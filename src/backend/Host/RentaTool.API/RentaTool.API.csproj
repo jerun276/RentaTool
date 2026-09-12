@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\BuildingBlocks\RentaTool.Shared.Kernel\RentaTool.Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\RentaTool.Shared.Infrastructure\RentaTool.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Identity\RentaTool.Modules.Identity\RentaTool.Modules.Identity.csproj" />
+    <ProjectReference Include="..\..\Modules\Catalog\RentaTool.Modules.Catalog\RentaTool.Modules.Catalog.csproj" />
+    <ProjectReference Include="..\..\Modules\Booking\RentaTool.Modules.Booking\RentaTool.Modules.Booking.csproj" />
+    <ProjectReference Include="..\..\Modules\Escrow\RentaTool.Modules.Escrow\RentaTool.Modules.Escrow.csproj" />
+  </ItemGroup>
+
+</Project>
