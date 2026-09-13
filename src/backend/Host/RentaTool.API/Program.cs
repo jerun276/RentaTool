@@ -1,41 +1,100 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
+using RentaTool.Modules.Catalog.Infrastructure;
+using RentaTool.Shared.Infrastructure.Persistence;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// 1. Database Persistence (PostgreSQL with EF Core)
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? "Host=localhost;Port=5432;Database=rentatool_db;Username=postgres;Password=rentatool_dev_secret_password";
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    options.UseNpgsql(connectionString);
+});
+
+// 2. Add MVC Controllers (scanning host and modular assemblies)
+builder.Services.AddControllers()
+    .AddApplicationPart(typeof(RentaTool.Modules.Catalog.Controllers.EquipmentController).Assembly);
+
+// 3. Register Business Modules (Clean Modular Monolith Extension Points)
+builder.Services.AddCatalogModule();
+
+// 4. OpenAPI / Swagger Documentation with Bearer Auth UI
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "RentaTool LK API – Modular Monolith Backend",
+        Version = "v1",
+        Description = "Authoritative REST API for RentaTool LK Peer-to-Peer Machinery & Equipment Rental System (SE3090 Assignment 1)"
+    });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+// 5. CORS configuration for React Web & Flutter
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Configure the HTTP request pipeline
+if (app.Environment.IsDevelopment() || true)
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "RentaTool LK API v1");
+        c.RoutePrefix = "swagger";
+    });
 }
 
-app.UseHttpsRedirection();
+app.UseCors("AllowAll");
 
-var summaries = new[]
+// Health check endpoint
+app.MapGet("/health", () => Results.Ok(new
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    status = "Healthy",
+    service = "RentaTool.API",
+    timestamp = DateTime.UtcNow,
+    framework = "ASP.NET Core 9.0",
+    modules = new[] { "Identity", "Catalog", "Booking", "Escrow" }
+})).WithName("HealthCheck");
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+app.UseRouting();
+
+app.MapControllers();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
