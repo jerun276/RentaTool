@@ -45,7 +45,7 @@ class DomainAnalysisAgent:
     ]
 
     def __init__(self, model_name: Optional[str] = None, api_key: Optional[str] = None):
-        self.model_name = model_name or os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        self.model_name = model_name or os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
         self.api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         self.llm = None
         self._initialize_llm()
@@ -259,11 +259,13 @@ class DomainAnalysisAgent:
         """Invokes Gemini LLM with structured prompt."""
         from langchain_core.messages import SystemMessage, HumanMessage
 
+        schema_json = json.dumps(DomainAnalysisResult.model_json_schema(), indent=2)
         system_prompt = (
             "You are the Domain Analysis Agent in the RentaTool LK dispute triage system. "
             "Your task is to analyze equipment condition deltas between pre-rental and post-rental inspections. "
-            "Categorize findings into: NORMAL_WEAR_AND_TEAR, ACCIDENTAL_STRUCTURAL_DAMAGE, MISUSE_OR_NEGLIGENCE, or UNDETERMINED. "
-            "You must respond with valid JSON matching the DomainAnalysisResult schema."
+            "Categorize findings into: NORMAL_WEAR_AND_TEAR, ACCIDENTAL_STRUCTURAL_DAMAGE, MISUSE_OR_NEGLIGENCE, or UNDETERMINED.\n\n"
+            "You MUST respond ONLY with a valid JSON object strictly matching this schema:\n"
+            f"{schema_json}"
         )
 
         user_content = {
@@ -291,6 +293,11 @@ class DomainAnalysisAgent:
 
         response = self.llm.invoke(messages)
         content_text = response.content if hasattr(response, "content") else str(response)
+        if isinstance(content_text, list):
+            content_text = "".join(
+                item.get("text", "") if isinstance(item, dict) else str(item)
+                for item in content_text
+            )
 
         # Parse JSON
         cleaned = content_text.strip()
