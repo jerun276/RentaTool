@@ -114,4 +114,71 @@ app.UseRouting();
 
 app.MapControllers();
 
+// Ensure PostgreSQL database schema and seed initial Component 2 data in Development
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try
+    {
+        await db.Database.EnsureCreatedAsync();
+
+        // Seed categories if table is empty
+        if (!await db.Set<RentaTool.Modules.Catalog.Domain.Category>().AnyAsync())
+        {
+            var catPower = new RentaTool.Modules.Catalog.Domain.Category("Power Tools", "Heavy-duty electric & cordless drilling, fastening, and cutting tools", "https://cdn.rentatool.lk/icons/drill.svg");
+            var catHeavy = new RentaTool.Modules.Catalog.Domain.Category("Heavy Machinery", "Earthmoving, compaction, and civil construction equipment", "https://cdn.rentatool.lk/icons/excavator.svg");
+            var catClean = new RentaTool.Modules.Catalog.Domain.Category("Cleaning Equipment", "Industrial high-pressure washers, vacuum cleaners, and scrubbers", "https://cdn.rentatool.lk/icons/washer.svg");
+            var catGen = new RentaTool.Modules.Catalog.Domain.Category("Generators & Power", "Silent diesel & petrol portable power generators", "https://cdn.rentatool.lk/icons/generator.svg");
+
+            db.Set<RentaTool.Modules.Catalog.Domain.Category>().AddRange(catPower, catHeavy, catClean, catGen);
+            await db.SaveChangesAsync();
+
+            // Seed initial verified equipment
+            var ownerId = Guid.Parse("99999999-9999-9999-9999-999999999999");
+
+            var washer = new RentaTool.Modules.Catalog.Domain.Equipment(
+                ownerId,
+                "Karcher HD 5/15 C Pressure Washer",
+                "Compact, commercial cold-water high pressure washer. Ideal for construction site cleaning.",
+                catClean.Id,
+                3500m,
+                75000m,
+                "Colombo 03"
+            );
+            washer.RecordRentalDays(24);
+
+            var hammer = new RentaTool.Modules.Catalog.Domain.Equipment(
+                ownerId,
+                "Bosch Professional GBH 8-45 D Rotary Hammer",
+                "Heavy 1500W SDS-Max demolition hammer for concrete drilling and chiselling.",
+                catPower.Id,
+                4200m,
+                120000m,
+                "Kandy"
+            );
+            hammer.RecordRentalDays(62); // Reaches 60-day threshold
+
+            var compactor = new RentaTool.Modules.Catalog.Domain.Equipment(
+                Guid.Parse("88888888-8888-8888-8888-888888888888"),
+                "Mikasa Plate Compactor 90kg",
+                "High-compaction forward plate compactor powered by Honda GX160 engine.",
+                catHeavy.Id,
+                6500m,
+                210000m,
+                "Gampaha"
+            );
+            compactor.FlagForMaintenance();
+            compactor.RecordRentalDays(78);
+
+            db.Set<RentaTool.Modules.Catalog.Domain.Equipment>().AddRange(washer, hammer, compactor);
+            await db.SaveChangesAsync();
+        }
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Could not auto-migrate PostgreSQL database. API will proceed.");
+    }
+}
+
 app.Run();
+
