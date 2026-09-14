@@ -1,6 +1,6 @@
 import React from "react"
 import { Link, useLocation } from "react-router-dom"
-import { Wrench, ShieldCheck, Box, Activity, User, Layers } from "lucide-react"
+import { Wrench, ShieldCheck, Box, Activity, User, Layers, Calendar } from "lucide-react"
 import { useAuthStore, UserRole } from "@/shared/store/useAuthStore"
 import { Badge } from "@/shared/components/ui/badge"
 
@@ -9,9 +9,10 @@ export const Navbar: React.FC = () => {
   const { user, setRole } = useAuthStore()
 
   const navItems = [
+    { label: "Rental Tracker", path: "/bookings", icon: Calendar },
+    { label: "Schedule Conflicts", path: "/bookings/calendar", icon: Activity },
     { label: "Equipment Catalog", path: "/catalog", icon: Box },
     { label: "Inspection Timeline", path: "/catalog/inspections", icon: ShieldCheck },
-    { label: "Maintenance Simulator", path: "/catalog/availability", icon: Activity },
   ]
 
   return (
@@ -19,7 +20,7 @@ export const Navbar: React.FC = () => {
       <div className="container flex h-16 items-center justify-between px-4 sm:px-8">
         {/* Brand */}
         <div className="flex items-center gap-6">
-          <Link to="/catalog" className="flex items-center gap-2.5 group">
+          <Link to="/bookings" className="flex items-center gap-2.5 group">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.25)] transition-all duration-300 group-hover:scale-105">
               <Wrench className="h-5 w-5" />
             </div>
@@ -28,7 +29,7 @@ export const Navbar: React.FC = () => {
                 RentaTool <span className="text-emerald-400">LK</span>
               </span>
               <span className="block text-[10px] uppercase font-mono tracking-wider text-muted-foreground">
-                P2P Machinery & Inspection
+                P2P Machinery & Rental Booking
               </span>
             </div>
           </Link>
@@ -44,7 +45,7 @@ export const Navbar: React.FC = () => {
                   to={item.path}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? "bg-accent text-emerald-400 shadow-sm"
+                      ? "bg-accent text-emerald-400 shadow-sm font-semibold"
                       : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                   }`}
                 >
@@ -61,9 +62,9 @@ export const Navbar: React.FC = () => {
           {/* Active Student Badge */}
           <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/40 border border-emerald-500/20 text-xs text-emerald-300">
             <Layers className="h-3.5 w-3.5 text-emerald-400 animate-pulse" />
-            <span>Component 2: Catalog & Inspection</span>
+            <span>Component 3: Booking & Handover</span>
             <Badge variant="available" className="text-[10px] py-0 px-1.5">
-              Jerun (S2)
+              Niro (S3)
             </Badge>
           </div>
 
