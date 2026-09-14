@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using RentaTool.Modules.Booking.Infrastructure;
 using RentaTool.Modules.Catalog.Infrastructure;
 using RentaTool.Shared.Infrastructure.Persistence;
 
@@ -16,10 +17,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // 2. Add MVC Controllers (scanning host and modular assemblies)
 builder.Services.AddControllers()
-    .AddApplicationPart(typeof(RentaTool.Modules.Catalog.Controllers.EquipmentController).Assembly);
+    .AddApplicationPart(typeof(RentaTool.Modules.Catalog.Controllers.EquipmentController).Assembly)
+    .AddApplicationPart(typeof(RentaTool.Modules.Booking.Controllers.BookingsController).Assembly);
 
 // 3. Register Business Modules (Clean Modular Monolith Extension Points)
 builder.Services.AddCatalogModule();
+builder.Services.AddBookingModule();
 
 // 4. OpenAPI / Swagger Documentation with Bearer Auth UI
 builder.Services.AddEndpointsApiExplorer();
@@ -82,6 +85,20 @@ if (app.Environment.IsDevelopment() || true)
 }
 
 app.UseCors("AllowAll");
+
+// Ensure database schema exists for local testing
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Database.EnsureCreated();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning("Could not auto-create database tables on startup: {Message}", ex.Message);
+    }
+}
 
 // Health check endpoint
 app.MapGet("/health", () => Results.Ok(new
