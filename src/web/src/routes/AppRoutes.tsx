@@ -2,6 +2,7 @@ import React from "react"
 import { Routes, Route, Navigate } from "react-router-dom"
 import { CatalogDashboardPage } from "@/modules/catalog/pages/CatalogDashboardPage"
 import { BookingDashboardPage } from "@/modules/booking/pages/BookingDashboardPage"
+import { IdentityVerificationPage } from "@/modules/identity/pages/IdentityVerificationPage"
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -18,6 +19,14 @@ export const AppRoutes: React.FC = () => {
       <Route path="/bookings" element={<BookingDashboardPage />} />
       <Route path="/bookings/calendar" element={<BookingDashboardPage />} />
       <Route path="/bookings/conflicts" element={<BookingDashboardPage />} />
+
+      {/* Component 1: Identity, KYC & verification */}
+      <Route path="/identity" element={<IdentityVerificationPage />} />
+      <Route path="/identity/register" element={<IdentityVerificationPage />} />
+      <Route path="/identity/login" element={<IdentityVerificationPage />} />
+      <Route path="/identity/kyc" element={<IdentityVerificationPage />} />
+      <Route path="/identity/trust-score" element={<IdentityVerificationPage />} />
+      <Route path="/identity/admin/kyc" element={<IdentityVerificationPage />} />
 
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/bookings" replace />} />

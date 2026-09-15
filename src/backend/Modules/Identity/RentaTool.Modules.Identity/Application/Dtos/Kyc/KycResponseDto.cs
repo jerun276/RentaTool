@@ -1,4 +1,5 @@
 using RentaTool.Shared.Kernel.Domain;
+using System.Text.Json.Serialization;
 
 namespace RentaTool.Modules.Identity.Application.Dtos;
 
@@ -7,7 +8,7 @@ public record KycResponseDto(
     Guid UserId,
     string DocumentType,
     string DocumentNumber,
-    KycStatus Status,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] KycStatus Status,
     string FrontImageUrl,
     string? BackImageUrl,
     string? RejectionReason);
