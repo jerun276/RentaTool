@@ -3,6 +3,7 @@ using Microsoft.OpenApi.Models;
 using RentaTool.Modules.Booking.Infrastructure;
 using RentaTool.Modules.Catalog.Infrastructure;
 using RentaTool.Modules.Identity.Infrastructure;
+using RentaTool.Modules.Escrow.Infrastructure;
 using RentaTool.Shared.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,12 +21,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddControllers()
     .AddApplicationPart(typeof(RentaTool.Modules.Catalog.Controllers.EquipmentController).Assembly)
     .AddApplicationPart(typeof(RentaTool.Modules.Booking.Controllers.BookingsController).Assembly)
-    .AddApplicationPart(typeof(RentaTool.Modules.Identity.Controllers.AuthController).Assembly);
+    .AddApplicationPart(typeof(RentaTool.Modules.Identity.Controllers.AuthController).Assembly)
+    .AddApplicationPart(typeof(RentaTool.Modules.Escrow.Controllers.EscrowController).Assembly);
 
 // 3. Register Business Modules (Clean Modular Monolith Extension Points)
 builder.Services.AddCatalogModule();
 builder.Services.AddBookingModule();
 builder.Services.AddIdentityModule(builder.Configuration);
+builder.Services.AddEscrowModule();
 
 // 4. OpenAPI / Swagger Documentation with Bearer Auth UI
 builder.Services.AddEndpointsApiExplorer();
