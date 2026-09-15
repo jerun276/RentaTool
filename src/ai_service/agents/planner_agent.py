@@ -41,7 +41,7 @@ class PlannerAgent:
     """
 
     def __init__(self, model_name: Optional[str] = None, api_key: Optional[str] = None):
-        self.model_name = model_name or os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        self.model_name = model_name or os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
         self.api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         self.llm = None
         self._initialize_llm()
@@ -159,6 +159,8 @@ class PlannerAgent:
 
         response = self.llm.invoke(prompt)
         text = response.content if hasattr(response, "content") else str(response)
+        if isinstance(text, list):
+            text = "".join(item.get("text", "") if isinstance(item, dict) else str(item) for item in text)
 
         # Extract JSON
         clean_text = text.replace("```json", "").replace("```", "").strip()
