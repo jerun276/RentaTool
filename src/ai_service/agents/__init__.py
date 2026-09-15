@@ -22,6 +22,19 @@ from src.ai_service.agents.planner_models import (
     DisputeWorkflowState,
 )
 from src.ai_service.agents.planner_agent import PlannerAgent
+from src.ai_service.agents.validation_agent import (
+    ValidationSafetyAgent,
+    ValidationResult,
+    validation_node,
+)
+from src.ai_service.agents.action_agent import (
+    ActionToolAgent,
+    ActionProposal,
+    action_agent_node,
+    get_equipment_replacement_cost,
+    calculate_rental_wear_factor,
+    compute_repair_deduction,
+)
 
 __all__ = [
     "DamageCategory",
@@ -42,7 +55,13 @@ __all__ = [
     "ArbitrationDossier",
     "DisputeWorkflowState",
     "PlannerAgent",
+    "ValidationSafetyAgent",
+    "ValidationResult",
+    "validation_node",
+    "ActionToolAgent",
+    "ActionProposal",
+    "action_agent_node",
+    "get_equipment_replacement_cost",
+    "calculate_rental_wear_factor",
+    "compute_repair_deduction",
 ]
-from .validation_agent import ValidationSafetyAgent, ValidationResult, validation_node
-
-__all__ = ["ValidationSafetyAgent", "ValidationResult", "validation_node"]
