@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using RentaTool.Modules.Booking.Infrastructure;
 using RentaTool.Modules.Catalog.Infrastructure;
+using RentaTool.Modules.Identity.Infrastructure;
 using RentaTool.Shared.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,11 +19,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // 2. Add MVC Controllers (scanning host and modular assemblies)
 builder.Services.AddControllers()
     .AddApplicationPart(typeof(RentaTool.Modules.Catalog.Controllers.EquipmentController).Assembly)
-    .AddApplicationPart(typeof(RentaTool.Modules.Booking.Controllers.BookingsController).Assembly);
+    .AddApplicationPart(typeof(RentaTool.Modules.Booking.Controllers.BookingsController).Assembly)
+    .AddApplicationPart(typeof(RentaTool.Modules.Identity.Controllers.AuthController).Assembly);
 
 // 3. Register Business Modules (Clean Modular Monolith Extension Points)
 builder.Services.AddCatalogModule();
 builder.Services.AddBookingModule();
+builder.Services.AddIdentityModule(builder.Configuration);
 
 // 4. OpenAPI / Swagger Documentation with Bearer Auth UI
 builder.Services.AddEndpointsApiExplorer();
@@ -85,6 +88,8 @@ if (app.Environment.IsDevelopment() || true)
 }
 
 app.UseCors("AllowAll");
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Ensure database schema exists for local testing
 using (var scope = app.Services.CreateScope())
