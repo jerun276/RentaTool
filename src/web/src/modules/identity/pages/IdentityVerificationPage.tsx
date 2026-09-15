@@ -62,7 +62,7 @@ export const IdentityVerificationPage: React.FC = () => {
     setReviewUserId(record.userId)
     setRejectionReason("")
     setReviewNotice(null)
-    document.getElementById("kyc-decision")?.scrollIntoView({ behavior: "smooth", block: "center" })
+    window.document.getElementById("kyc-decision")?.scrollIntoView({ behavior: "smooth", block: "center" })
   }
   const updateRegistration = (field: keyof RegistrationValues, value: string) => {
     const next = { ...registration, [field]: value }; setRegistration(next)

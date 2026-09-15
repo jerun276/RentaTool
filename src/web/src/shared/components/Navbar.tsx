@@ -1,6 +1,6 @@
 import React from "react"
 import { Link, useLocation } from "react-router-dom"
-import { Wrench, ShieldCheck, Box, Activity, User, Layers, Calendar } from "lucide-react"
+import { Wrench, ShieldCheck, Box, Activity, User, Layers, Calendar, Scale } from "lucide-react"
 import { useAuthStore, UserRole } from "@/shared/store/useAuthStore"
 import { Badge } from "@/shared/components/ui/badge"
 
@@ -13,6 +13,7 @@ export const Navbar: React.FC = () => {
     { label: "Schedule Conflicts", path: "/bookings/calendar", icon: Activity },
     { label: "Equipment Catalog", path: "/catalog", icon: Box },
     { label: "Inspection Timeline", path: "/catalog/inspections", icon: ShieldCheck },
+    { label: "Arbitration Desk", path: "/claims", icon: Scale },
   ]
 
   return (
