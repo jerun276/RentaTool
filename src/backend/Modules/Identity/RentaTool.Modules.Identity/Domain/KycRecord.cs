@@ -21,7 +21,10 @@ public class KycRecord : BaseEntity
     public DateTime? VerifiedAtUtc { get; private set; }
     public void Review(KycStatus status, Guid adminId, string? rejectionReason)
     {
-        if (status == KycStatus.Pending) throw new ArgumentException("Verification status must be Approved or Rejected.");
+        if (!Enum.IsDefined(status) || status == KycStatus.Pending)
+            throw new ArgumentException("Verification status must be Approved or Rejected.");
+        if (Status != KycStatus.Pending)
+            throw new InvalidOperationException("Only a pending KYC submission can be reviewed.");
         if (status == KycStatus.Rejected && string.IsNullOrWhiteSpace(rejectionReason)) throw new ArgumentException("A rejection reason is required.");
         Status = status; VerifiedByAdminId = adminId; RejectionReason = status == KycStatus.Rejected ? rejectionReason!.Trim() : null;
         VerifiedAtUtc = DateTime.UtcNow; MarkUpdated();

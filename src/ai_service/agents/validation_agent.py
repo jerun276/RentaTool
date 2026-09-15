@@ -9,12 +9,35 @@ import re
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, Iterable, Optional
 
+from fastapi import FastAPI
+from pydantic import BaseModel, Field
+
+
+app = FastAPI(title="RentaTool Validation Safety API", version="1.0.0")
+
 
 @dataclass(frozen=True)
 class ValidationResult:
     approved: bool
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+
+
+class ValidationRequest(BaseModel):
+    """Untrusted workflow input accepted by the private validation endpoint."""
+
+    document_type: str = Field(..., max_length=30)
+    document_number: str = Field(..., max_length=30)
+    name: str = Field(..., max_length=120)
+    proposed_deduction: float = Field(..., ge=0)
+    held_deposit: float = Field(..., ge=0)
+    free_text: str = Field(default="", max_length=10_000)
+
+
+class ValidationResponse(BaseModel):
+    approved: bool
+    errors: list[str]
+    warnings: list[str]
 
 
 class ValidationSafetyAgent:
@@ -101,3 +124,21 @@ def validation_node(state: Dict[str, Any]) -> Dict[str, Any]:
         free_text=str(data.get("free_text", "")),
     )
     return {**state, "validation": asdict(result), "validation_passed": result.approved}
+
+
+@app.post("/api/v1/ai/validate", response_model=ValidationResponse)
+def validate(request: ValidationRequest) -> ValidationResponse:
+    """Validate identity, deposit-cap, and prompt-safety rules in one request.
+
+    The blacklist intentionally remains server-controlled: this public contract does
+    not accept blacklist entries from a caller.
+    """
+    result = ValidationSafetyAgent().validate_workflow_input(
+        document_type=request.document_type,
+        document_number=request.document_number,
+        name=request.name,
+        proposed_deduction=request.proposed_deduction,
+        held_deposit=request.held_deposit,
+        free_text=request.free_text,
+    )
+    return ValidationResponse(**asdict(result))
