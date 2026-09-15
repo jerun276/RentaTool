@@ -39,6 +39,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RentaTool.Modules.Booking.T
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RentaTool.Modules.Identity.Tests", "tests\RentaTool.Modules.Identity.Tests\RentaTool.Modules.Identity.Tests.csproj", "{7EC84EC8-4C93-4650-B72D-E974F7B585AF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RentaTool.Modules.Escrow.Tests", "tests\RentaTool.Modules.Escrow.Tests\RentaTool.Modules.Escrow.Tests.csproj", "{F74702CE-F5EC-4C12-A542-284341D42722}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -169,6 +171,18 @@ Global
 		{7EC84EC8-4C93-4650-B72D-E974F7B585AF}.Release|x64.Build.0 = Release|Any CPU
 		{7EC84EC8-4C93-4650-B72D-E974F7B585AF}.Release|x86.ActiveCfg = Release|Any CPU
 		{7EC84EC8-4C93-4650-B72D-E974F7B585AF}.Release|x86.Build.0 = Release|Any CPU
+		{F74702CE-F5EC-4C12-A542-284341D42722}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F74702CE-F5EC-4C12-A542-284341D42722}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F74702CE-F5EC-4C12-A542-284341D42722}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F74702CE-F5EC-4C12-A542-284341D42722}.Debug|x64.Build.0 = Debug|Any CPU
+		{F74702CE-F5EC-4C12-A542-284341D42722}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F74702CE-F5EC-4C12-A542-284341D42722}.Debug|x86.Build.0 = Debug|Any CPU
+		{F74702CE-F5EC-4C12-A542-284341D42722}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F74702CE-F5EC-4C12-A542-284341D42722}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F74702CE-F5EC-4C12-A542-284341D42722}.Release|x64.ActiveCfg = Release|Any CPU
+		{F74702CE-F5EC-4C12-A542-284341D42722}.Release|x64.Build.0 = Release|Any CPU
+		{F74702CE-F5EC-4C12-A542-284341D42722}.Release|x86.ActiveCfg = Release|Any CPU
+		{F74702CE-F5EC-4C12-A542-284341D42722}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -188,5 +202,6 @@ Global
 		{DB150942-8C4A-431B-A0A7-4EE912850606} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{5B2DD1CA-FF05-4B5C-9FF2-5A4220F344FF} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{7EC84EC8-4C93-4650-B72D-E974F7B585AF} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{F74702CE-F5EC-4C12-A542-284341D42722} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal
