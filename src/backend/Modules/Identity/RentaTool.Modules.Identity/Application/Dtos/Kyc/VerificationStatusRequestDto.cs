@@ -6,4 +6,4 @@ namespace RentaTool.Modules.Identity.Application.Dtos;
 
 public record VerificationStatusRequestDto(
     [property: JsonConverter(typeof(JsonStringEnumConverter))] KycStatus Status,
-    [property: StringLength(500)] string? RejectionReason);
+    [StringLength(500)] string? RejectionReason);
