@@ -6,7 +6,7 @@ import { Badge } from "@/shared/components/ui/badge"
 
 export const Navbar: React.FC = () => {
   const location = useLocation()
-  const { user, setRole } = useAuthStore()
+  const { user, isAuthenticated, setRole, logout } = useAuthStore()
 
   const navItems = [
     { label: "Rental Tracker", path: "/bookings", icon: Calendar },
@@ -86,6 +86,24 @@ export const Navbar: React.FC = () => {
               </button>
             ))}
           </div>
+
+          {/* User Sign In / Out */}
+          {isAuthenticated && user ? (
+            <button
+              onClick={() => logout()}
+              className="px-2.5 py-1 text-xs rounded border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              title="Sign Out"
+            >
+              Sign Out
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              className="px-3 py-1 text-xs rounded bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-600/30 transition-colors font-medium"
+            >
+              Sign In
+            </Link>
+          )}
         </div>
       </div>
     </header>
