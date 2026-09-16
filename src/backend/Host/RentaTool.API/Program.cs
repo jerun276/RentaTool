@@ -91,6 +91,7 @@ if (app.Environment.IsDevelopment() || true)
 }
 
 app.UseCors("AllowAll");
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -117,8 +118,6 @@ app.MapGet("/health", () => Results.Ok(new
     framework = "ASP.NET Core 9.0",
     modules = new[] { "Identity", "Catalog", "Booking", "Escrow" }
 })).WithName("HealthCheck");
-
-app.UseRouting();
 
 app.MapControllers();
 

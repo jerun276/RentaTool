@@ -4,11 +4,25 @@ import type { AuthResponse, LoginFormValues, RegistrationFormValues, TrustScoreR
 
 export const apiErrorMessage = (error: unknown) => {
   if (axios.isAxiosError(error)) {
-    const data = error.response?.data as { message?: string; errors?: Record<string, string[]> } | undefined
-    return data?.message || Object.values(data?.errors || {}).flat()[0] || "We could not complete your request. Please try again."
+    if (error.response?.status === 401) {
+      const data = error.response.data as { message?: string } | undefined
+      return data?.message || "Invalid email address or password. Please verify your credentials."
+    }
+    const data = error.response?.data as { message?: string; title?: string; errors?: Record<string, string[]> } | undefined
+    if (data?.message) return data.message
+    if (data?.errors) {
+      const flatErrors = Object.values(data.errors).flat()
+      if (flatErrors.length > 0) return flatErrors.join(", ")
+    }
+    if (data?.title) return data.title
+    return error.message || "We could not complete your request. Please try again."
+  }
+  if (error instanceof Error) {
+    return error.message
   }
   return "We could not complete your request. Please try again."
 }
+
 
 export const identityApi = {
   register: (values: RegistrationFormValues) => axiosClient.post<AuthResponse>("/auth/register", {

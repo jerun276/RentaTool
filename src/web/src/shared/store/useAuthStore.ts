@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import { persist } from "zustand/middleware"
 
 export type UserRole = "Renter" | "Owner" | "Admin"
 
@@ -7,7 +8,8 @@ export interface AuthUser {
   name: string
   email: string
   role: UserRole
-  trustScore: number
+  trustScore?: number
+  phoneNumber?: string
 }
 
 interface AuthState {
@@ -19,20 +21,22 @@ interface AuthState {
   logout: () => void
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  token: "mock-jwt-token-jerun-student2",
-  user: {
-    id: "99999999-9999-9999-9999-999999999999",
-    name: "Jerun (Student 2)",
-    email: "jerun.catalog@rentatool.lk",
-    role: "Owner",
-    trustScore: 98,
-  },
-  isAuthenticated: true,
-  setAuth: (token, user) => set({ token, user, isAuthenticated: true }),
-  setRole: (role) =>
-    set((state) => ({
-      user: state.user ? { ...state.user, role } : null,
-    })),
-  logout: () => set({ token: null, user: null, isAuthenticated: false }),
-}))
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      token: null,
+      user: null,
+      isAuthenticated: false,
+      setAuth: (token, user) => set({ token, user, isAuthenticated: true }),
+      setRole: (role) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, role } : null,
+        })),
+      logout: () => set({ token: null, user: null, isAuthenticated: false }),
+    }),
+    {
+      name: "rentatool-auth-session",
+    }
+  )
+)
+

@@ -88,7 +88,7 @@ export const bookingApi = {
   // 1. Create a new booking request
   createBooking: async (data: CreateBookingRequestDto): Promise<BookingResponseDto> => {
     try {
-      const response = await axiosClient.post<BookingResponseDto>("/api/v1/bookings", data)
+      const response = await axiosClient.post<BookingResponseDto>("/bookings", data)
       return response.data
     } catch (err) {
       console.warn("API unavailable, simulating local booking creation", err)
@@ -111,7 +111,7 @@ export const bookingApi = {
   // 2. Fetch active bookings
   getActiveBookings: async (): Promise<ActiveBookingSummaryDto[]> => {
     try {
-      const response = await axiosClient.get<ActiveBookingSummaryDto[]>("/api/v1/bookings/active")
+      const response = await axiosClient.get<ActiveBookingSummaryDto[]>("/bookings/active")
       return response.data
     } catch (err) {
       console.warn("API unavailable, returning mock active bookings", err)
@@ -122,7 +122,7 @@ export const bookingApi = {
   // 3. Get booking by ID
   getBookingById: async (id: string): Promise<BookingResponseDto | null> => {
     try {
-      const response = await axiosClient.get<BookingResponseDto>(`/api/v1/bookings/${id}`)
+      const response = await axiosClient.get<BookingResponseDto>(`/bookings/${id}`)
       return response.data
     } catch (err) {
       console.warn("API unavailable, falling back to mock booking", err)
@@ -142,7 +142,7 @@ export const bookingApi = {
   ): Promise<HandoverTokenResponseDto> => {
     try {
       const response = await axiosClient.post<HandoverTokenResponseDto>(
-        `/api/v1/bookings/${id}/generate-handover-token`,
+        `/bookings/${id}/generate-handover-token`,
         { eventType } as GenerateHandoverTokenRequestDto
       )
       return response.data
@@ -167,7 +167,7 @@ export const bookingApi = {
   ): Promise<HandoverVerificationResponseDto> => {
     try {
       const response = await axiosClient.post<HandoverVerificationResponseDto>(
-        `/api/v1/bookings/${id}/verify-handover`,
+        `/bookings/${id}/verify-handover`,
         data
       )
       return response.data
@@ -192,7 +192,7 @@ export const bookingApi = {
   ): Promise<ExtendScheduleResponseDto> => {
     try {
       const response = await axiosClient.post<ExtendScheduleResponseDto>(
-        `/api/v1/bookings/${id}/extend-schedule`,
+        `/bookings/${id}/extend-schedule`,
         data
       )
       return response.data
