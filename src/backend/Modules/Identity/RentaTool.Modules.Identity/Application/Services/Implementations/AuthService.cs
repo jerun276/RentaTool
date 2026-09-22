@@ -30,6 +30,12 @@ public sealed class AuthService(AppDbContext db, ITokenService tokens) : IAuthSe
     {
         var email = request.Email.Trim().ToLowerInvariant();
         var user = await db.Set<User>().SingleOrDefaultAsync(x => x.Email == email);
-        return user is not null && PasswordHasher.Verify(request.Password, user.PasswordHash) ? tokens.Create(user) : null;
+        if (user is null || !PasswordHasher.Verify(request.Password, user.PasswordHash))
+            return null;
+
+        if (!user.IsActive)
+            throw new InvalidOperationException($"Account is suspended: {user.SuspensionReason ?? "Administrative action"}. Please contact support.");
+
+        return tokens.Create(user);
     }
 }

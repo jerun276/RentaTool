@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react"
 import { axiosClient } from "@/shared/api/axiosClient"
+import { UserManagementDirectoryView } from "./UserManagementDirectoryView"
 
 export const KycTrustComplianceView: React.FC = () => {
+  const [activeSubTab, setActiveSubTab] = useState<"users" | "kyc">("users")
   const [selectedCandidateId, setSelectedCandidateId] = useState<string>("duminda")
   const [filterTab, setFilterTab] = useState<"pending" | "all" | "verified" | "flagged">("pending")
   const [searchQuery, setSearchQuery] = useState("")
@@ -226,8 +228,39 @@ export const KycTrustComplianceView: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. FILTER & CONTROLS TOOLBAR */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-[#181c24] p-3 rounded-lg border border-[#1f2937]">
+      {/* SUB-NAVIGATION TABS */}
+      <div className="flex items-center gap-2 border-b border-[#1f2937] pb-3">
+        <button
+          onClick={() => setActiveSubTab("users")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-mono font-bold transition-all ${
+            activeSubTab === "users"
+              ? "bg-[#10b981] text-[#003824] shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+              : "bg-[#181c24] text-[#86948a] hover:text-[#dfe2ee] border border-[#1f2937]"
+          }`}
+        >
+          <span className="material-symbols-outlined text-[18px]">manage_accounts</span>
+          <span>User Directory & Account Governance</span>
+        </button>
+
+        <button
+          onClick={() => setActiveSubTab("kyc")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-mono font-bold transition-all ${
+            activeSubTab === "kyc"
+              ? "bg-[#10b981] text-[#003824] shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+              : "bg-[#181c24] text-[#86948a] hover:text-[#dfe2ee] border border-[#1f2937]"
+          }`}
+        >
+          <span className="material-symbols-outlined text-[18px]">document_scanner</span>
+          <span>KYC Document Inspection & Biometrics</span>
+        </button>
+      </div>
+
+      {activeSubTab === "users" ? (
+        <UserManagementDirectoryView />
+      ) : (
+        <>
+          {/* 2. FILTER & CONTROLS TOOLBAR */}
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-[#181c24] p-3 rounded-lg border border-[#1f2937]">
         {/* Filter Tabs */}
         <div className="flex items-center gap-2 overflow-x-auto">
           {[
@@ -484,6 +517,8 @@ export const KycTrustComplianceView: React.FC = () => {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   )
 }

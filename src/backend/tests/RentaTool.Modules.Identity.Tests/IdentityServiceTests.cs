@@ -110,6 +110,84 @@ public class AuthServiceTests
         await using var db = CreateDb();
         Assert.Null(await new TrustScoreService(db).GetAsync(Guid.NewGuid()));
     }
+
+    [Fact]
+    public async Task GetUsers_filters_by_search_keyword_and_role()
+    {
+        await using var db = CreateDb();
+        var auth = new AuthService(db, Tokens());
+        await auth.RegisterAsync(new("Duminda Bandara", "duminda@example.com", "SecurePass123", "Renter", "0771112233"));
+        await auth.RegisterAsync(new("Chaminda Perera", "chaminda@example.com", "SecurePass123", "Owner", "0774445566"));
+
+        var userService = new UserService(db);
+        var allUsers = await userService.GetUsersAsync(null, null, null);
+        Assert.Equal(2, allUsers.Count);
+
+        var searchResult = await userService.GetUsersAsync("Duminda", null, null);
+        Assert.Single(searchResult);
+        Assert.Equal("duminda@example.com", searchResult[0].Email);
+
+        var owners = await userService.GetUsersAsync(null, UserRole.Owner, null);
+        Assert.Single(owners);
+        Assert.Equal("Chaminda Perera", owners[0].Name);
+    }
+
+    [Fact]
+    public async Task UpdateStatus_suspends_user_and_prevents_login()
+    {
+        await using var db = CreateDb();
+        var auth = new AuthService(db, Tokens());
+        var user = await auth.RegisterAsync(new("Test User", "test@example.com", "SecurePass123", "Renter", "0771234567"));
+
+        var userService = new UserService(db);
+        var adminId = Guid.NewGuid();
+
+        // Suspend user
+        var suspended = await userService.UpdateStatusAsync(user.UserId, new(false, "Repeated fraudulent claims"), adminId);
+        Assert.False(suspended.IsActive);
+        Assert.Equal("Repeated fraudulent claims", suspended.SuspensionReason);
+
+        // Login should now throw InvalidOperationException
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => auth.LoginAsync(new("test@example.com", "SecurePass123")));
+        Assert.Contains("suspended", ex.Message, StringComparison.OrdinalIgnoreCase);
+
+        // Reactivate user
+        var reactivated = await userService.UpdateStatusAsync(user.UserId, new(true, null), adminId);
+        Assert.True(reactivated.IsActive);
+        Assert.Null(reactivated.SuspensionReason);
+
+        // Login should succeed again
+        var login = await auth.LoginAsync(new("test@example.com", "SecurePass123"));
+        Assert.NotNull(login);
+    }
+
+    [Fact]
+    public async Task UpdateStatus_prevents_admin_from_suspending_self()
+    {
+        await using var db = CreateDb();
+        var admin = new User("Super Admin", "admin@rentatool.lk", "hash", UserRole.Admin, "0770000000");
+        db.Set<User>().Add(admin);
+        await db.SaveChangesAsync();
+
+        var userService = new UserService(db);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => userService.UpdateStatusAsync(admin.Id, new(false, "Self suspend"), admin.Id));
+    }
+
+    [Fact]
+    public async Task UpdateRole_changes_user_role_and_syncs_assignment()
+    {
+        await using var db = CreateDb();
+        var auth = new AuthService(db, Tokens());
+        var user = await auth.RegisterAsync(new("Candidate", "candidate@example.com", "SecurePass123", "Renter", "0771234567"));
+
+        var userService = new UserService(db);
+        var updated = await userService.UpdateRoleAsync(user.UserId, new("Owner"), Guid.NewGuid());
+        Assert.Equal("Owner", updated.Role);
+
+        var assignment = Assert.Single(await db.Set<UserRoleAssignment>().Where(a => a.UserId == user.UserId).ToListAsync());
+        Assert.Equal(UserRole.Owner, assignment.Role);
+    }
+
     private static AppDbContext CreateDb() => new(new DbContextOptionsBuilder<AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
     private static ITokenService Tokens() => new JwtTokenService(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Jwt:Key"] = "A-development-test-key-that-is-long-enough-for-HS256!" }).Build());
 }

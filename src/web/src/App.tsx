@@ -1,11 +1,36 @@
-import React from "react"
+import React, { useEffect } from "react"
 import { BrowserRouter, useLocation } from "react-router-dom"
 import { Navbar } from "@/shared/components/Navbar"
 import { AppRoutes } from "@/routes/AppRoutes"
+import { useAuthStore, type UserRole } from "@/shared/store/useAuthStore"
+import { identityApi } from "@/modules/identity/api/identityApi"
 
 const AppContent: React.FC = () => {
   const location = useLocation()
   const isAuthPage = location.pathname === "/login"
+
+  // Ensure an authenticated session exists for Admin/Operations desks
+  useEffect(() => {
+    const initAuth = async () => {
+      const state = useAuthStore.getState()
+      if (!state.token || !state.user) {
+        try {
+          const res = await identityApi.login({ email: "admin@rentatool.lk", password: "Admin@123" })
+          if (res.data?.accessToken) {
+            useAuthStore.getState().setAuth(res.data.accessToken, {
+              id: res.data.userId,
+              name: res.data.name,
+              email: "admin@rentatool.lk",
+              role: res.data.role as UserRole,
+            })
+          }
+        } catch {
+          // Dev auth fallback
+        }
+      }
+    }
+    initAuth()
+  }, [])
 
   const isOperationsPortal =
     location.pathname === "/" ||

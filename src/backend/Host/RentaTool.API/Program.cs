@@ -102,6 +102,21 @@ using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         db.Database.EnsureCreated();
+
+        if (db.Database.IsRelational())
+        {
+            try
+            {
+                db.Database.ExecuteSqlRaw(@"
+                    ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT TRUE;
+                    ALTER TABLE users ADD COLUMN IF NOT EXISTS suspension_reason character varying(500);
+                ");
+            }
+            catch (Exception ex)
+            {
+                app.Logger.LogDebug("Auto-migration schema update skipped or already applied: {Message}", ex.Message);
+            }
+        }
     }
     catch (Exception ex)
     {

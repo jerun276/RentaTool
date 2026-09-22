@@ -22,3 +22,26 @@ export interface AuthResponse {
 }
 
 export interface TrustScoreResponse { userId: string; score: number; trustScore?: number; lastUpdatedUtc?: string }
+
+export interface ManagedUser {
+  id: string
+  name: string
+  email: string
+  phoneNumber: string
+  role: "Admin" | "Owner" | "Renter"
+  isVerified: boolean
+  isActive: boolean
+  suspensionReason?: string | null
+  trustScore: number
+  createdAtUtc: string
+  updatedAtUtc?: string | null
+}
+
+export interface UpdateUserStatusPayload {
+  isActive: boolean
+  reason?: string
+}
+
+export interface UpdateUserRolePayload {
+  role: "Admin" | "Owner" | "Renter"
+}

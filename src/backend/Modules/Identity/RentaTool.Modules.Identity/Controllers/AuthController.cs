@@ -24,9 +24,18 @@ public class AuthController(IAuthService authService) : ControllerBase
     [HttpPost("login")]
     [ProducesResponseType(typeof(TokenResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Login(LoginRequestDto request)
     {
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
-        var token = await authService.LoginAsync(request); return token is null ? Unauthorized(new { message = "Invalid email or password." }) : Ok(token);
+        try
+        {
+            var token = await authService.LoginAsync(request);
+            return token is null ? Unauthorized(new { message = "Invalid email or password." }) : Ok(token);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
     }
 }
