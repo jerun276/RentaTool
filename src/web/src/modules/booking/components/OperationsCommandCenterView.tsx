@@ -151,7 +151,7 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
         <div className="space-y-1.5 z-10">
           <div className="flex items-center gap-2">
             <span className="px-2 py-0.5 rounded bg-[#10b981]/15 text-[#4edea3] font-mono text-[11px] uppercase tracking-wider font-semibold border border-[#10b981]/25">
-              Desk 01 // Operations
+              Real-Time Operations
             </span>
             <span className="text-[#86948a]">•</span>
             <span className="flex items-center gap-1.5 font-mono text-[11px] text-[#bbcabf]">

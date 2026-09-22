@@ -91,11 +91,17 @@ public class BookingService : IBookingService
             BookingStatus.Active
         };
 
-        var bookings = await _context.Set<Domain.Booking>()
+        var query = _context.Set<Domain.Booking>()
             .Include(b => b.HandoverEvents)
             .AsNoTracking()
-            .Where(b => (b.RenterId == userId || b.OwnerId == userId) &&
-                        activeStatuses.Contains(b.Status))
+            .Where(b => activeStatuses.Contains(b.Status));
+
+        if (userId != Guid.Empty)
+        {
+            query = query.Where(b => b.RenterId == userId || b.OwnerId == userId);
+        }
+
+        var bookings = await query
             .OrderByDescending(b => b.StartDate)
             .ToListAsync(cancellationToken);
 

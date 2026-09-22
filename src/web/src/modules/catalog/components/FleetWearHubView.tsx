@@ -92,35 +92,27 @@ export const FleetWearHubView: React.FC = () => {
           setDbLive(true)
           const items = res.data.items || (Array.isArray(res.data) ? res.data : [])
           if (items.length > 0) {
-            setFleetList((prev) => {
-              const updated = [...prev]
-              items.forEach((eq: any) => {
-                const matchIndex = updated.findIndex(
-                  (f) => f.name.toLowerCase() === eq.title.toLowerCase() || f.dbId === eq.id
-                )
-                const isLocked = eq.requiresMaintenanceCheck || eq.status === "UnderMaintenance" || eq.totalRentalDaysAccumulated >= 60
-                const mappedItem = {
-                  id: `EQ-${eq.id.slice(0, 4).toUpperCase()}`,
-                  dbId: eq.id,
-                  name: eq.title,
-                  category: eq.categoryName || "Heavy Machinery",
-                  serial: `SN-${eq.id.slice(0, 8).toUpperCase()}`,
-                  custodian: "Western Province Operations Hub",
-                  location: eq.location || "Colombo",
-                  dailyRate: eq.dailyRate || 5000,
-                  valuation: eq.replacementValue || 200000,
-                  daysRented: eq.totalRentalDaysAccumulated || 0,
-                  isLocked,
-                  image: eq.images && eq.images.length > 0 ? eq.images[0] : "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&auto=format&fit=crop&q=80",
-                }
-                if (matchIndex >= 0) {
-                  updated[matchIndex] = { ...updated[matchIndex], ...mappedItem }
-                } else {
-                  updated.unshift(mappedItem)
-                }
-              })
-              return updated
+            const mapped = items.map((eq: any) => {
+              const isLocked = eq.requiresMaintenanceCheck || eq.status === "UnderMaintenance" || (eq.totalRentalDaysAccumulated || 0) >= 60
+              return {
+                id: `EQ-${eq.id.slice(0, 4).toUpperCase()}`,
+                dbId: eq.id,
+                name: eq.title,
+                category: eq.categoryName || "Heavy Machinery",
+                serial: `SN-${eq.id.slice(0, 8).toUpperCase()}`,
+                custodian: "Western Province Operations Hub",
+                location: eq.location || "Colombo",
+                dailyRate: eq.dailyRate || 5000,
+                valuation: eq.replacementValue || 200000,
+                daysRented: eq.totalRentalDaysAccumulated || 0,
+                isLocked,
+                image: eq.images && eq.images.length > 0 ? eq.images[0] :
+                  eq.title.toLowerCase().includes("excavator") ? "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=150&auto=format&fit=crop&q=80" :
+                  eq.title.toLowerCase().includes("roller") || eq.title.toLowerCase().includes("compactor") ? "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&auto=format&fit=crop&q=80" :
+                  "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=150&auto=format&fit=crop&q=80",
+              }
             })
+            setFleetList(mapped)
           }
         }
       } catch (err) {
@@ -170,7 +162,7 @@ export const FleetWearHubView: React.FC = () => {
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <span className="px-2 py-0.5 rounded bg-[#10b981]/15 text-[#4edea3] font-mono text-[11px] uppercase tracking-wider font-semibold border border-[#10b981]/25">
-              Desk 03 • Fleet Telematics
+              Fleet Telematics & Health
             </span>
             {dbLive && (
               <span className="px-2 py-0.5 rounded bg-[#10b981]/20 text-[#4edea3] font-mono text-[10px] font-bold border border-[#10b981]/30">

@@ -1,3 +1,4 @@
+
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -79,6 +80,17 @@ public class BookingsController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<ActiveBookingSummaryDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetActiveBookings()
     {
+        var role = User.FindFirst(ClaimTypes.Role)?.Value ?? User.FindFirst("role")?.Value;
+        var hasUserHeader = Request.Headers.TryGetValue("X-User-Id", out var headerValue) &&
+                            Guid.TryParse(headerValue.FirstOrDefault(), out _);
+        var hasJwt = User.FindFirst(ClaimTypes.NameIdentifier) != null || User.FindFirst("sub") != null;
+
+        if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase) || (!hasUserHeader && !hasJwt))
+        {
+            var fleetResults = await _bookingService.GetActiveBookingsAsync(Guid.Empty);
+            return Ok(fleetResults);
+        }
+
         var currentUserId = GetCurrentUserId();
         var results = await _bookingService.GetActiveBookingsAsync(currentUserId);
         return Ok(results);

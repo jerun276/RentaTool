@@ -79,10 +79,10 @@ export const OperationsPortalShell: React.FC<OperationsPortalShellProps> = ({
         <div className="flex-1 overflow-y-auto px-2 py-4 space-y-6">
           <div className="space-y-1">
             <div className="px-2 py-1 text-[10px] font-mono text-[#86948a] uppercase tracking-wider">
-              Operational Desks
+              Operations & Modules
             </div>
             <nav className="space-y-1">
-              {/* Desk 01: Operations Command Center (Component 3) */}
+              {/* Operations Command Center */}
               <button
                 onClick={() => onSelectDesk("desk01")}
                 className={`w-full group flex items-center justify-between px-3 py-2 rounded text-left transition-all ${
@@ -95,18 +95,13 @@ export const OperationsPortalShell: React.FC<OperationsPortalShellProps> = ({
                   <span className="material-symbols-outlined text-[18px]">dashboard</span>
                   <span className="text-[13px]">Command Center</span>
                 </div>
-                <span
-                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                    activeDesk === "desk01"
-                      ? "bg-[#10b981]/20 text-[#4edea3]"
-                      : "bg-[#31353e] text-[#bbcabf]"
-                  }`}
-                >
-                  DESK 01
+                <span className="flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#10b981]/20 text-[#4edea3] font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse" />
+                  Live
                 </span>
               </button>
 
-              {/* Desk 02: KYC & Compliance (Component 1) */}
+              {/* User Governance & KYC */}
               <button
                 onClick={() => onSelectDesk("desk02")}
                 className={`w-full group flex items-center justify-between px-3 py-2 rounded text-left transition-all ${
@@ -116,8 +111,8 @@ export const OperationsPortalShell: React.FC<OperationsPortalShellProps> = ({
                 }`}
               >
                 <div className="flex items-center gap-2.5">
-                  <span className="material-symbols-outlined text-[18px]">verified_user</span>
-                  <span className="text-[13px]">KYC & Compliance</span>
+                  <span className="material-symbols-outlined text-[18px]">manage_accounts</span>
+                  <span className="text-[13px]">User Governance & KYC</span>
                 </div>
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#e29100]/20 text-[#ffb95f] font-bold">
                   4 Pending
