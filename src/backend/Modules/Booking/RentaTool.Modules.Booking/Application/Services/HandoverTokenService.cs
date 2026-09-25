@@ -97,19 +97,21 @@ public class HandoverTokenService : IHandoverTokenService
             throw new InvalidOperationException("Invalid or unrecognized handover token.");
         }
 
-        // Record GPS GeoLocation
-        GeoLocation? geoLocation = null;
-        if (dto.Latitude != 0 || dto.Longitude != 0)
+        // Anti-Fraud Validation: Enforce real non-zero GPS coordinates for physical presence
+        if (Math.Abs(dto.Latitude) < 0.0001 && Math.Abs(dto.Longitude) < 0.0001)
         {
-            geoLocation = new GeoLocation(
-                dto.Latitude,
-                dto.Longitude,
-                dto.AddressLine ?? string.Empty,
-                dto.City ?? string.Empty,
-                dto.PostalCode ?? string.Empty);
-
-            await _context.Set<GeoLocation>().AddAsync(geoLocation, cancellationToken);
+            throw new ArgumentException("Valid non-zero GPS coordinates (Latitude and Longitude) are mandatory to confirm physical equipment handover.");
         }
+
+        // Record GPS GeoLocation
+        var geoLocation = new GeoLocation(
+            dto.Latitude,
+            dto.Longitude,
+            dto.AddressLine ?? string.Empty,
+            dto.City ?? string.Empty,
+            dto.PostalCode ?? string.Empty);
+
+        await _context.Set<GeoLocation>().AddAsync(geoLocation, cancellationToken);
 
         // Consume and verify the event
         handoverEvent.Verify(scannerUserId, geoLocation?.Id);
