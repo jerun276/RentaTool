@@ -142,7 +142,9 @@ public class HandoverTokenServiceTests
         await tokenService.VerifyHandoverAsync(booking.Id, new VerifyHandoverRequestDto
         {
             Token = pickupToken.Token,
-            EventType = HandoverEventType.Pickup
+            EventType = HandoverEventType.Pickup,
+            Latitude = 6.9271,
+            Longitude = 79.8612
         }, _renterId);
 
         // 2. Return
@@ -220,7 +222,9 @@ public class HandoverTokenServiceTests
         var verifyDto = new VerifyHandoverRequestDto
         {
             Token = pickupToken.Token,
-            EventType = HandoverEventType.Pickup
+            EventType = HandoverEventType.Pickup,
+            Latitude = 6.9271,
+            Longitude = 79.8612
         };
 
         // First verification succeeds
@@ -232,5 +236,40 @@ public class HandoverTokenServiceTests
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*already been confirmed and consumed*");
+    }
+
+    [Fact]
+    public async Task VerifyHandover_ZeroGpsCoordinates_ThrowsArgumentException()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.Create(nameof(VerifyHandover_ZeroGpsCoordinates_ThrowsArgumentException));
+        var bookingService = new BookingService(context);
+        var tokenService = new HandoverTokenService(context);
+
+        var booking = await bookingService.CreateBookingAsync(new CreateBookingRequestDto
+        {
+            EquipmentId = _equipmentId,
+            OwnerId = _ownerId,
+            StartDate = DateTime.UtcNow.Date.AddDays(1),
+            EndDate = DateTime.UtcNow.Date.AddDays(2),
+            DailyRate = 2000m
+        }, _renterId);
+
+        var tokenResult = await tokenService.GenerateTokenAsync(booking.Id, HandoverEventType.Pickup, _ownerId);
+
+        var zeroGpsDto = new VerifyHandoverRequestDto
+        {
+            Token = tokenResult.Token,
+            EventType = HandoverEventType.Pickup,
+            Latitude = 0.0,
+            Longitude = 0.0
+        };
+
+        // Act
+        var act = async () => await tokenService.VerifyHandoverAsync(booking.Id, zeroGpsDto, _renterId);
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*Valid non-zero GPS coordinates*");
     }
 }
