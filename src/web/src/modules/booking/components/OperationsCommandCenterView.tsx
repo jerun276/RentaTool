@@ -247,17 +247,9 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
                 Active Rentals in Field
               </span>
             </div>
-            <div className="flex items-center gap-1.5">
-              {dbLive && (
-                <span className="text-[10px] font-mono text-[#4edea3] flex items-center gap-1 bg-[#10b981]/10 px-1.5 py-0.5 rounded border border-[#10b981]/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-ping" />
-                  Live DB Synced
-                </span>
-              )}
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#10b981]/15 text-[#4edea3] font-semibold">
-                +8.4%
-              </span>
-            </div>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#10b981]/15 text-[#4edea3] font-semibold">
+              +8.4%
+            </span>
           </div>
 
           <div className="flex items-baseline justify-between pt-1">
