@@ -6,26 +6,18 @@ import { apiErrorMessage, identityApi } from "../api/identityApi"
 const DEMO_ACCOUNTS = [
   {
     role: "Admin" as UserRole,
-    title: "Super Admin",
+    title: "Primary Admin",
     email: "admin@rentatool.lk",
-    pass: "Admin@123",
+    pass: "Password@123",
     badge: "DESK 01-04 ALL ACCESS",
     badgeClass: "bg-[#10b981]/20 text-[#4edea3] border-[#10b981]/30",
   },
   {
-    role: "Owner" as UserRole,
-    title: "Fleet Owner",
-    email: "owner@rentatool.lk",
-    pass: "Owner@123",
-    badge: "FLEET & WEAR HUB",
-    badgeClass: "bg-[#8b5cf6]/20 text-[#d0bcff] border-[#8b5cf6]/30",
-  },
-  {
-    role: "Renter" as UserRole,
-    title: "Machinery Renter",
-    email: "renter@rentatool.lk",
-    pass: "Renter@123",
-    badge: "ESCROW & BOOKINGS",
+    role: "Admin" as UserRole,
+    title: "Dev Admin",
+    email: "admin@rentatool.lk",
+    pass: "Admin@123",
+    badge: "LOCAL DEV FALLBACK",
     badgeClass: "bg-[#38bdf8]/20 text-[#7dd3fc] border-[#38bdf8]/30",
   },
 ]
@@ -42,6 +34,14 @@ export const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+  // Detect session timeout redirect
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get("session_expired") === "true") {
+      setErrorMessage("Your session has expired. Please sign in again to continue.")
+    }
+  }, [location.search])
 
   // Quick fill demo user
   const handleQuickFill = (acc: (typeof DEMO_ACCOUNTS)[0]) => {
@@ -68,6 +68,15 @@ export const LoginPage: React.FC = () => {
       })
 
       const data = response.data
+
+      // Enforce Admin role restriction on the Web Operations Portal
+      if (data.role !== "Admin") {
+        setErrorMessage(
+          `Access Denied: Account role '${data.role}' is not authorized for the Admin Web Portal. Equipment owners and renters must use the RentaTool Mobile App.`
+        )
+        return
+      }
+
       setAuth(data.accessToken, {
         id: data.userId,
         name: data.name,
@@ -76,7 +85,7 @@ export const LoginPage: React.FC = () => {
         trustScore: 92,
       })
 
-      setSuccessMessage(`Authenticated as ${data.name} (${data.role}). Access granted.`)
+      setSuccessMessage(`Authenticated as ${data.name} (Admin). Access granted.`)
 
       // Redirect after brief visual feedback
       setTimeout(() => {

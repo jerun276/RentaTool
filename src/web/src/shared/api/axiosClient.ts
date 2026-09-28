@@ -25,7 +25,12 @@ axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.warn("Unauthorized request. Consider re-authenticating.")
+      console.warn("Session expired or unauthorized request. Logging out...")
+      const isLoginRoute = window.location.pathname === "/login"
+      useAuthStore.getState().logout()
+      if (!isLoginRoute) {
+        window.location.href = "/login?session_expired=true"
+      }
     }
     return Promise.reject(error)
   }

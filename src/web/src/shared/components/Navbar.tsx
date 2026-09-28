@@ -1,12 +1,12 @@
 import React from "react"
 import { Link, useLocation } from "react-router-dom"
 import { Wrench, ShieldCheck, Box, Activity, User, Layers, Calendar, Scale } from "lucide-react"
-import { useAuthStore, UserRole } from "@/shared/store/useAuthStore"
+import { useAuthStore } from "@/shared/store/useAuthStore"
 import { Badge } from "@/shared/components/ui/badge"
 
 export const Navbar: React.FC = () => {
   const location = useLocation()
-  const { user, isAuthenticated, setRole, logout } = useAuthStore()
+  const { user, isAuthenticated, logout } = useAuthStore()
 
   const navItems = [
     { label: "Rental Tracker", path: "/bookings", icon: Calendar },
@@ -69,33 +69,24 @@ export const Navbar: React.FC = () => {
             </Badge>
           </div>
 
-          {/* User Role Switcher */}
-          <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs">
-            <User className="h-3.5 w-3.5 text-muted-foreground ml-1 mr-0.5" />
-            {(["Owner", "Renter", "Admin"] as UserRole[]).map((r) => (
-              <button
-                key={r}
-                onClick={() => setRole(r)}
-                className={`px-2.5 py-1 rounded-md transition-all font-medium ${
-                  user?.role === r
-                    ? "bg-background text-emerald-400 shadow-sm font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-
-          {/* User Sign In / Out */}
+          {/* Authenticated Admin Operator Status & Sign Out */}
           {isAuthenticated && user ? (
-            <button
-              onClick={() => logout()}
-              className="px-2.5 py-1 text-xs rounded border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-              title="Sign Out"
-            >
-              Sign Out
-            </button>
+            <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2 bg-muted/50 py-1 px-2.5 rounded-lg border border-border/50 text-xs">
+                <User className="h-3.5 w-3.5 text-emerald-400" />
+                <span className="font-medium text-foreground max-w-[120px] truncate">{user.name}</span>
+                <Badge variant="available" className="text-[10px] py-0 px-1.5 uppercase font-mono">
+                  {user.role}
+                </Badge>
+              </div>
+              <button
+                onClick={() => logout()}
+                className="px-2.5 py-1 text-xs rounded border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                title="Sign Out"
+              >
+                Sign Out
+              </button>
+            </div>
           ) : (
             <Link
               to="/login"
