@@ -3,15 +3,16 @@
 -- Populates:
 --   1. Users & Credentials (Password@123)
 --   2. User Role Assignments
---   3. Categories
+--   3. Categories (Guaranteed unique by name)
 --   4. Trust Ledger & Reputation Records
---   5. Equipment Fleet (All Categories, including 60-day wear threshold items)
+--   5. Equipment Fleet (Dynamically resolved category foreign keys)
 --   6. Bookings (Active, Completed)
 --   7. KYC Verification Dossiers (Approved, Pending, Rejected)
 --   8. Escrow Holds & Pre-authorized Deposits
 --   9. Damage Disputes & Arbitration Claims
 -- ==============================================================================
 
+ROLLBACK;
 BEGIN;
 
 -- ------------------------------------------------------------------------------
@@ -87,7 +88,7 @@ VALUES
     ('62886944-85b4-4d2f-a700-382319ab2ddf', 'Generators & Power', 'Silent diesel & petrol portable power generators', 'https://cdn.rentatool.lk/icons/generator.svg', true, NOW(), false),
     ('6550f572-d602-4ec8-88e5-d3183a807787', 'Power Tools', 'Heavy-duty electric & cordless drilling, fastening, and cutting tools', 'https://cdn.rentatool.lk/icons/drill.svg', true, NOW(), false),
     ('5fcc78e0-06b4-4db7-b6bf-31c3fac5524d', 'Cleaning Equipment', 'Industrial high-pressure washers, vacuum cleaners, and scrubbers', 'https://cdn.rentatool.lk/icons/washer.svg', true, NOW(), false)
-ON CONFLICT (id) DO UPDATE SET is_active = true;
+ON CONFLICT (name) DO UPDATE SET is_active = true;
 
 -- ------------------------------------------------------------------------------
 -- 4. TRUST LEDGER & REPUTATION SCORES
@@ -108,23 +109,23 @@ ON CONFLICT DO NOTHING;
 -- ------------------------------------------------------------------------------
 INSERT INTO equipment (id, owner_id, title, description, category_id, daily_rate, replacement_value, status, location, specifications_json, total_rental_days_accumulated, requires_maintenance_check, last_maintenance_date_utc, created_at_utc, is_deleted)
 VALUES
-    ('22222222-2222-2222-2222-222222222201', '11111111-1111-1111-1111-111111111102', 'Caterpillar 320D Hydraulic Excavator', 'Heavy-duty 20-ton crawler excavator equipped with heavy hydraulic rock breaker and digging bucket.', '352ea07e-bd97-481b-a287-027036658902', 32000.00, 18000000.00, 'Available', 'Colombo 05', '{"weight": "21.5 tons", "engine": "Cat C6.4 Acert", "fuel": "Diesel"}'::jsonb, 24, false, NOW() - INTERVAL '20 days', NOW() - INTERVAL '60 days', false),
+    ('22222222-2222-2222-2222-222222222201', '11111111-1111-1111-1111-111111111102', 'Caterpillar 320D Hydraulic Excavator', 'Heavy-duty 20-ton crawler excavator equipped with heavy hydraulic rock breaker and digging bucket.', (SELECT id FROM categories WHERE name = 'Heavy Machinery' LIMIT 1), 32000.00, 18000000.00, 'Available', 'Colombo 05', '{"weight": "21.5 tons", "engine": "Cat C6.4 Acert", "fuel": "Diesel"}'::jsonb, 24, false, NOW() - INTERVAL '20 days', NOW() - INTERVAL '60 days', false),
 
-    ('22222222-2222-2222-2222-222222222202', '11111111-1111-1111-1111-111111111102', 'Bomag BW 120 AD Tandem Vibratory Roller', 'Dual drum asphalt and sub-base compaction roller for highway and paving contractors.', '352ea07e-bd97-481b-a287-027036658902', 14500.00, 8500000.00, 'Available', 'Gampaha', '{"operating_weight": "2.7 tons", "drum_width": "1200mm"}'::jsonb, 42, false, NOW() - INTERVAL '15 days', NOW() - INTERVAL '50 days', false),
+    ('22222222-2222-2222-2222-222222222202', '11111111-1111-1111-1111-111111111102', 'Bomag BW 120 AD Tandem Vibratory Roller', 'Dual drum asphalt and sub-base compaction roller for highway and paving contractors.', (SELECT id FROM categories WHERE name = 'Heavy Machinery' LIMIT 1), 14500.00, 8500000.00, 'Available', 'Gampaha', '{"operating_weight": "2.7 tons", "drum_width": "1200mm"}'::jsonb, 42, false, NOW() - INTERVAL '15 days', NOW() - INTERVAL '50 days', false),
 
-    ('22222222-2222-2222-2222-222222222203', '11111111-1111-1111-1111-111111111106', 'Denyo DCA-25USI 20kVA Ultra-Silent Generator', 'Three-phase soundproof diesel generator with automatic voltage regulation for site power.', '62886944-85b4-4d2f-a700-382319ab2ddf', 8500.00, 3200000.00, 'Available', 'Kandy', '{"prime_output": "20 kVA", "sound_level": "58 dB(A)@7m"}'::jsonb, 15, false, NOW() - INTERVAL '10 days', NOW() - INTERVAL '40 days', false),
+    ('22222222-2222-2222-2222-222222222203', '11111111-1111-1111-1111-111111111106', 'Denyo DCA-25USI 20kVA Ultra-Silent Generator', 'Three-phase soundproof diesel generator with automatic voltage regulation for site power.', (SELECT id FROM categories WHERE name = 'Generators & Power' LIMIT 1), 8500.00, 3200000.00, 'Available', 'Kandy', '{"prime_output": "20 kVA", "sound_level": "58 dB(A)@7m"}'::jsonb, 15, false, NOW() - INTERVAL '10 days', NOW() - INTERVAL '40 days', false),
 
-    ('22222222-2222-2222-2222-222222222204', '990d754f-9e7a-4a54-92f7-d27d141c5ba5', 'Hilti TE 3000-AVR Heavy Demolition Breaker', 'High-performance concrete breaking tool with active vibration reduction and brushless motor.', '6550f572-d602-4ec8-88e5-d3183a807787', 5500.00, 1200000.00, 'Available', 'Negombo', '{"impact_energy": "68 Joules", "weight": "29.9 kg"}'::jsonb, 18, false, NOW() - INTERVAL '5 days', NOW() - INTERVAL '30 days', false),
+    ('22222222-2222-2222-2222-222222222204', '990d754f-9e7a-4a54-92f7-d27d141c5ba5', 'Hilti TE 3000-AVR Heavy Demolition Breaker', 'High-performance concrete breaking tool with active vibration reduction and brushless motor.', (SELECT id FROM categories WHERE name = 'Power Tools' LIMIT 1), 5500.00, 1200000.00, 'Available', 'Negombo', '{"impact_energy": "68 Joules", "weight": "29.9 kg"}'::jsonb, 18, false, NOW() - INTERVAL '5 days', NOW() - INTERVAL '30 days', false),
 
-    ('22222222-2222-2222-2222-222222222205', '11111111-1111-1111-1111-111111111104', 'Komatsu PC200-8 Crawler Excavator', 'Large hydraulic excavator flagged for mandatory overhaul inspection after reaching threshold.', '352ea07e-bd97-481b-a287-027036658902', 38000.00, 22000000.00, 'UnderMaintenance', 'Kurunegala', '{"weight": "20 tons", "bucket_capacity": "1.0 m3"}'::jsonb, 62, true, NOW() - INTERVAL '65 days', NOW() - INTERVAL '90 days', false),
+    ('22222222-2222-2222-2222-222222222205', '11111111-1111-1111-1111-111111111104', 'Komatsu PC200-8 Crawler Excavator', 'Large hydraulic excavator flagged for mandatory overhaul inspection after reaching threshold.', (SELECT id FROM categories WHERE name = 'Heavy Machinery' LIMIT 1), 38000.00, 22000000.00, 'UnderMaintenance', 'Kurunegala', '{"weight": "20 tons", "bucket_capacity": "1.0 m3"}'::jsonb, 62, true, NOW() - INTERVAL '65 days', NOW() - INTERVAL '90 days', false),
 
-    ('22222222-2222-2222-2222-222222222206', '11111111-1111-1111-1111-111111111104', 'Dynapac CA250D Single Drum Soil Compactor', 'Heavy embankment and earthworks compactor locked due to 60-day wear limit trigger.', '352ea07e-bd97-481b-a287-027036658902', 19000.00, 11000000.00, 'UnderMaintenance', 'Galle', '{"drum_type": "Smooth", "weight": "11.5 tons"}'::jsonb, 64, true, NOW() - INTERVAL '70 days', NOW() - INTERVAL '100 days', false),
+    ('22222222-2222-2222-2222-222222222206', '11111111-1111-1111-1111-111111111104', 'Dynapac CA250D Single Drum Soil Compactor', 'Heavy embankment and earthworks compactor locked due to 60-day wear limit trigger.', (SELECT id FROM categories WHERE name = 'Heavy Machinery' LIMIT 1), 19000.00, 11000000.00, 'UnderMaintenance', 'Galle', '{"drum_type": "Smooth", "weight": "11.5 tons"}'::jsonb, 64, true, NOW() - INTERVAL '70 days', NOW() - INTERVAL '100 days', false),
 
-    ('22222222-2222-2222-2222-222222222207', '11111111-1111-1111-1111-111111111106', 'Nilfisk SC500 Walk-Behind Industrial Scrubber', 'Battery-powered scrubbing and drying machine for commercial warehouses and factory floors.', '5fcc78e0-06b4-4db7-b6bf-31c3fac5524d', 4500.00, 950000.00, 'Available', 'Colombo 03', '{"scrubbing_width": "530mm", "tank_capacity": "45L"}'::jsonb, 12, false, NOW() - INTERVAL '12 days', NOW() - INTERVAL '35 days', false),
+    ('22222222-2222-2222-2222-222222222207', '11111111-1111-1111-1111-111111111106', 'Nilfisk SC500 Walk-Behind Industrial Scrubber', 'Battery-powered scrubbing and drying machine for commercial warehouses and factory floors.', (SELECT id FROM categories WHERE name = 'Cleaning Equipment' LIMIT 1), 4500.00, 950000.00, 'Available', 'Colombo 03', '{"scrubbing_width": "530mm", "tank_capacity": "45L"}'::jsonb, 12, false, NOW() - INTERVAL '12 days', NOW() - INTERVAL '35 days', false),
 
-    ('9532fff5-e5cd-49d7-a121-96ade735a4af', '990d754f-9e7a-4a54-92f7-d27d141c5ba5', 'Bosch Professional GBH 8-45 D Rotary Hammer', 'Heavy 1500W SDS-Max demolition hammer for concrete drilling and chiselling.', '6550f572-d602-4ec8-88e5-d3183a807787', 4200.00, 120000.00, 'Available', 'Kandy', '{"weight": "8.2 kg", "power": "1500W"}'::jsonb, 62, true, NULL, NOW() - INTERVAL '40 days', false),
+    ('9532fff5-e5cd-49d7-a121-96ade735a4af', '990d754f-9e7a-4a54-92f7-d27d141c5ba5', 'Bosch Professional GBH 8-45 D Rotary Hammer', 'Heavy 1500W SDS-Max demolition hammer for concrete drilling and chiselling.', (SELECT id FROM categories WHERE name = 'Power Tools' LIMIT 1), 4200.00, 120000.00, 'Available', 'Kandy', '{"weight": "8.2 kg", "power": "1500W"}'::jsonb, 62, true, NULL, NOW() - INTERVAL '40 days', false),
 
-    ('aea6d444-997e-48a1-a834-873df6edcf10', '990d754f-9e7a-4a54-92f7-d27d141c5ba5', 'Karcher HD 5/15 C Pressure Washer', 'Compact, commercial cold-water high pressure washer. Ideal for construction site cleaning.', '5fcc78e0-06b4-4db7-b6bf-31c3fac5524d', 3500.00, 75000.00, 'Available', 'Colombo 03', '{"pressure": "150 bar", "flow": "500 l/h"}'::jsonb, 24, false, NULL, NOW() - INTERVAL '25 days', false)
+    ('aea6d444-997e-48a1-a834-873df6edcf10', '990d754f-9e7a-4a54-92f7-d27d141c5ba5', 'Karcher HD 5/15 C Pressure Washer', 'Compact, commercial cold-water high pressure washer. Ideal for construction site cleaning.', (SELECT id FROM categories WHERE name = 'Cleaning Equipment' LIMIT 1), 3500.00, 75000.00, 'Available', 'Colombo 03', '{"pressure": "150 bar", "flow": "500 l/h"}'::jsonb, 24, false, NULL, NOW() - INTERVAL '25 days', false)
 ON CONFLICT (id) DO NOTHING;
 
 -- ------------------------------------------------------------------------------
