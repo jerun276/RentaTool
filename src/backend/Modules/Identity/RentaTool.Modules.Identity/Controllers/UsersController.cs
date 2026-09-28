@@ -27,14 +27,29 @@ public class UsersController(
         return Ok(await userService.GetUsersAsync(search, role, isActive));
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(UserSummaryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUserById(Guid id)
     {
+        if (CurrentUserId() != id && !User.IsInRole("Admin")) return Forbid();
         var user = await userService.GetUserByIdAsync(id);
         return user is null ? NotFound(new { message = $"User with ID '{id}' was not found." }) : Ok(user);
+    }
+
+    [Authorize]
+    [HttpPatch("{id:guid}/profile")]
+    [ProducesResponseType(typeof(UserSummaryDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateProfile(Guid id, UpdateProfileRequestDto request)
+    {
+        if (CurrentUserId() != id && !User.IsInRole("Admin")) return Forbid();
+        if (!ModelState.IsValid) return ValidationProblem(ModelState);
+        try { return Ok(await userService.UpdateProfileAsync(id, request)); }
+        catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
     }
 
     [Authorize(Roles = "Admin")]
