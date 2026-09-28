@@ -24,6 +24,7 @@ public class EndpointContractTests
     [InlineData(typeof(KycController), nameof(KycController.SubmitKyc), "kyc", "POST")]
     [InlineData(typeof(UsersController), nameof(UsersController.GetTrustScore), "{id:guid}/trust-score", "GET")]
     [InlineData(typeof(UsersController), nameof(UsersController.ReviewKyc), "{id:guid}/verification-status", "PATCH")]
+    [InlineData(typeof(UsersController), nameof(UsersController.UpdateProfile), "{id:guid}/profile", "PATCH")]
     public void Required_endpoint_uses_the_correct_http_verb_and_path(Type controller, string methodName, string path, string verb)
     {
         var method = controller.GetMethod(methodName)!;
@@ -36,6 +37,7 @@ public class EndpointContractTests
     {
         Assert.NotNull(typeof(KycController).GetMethod(nameof(KycController.SubmitKyc))!.GetCustomAttribute<AuthorizeAttribute>());
         Assert.NotNull(typeof(UsersController).GetMethod(nameof(UsersController.GetTrustScore))!.GetCustomAttribute<AuthorizeAttribute>());
+        Assert.NotNull(typeof(UsersController).GetMethod(nameof(UsersController.UpdateProfile))!.GetCustomAttribute<AuthorizeAttribute>());
     }
 
     [Fact]

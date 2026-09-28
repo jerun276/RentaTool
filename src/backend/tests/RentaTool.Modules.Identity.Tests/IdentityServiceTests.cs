@@ -188,6 +188,33 @@ public class AuthServiceTests
         Assert.Equal(UserRole.Owner, assignment.Role);
     }
 
+    [Fact]
+    public async Task UpdateProfile_updates_name_and_phone_number()
+    {
+        await using var db = CreateDb();
+        var auth = new AuthService(db, Tokens());
+        var user = await auth.RegisterAsync(new("Duminda Bandara", "duminda@example.com", "SecurePass123", "Renter", "0771234567"));
+
+        var userService = new UserService(db);
+        var updated = await userService.UpdateProfileAsync(user.UserId, new("Duminda B. Updated", "0779998888"));
+
+        Assert.Equal("Duminda B. Updated", updated.Name);
+        Assert.Equal("0779998888", updated.PhoneNumber);
+
+        var freshUser = await userService.GetUserByIdAsync(user.UserId);
+        Assert.NotNull(freshUser);
+        Assert.Equal("Duminda B. Updated", freshUser.Name);
+        Assert.Equal("0779998888", freshUser.PhoneNumber);
+    }
+
+    [Fact]
+    public async Task UpdateProfile_throws_KeyNotFoundException_for_invalid_user_id()
+    {
+        await using var db = CreateDb();
+        var userService = new UserService(db);
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => userService.UpdateProfileAsync(Guid.NewGuid(), new("Non Existent", "0770000000")));
+    }
+
     private static AppDbContext CreateDb() => new(new DbContextOptionsBuilder<AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
     private static ITokenService Tokens() => new JwtTokenService(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Jwt:Key"] = "A-development-test-key-that-is-long-enough-for-HS256!" }).Build());
 }

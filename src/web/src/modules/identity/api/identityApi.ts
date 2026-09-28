@@ -57,6 +57,8 @@ export const identityApi = {
     axiosClient.get<ManagedUser[]>("/users", { params }),
   getUserById: (id: string) =>
     axiosClient.get<ManagedUser>(`/users/${id}`),
+  updateProfile: (id: string, payload: { name: string; phoneNumber: string }) =>
+    axiosClient.patch<ManagedUser>(`/users/${id}/profile`, payload),
   updateUserStatus: (id: string, payload: UpdateUserStatusPayload) =>
     axiosClient.patch<ManagedUser>(`/users/${id}/status`, payload),
   updateUserRole: (id: string, payload: UpdateUserRolePayload) =>
