@@ -140,3 +140,21 @@ docker compose -f docker-compose.prod.yml down
 git pull origin <your-branch>
 docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
 ```
+
+---
+
+## 9. Automated GitHub Actions CI/CD Setup
+
+With the `.github/workflows/deploy.yml` workflow in place, every push automatically runs tests, builds containers, and deploys directly to your AWS EC2 instance.
+
+### Configuring GitHub Repository Secrets:
+Go to your GitHub repository: **Settings ➔ Secrets and variables ➔ Actions ➔ New repository secret**:
+
+| Secret Name | Value | Description |
+| :--- | :--- | :--- |
+| **`EC2_HOST`** | `13.250.xxx.xxx` | Your AWS EC2 Public IPv4 address |
+| **`EC2_USERNAME`** | `ubuntu` | Default SSH user for Ubuntu instances |
+| **`EC2_SSH_KEY`** | `-----BEGIN RSA PRIVATE KEY-----...` | Entire contents of your `rentatool-key.pem` file |
+
+Once configured, pushing any commit to `jerun-feature`, `dev`, or `main` will automatically test and deploy to AWS EC2 without running manual SSH commands!
+
