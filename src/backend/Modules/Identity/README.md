@@ -6,6 +6,8 @@
 |---|---|---|
 | `POST /api/v1/auth/register` | Public | Creates a `Renter` or `Owner`, hashes its password, creates role and initial trust ledger records, and returns JWT access/refresh tokens. |
 | `POST /api/v1/auth/login` | Public | Verifies credentials and issues new tokens. |
+| `GET /api/v1/users/{id}` | Account holder or admin | Returns the caller's profile, or any profile for an admin. |
+| `PATCH /api/v1/users/{id}/profile` | Account holder or admin | Updates the profile name and phone number. |
 | `POST /api/v1/users/kyc` | Authenticated | `KycController` submits NIC or driving licence document metadata and image URLs. |
 | `GET /api/v1/users/{id}/trust-score` | Account holder or admin | Returns the current ledger score. |
 | `PATCH /api/v1/users/{id}/verification-status` | Admin | Approves/rejects the latest KYC submission, preserves reviewer/rejection audit data, and awards 25 trust points for approval. |

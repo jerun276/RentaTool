@@ -93,6 +93,20 @@ public sealed class UserService(AppDbContext db) : IUserService
         );
     }
 
+    public async Task<UserSummaryDto> UpdateProfileAsync(
+        Guid id,
+        UpdateProfileRequestDto request,
+        CancellationToken ct = default)
+    {
+        var user = await db.Set<User>().SingleOrDefaultAsync(u => u.Id == id, ct);
+        if (user is null)
+            throw new KeyNotFoundException($"User with ID '{id}' was not found.");
+
+        user.UpdateProfile(request.Name, request.PhoneNumber);
+        await db.SaveChangesAsync(ct);
+        return (await GetUserByIdAsync(id, ct))!;
+    }
+
     public async Task<UserSummaryDto> UpdateStatusAsync(
         Guid id,
         UpdateUserStatusRequestDto request,
