@@ -1,54 +1,97 @@
--- RentaTool LK - Comprehensive PostgreSQL Seed Script
--- Populates Users, Roles, Trust Ledger, Categories, Equipment, Bookings, KYC Records, Escrow Holds, and Damage Claims
+-- ==============================================================================
+-- RentaTool LK - Comprehensive PostgreSQL Production Seed Script
+-- Populates:
+--   1. Users & Credentials (Password@123)
+--   2. User Role Assignments
+--   3. Categories
+--   4. Trust Ledger & Reputation Records
+--   5. Equipment Fleet (All Categories, including 60-day wear threshold items)
+--   6. Bookings (Active, Completed)
+--   7. KYC Verification Dossiers (Approved, Pending, Rejected)
+--   8. Escrow Holds & Pre-authorized Deposits
+--   9. Damage Disputes & Arbitration Claims
+-- ==============================================================================
 
 BEGIN;
 
+-- ------------------------------------------------------------------------------
 -- 1. USERS & PASSWORDS (PBKDF2 hash compatible with PasswordHasher)
--- Password for all seed users is 'Password@123'
+-- Password for all seed users is: Password@123
+-- ------------------------------------------------------------------------------
 DO $$
 DECLARE
     pwd_hash text := 'JZD4TpMjL0UtrX+jG4NVnQ==.og7c86x4PD/DeD4T6eVBhuCiMBER8EgWPMUmAMrjw/A=';
 BEGIN
 
-    -- Duminda Bandara (Verified Renter)
+    -- 0. System Admin
+    INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
+    VALUES ('d16fc821-96e2-4a80-95e1-d3fa782e048f', 'System Admin', 'admin@rentatool.lk', pwd_hash, 'Admin', '0770000000', true, true, NULL, NOW() - INTERVAL '180 days', false)
+    ON CONFLICT (email) DO UPDATE SET is_active = true, is_verified = true;
+
+    -- 1. Duminda Bandara (Verified Renter)
     INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
     VALUES ('11111111-1111-1111-1111-111111111101', 'Duminda Bandara', 'duminda@rentatool.lk', pwd_hash, 'Renter', '0774210992', true, true, NULL, NOW() - INTERVAL '60 days', false)
     ON CONFLICT (email) DO UPDATE SET is_active = true, is_verified = true;
 
-    -- Chaminda Perera (Verified Owner)
+    -- 2. Chaminda Perera (Verified Owner)
     INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
     VALUES ('11111111-1111-1111-1111-111111111102', 'Chaminda Perera', 'chaminda@rentatool.lk', pwd_hash, 'Owner', '0771280912', true, true, NULL, NOW() - INTERVAL '90 days', false)
     ON CONFLICT (email) DO UPDATE SET is_active = true, is_verified = true;
 
-    -- K.G. Nimal Jayasinghe (Unverified Renter - Pending KYC)
+    -- 3. K.G. Nimal Jayasinghe (Unverified Renter - Pending KYC)
     INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
     VALUES ('11111111-1111-1111-1111-111111111103', 'K.G. Nimal Jayasinghe', 'nimal.jay@gmail.com', pwd_hash, 'Renter', '0770450811', false, true, NULL, NOW() - INTERVAL '15 days', false)
     ON CONFLICT (email) DO UPDATE SET is_active = true, is_verified = false;
 
-    -- Tharindu Wijesinghe (Suspended Owner)
+    -- 4. Tharindu Wijesinghe (Suspended Owner)
     INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
     VALUES ('11111111-1111-1111-1111-111111111104', 'Tharindu Wijesinghe', 'tharindu.w@agriheavy.lk', pwd_hash, 'Owner', '0775223019', false, false, 'Multiple unresolved damage disputes and KYC forgery flags', NOW() - INTERVAL '120 days', false)
     ON CONFLICT (email) DO UPDATE SET is_active = false, suspension_reason = 'Multiple unresolved damage disputes and KYC forgery flags';
 
-    -- Kasun Kalhara (Renter)
+    -- 5. Kasun Kalhara (Renter)
     INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
     VALUES ('11111111-1111-1111-1111-111111111105', 'Kasun Kalhara', 'kasun.civil@gmail.com', pwd_hash, 'Renter', '0776829104', true, true, NULL, NOW() - INTERVAL '30 days', false)
     ON CONFLICT (email) DO UPDATE SET is_active = true, is_verified = true;
 
-    -- Saman Dissanayake (Owner)
+    -- 6. Saman Dissanayake (Owner)
     INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
     VALUES ('11111111-1111-1111-1111-111111111106', 'Saman Dissanayake', 'saman.generators@sltnet.lk', pwd_hash, 'Owner', '0779920194', true, true, NULL, NOW() - INTERVAL '75 days', false)
     ON CONFLICT (email) DO UPDATE SET is_active = true, is_verified = true;
 
+    -- 7. Lanka Tool Hire (Verified Plant Partner Owner)
+    INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
+    VALUES ('990d754f-9e7a-4a54-92f7-d27d141c5ba5', 'Lanka Tool Hire', 'tools@lankahire.lk', pwd_hash, 'Owner', '0771122334', true, true, NULL, NOW() - INTERVAL '100 days', false)
+    ON CONFLICT (email) DO UPDATE SET is_active = true, is_verified = true;
+
+    -- 8. Sunil Weerakkody (Verified Commercial Renter)
+    INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
+    VALUES ('533502bf-3ca3-4cda-a059-539a27e7d2bf', 'Sunil Weerakkody', 'sunil.w@builders.lk', pwd_hash, 'Renter', '0775566778', true, true, NULL, NOW() - INTERVAL '80 days', false)
+    ON CONFLICT (email) DO UPDATE SET is_active = true, is_verified = true;
+
 END $$;
 
+-- ------------------------------------------------------------------------------
 -- 2. USER ROLE ASSIGNMENTS
+-- ------------------------------------------------------------------------------
 INSERT INTO user_roles (id, user_id, role, created_at_utc, is_deleted)
 SELECT gen_random_uuid(), u.id, u.role, NOW(), false
 FROM users u
 WHERE NOT EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = u.role);
 
--- 3. TRUST LEDGER SCORES
+-- ------------------------------------------------------------------------------
+-- 3. CATEGORIES (Catalog Taxonomy)
+-- ------------------------------------------------------------------------------
+INSERT INTO categories (id, name, description, icon_url, is_active, created_at_utc, is_deleted)
+VALUES
+    ('352ea07e-bd97-481b-a287-027036658902', 'Heavy Machinery', 'Earthmoving, compaction, and civil construction equipment', 'https://cdn.rentatool.lk/icons/excavator.svg', true, NOW(), false),
+    ('62886944-85b4-4d2f-a700-382319ab2ddf', 'Generators & Power', 'Silent diesel & petrol portable power generators', 'https://cdn.rentatool.lk/icons/generator.svg', true, NOW(), false),
+    ('6550f572-d602-4ec8-88e5-d3183a807787', 'Power Tools', 'Heavy-duty electric & cordless drilling, fastening, and cutting tools', 'https://cdn.rentatool.lk/icons/drill.svg', true, NOW(), false),
+    ('5fcc78e0-06b4-4db7-b6bf-31c3fac5524d', 'Cleaning Equipment', 'Industrial high-pressure washers, vacuum cleaners, and scrubbers', 'https://cdn.rentatool.lk/icons/washer.svg', true, NOW(), false)
+ON CONFLICT (id) DO UPDATE SET is_active = true;
+
+-- ------------------------------------------------------------------------------
+-- 4. TRUST LEDGER & REPUTATION SCORES
+-- ------------------------------------------------------------------------------
 INSERT INTO trust_ledger (id, user_id, score_delta, reason, transaction_reference, running_trust_score, created_at_utc, is_deleted)
 VALUES
     (gen_random_uuid(), '11111111-1111-1111-1111-111111111101', 38, 'Successful rentals without damages & verified NIC', 'registration-kyc', 88, NOW() - INTERVAL '30 days', false),
@@ -56,10 +99,13 @@ VALUES
     (gen_random_uuid(), '11111111-1111-1111-1111-111111111103', 12, 'New account, pending NIC verification inspection', 'initial-audit', 62, NOW() - INTERVAL '15 days', false),
     (gen_random_uuid(), '11111111-1111-1111-1111-111111111104', -15, 'Penalized for fraudulent document submission', 'dispute-penalty', 35, NOW() - INTERVAL '10 days', false),
     (gen_random_uuid(), '11111111-1111-1111-1111-111111111105', 28, 'Good return timeliness rating', 'booking-audit', 78, NOW() - INTERVAL '20 days', false),
-    (gen_random_uuid(), '11111111-1111-1111-1111-111111111106', 41, 'Certified silent generator fleet operator', 'owner-compliance', 91, NOW() - INTERVAL '35 days', false)
+    (gen_random_uuid(), '11111111-1111-1111-1111-111111111106', 41, 'Certified silent generator fleet operator', 'owner-compliance', 91, NOW() - INTERVAL '35 days', false),
+    (gen_random_uuid(), '990d754f-9e7a-4a54-92f7-d27d141c5ba5', 50, 'Authoritative plant fleet verified partner', 'corporate-vetting', 95, NOW() - INTERVAL '50 days', false)
 ON CONFLICT DO NOTHING;
 
--- 4. EQUIPMENT FLEET (Catalog & 60-day wear compliance)
+-- ------------------------------------------------------------------------------
+-- 5. EQUIPMENT FLEET (Catalog & 60-day wear compliance)
+-- ------------------------------------------------------------------------------
 INSERT INTO equipment (id, owner_id, title, description, category_id, daily_rate, replacement_value, status, location, specifications_json, total_rental_days_accumulated, requires_maintenance_check, last_maintenance_date_utc, created_at_utc, is_deleted)
 VALUES
     ('22222222-2222-2222-2222-222222222201', '11111111-1111-1111-1111-111111111102', 'Caterpillar 320D Hydraulic Excavator', 'Heavy-duty 20-ton crawler excavator equipped with heavy hydraulic rock breaker and digging bucket.', '352ea07e-bd97-481b-a287-027036658902', 32000.00, 18000000.00, 'Available', 'Colombo 05', '{"weight": "21.5 tons", "engine": "Cat C6.4 Acert", "fuel": "Diesel"}'::jsonb, 24, false, NOW() - INTERVAL '20 days', NOW() - INTERVAL '60 days', false),
@@ -74,10 +120,16 @@ VALUES
 
     ('22222222-2222-2222-2222-222222222206', '11111111-1111-1111-1111-111111111104', 'Dynapac CA250D Single Drum Soil Compactor', 'Heavy embankment and earthworks compactor locked due to 60-day wear limit trigger.', '352ea07e-bd97-481b-a287-027036658902', 19000.00, 11000000.00, 'UnderMaintenance', 'Galle', '{"drum_type": "Smooth", "weight": "11.5 tons"}'::jsonb, 64, true, NOW() - INTERVAL '70 days', NOW() - INTERVAL '100 days', false),
 
-    ('22222222-2222-2222-2222-222222222207', '11111111-1111-1111-1111-111111111106', 'Nilfisk SC500 Walk-Behind Industrial Scrubber', 'Battery-powered scrubbing and drying machine for commercial warehouses and factory floors.', '5fcc78e0-06b4-4db7-b6bf-31c3fac5524d', 4500.00, 950000.00, 'Available', 'Colombo 03', '{"scrubbing_width": "530mm", "tank_capacity": "45L"}'::jsonb, 12, false, NOW() - INTERVAL '12 days', NOW() - INTERVAL '35 days', false)
+    ('22222222-2222-2222-2222-222222222207', '11111111-1111-1111-1111-111111111106', 'Nilfisk SC500 Walk-Behind Industrial Scrubber', 'Battery-powered scrubbing and drying machine for commercial warehouses and factory floors.', '5fcc78e0-06b4-4db7-b6bf-31c3fac5524d', 4500.00, 950000.00, 'Available', 'Colombo 03', '{"scrubbing_width": "530mm", "tank_capacity": "45L"}'::jsonb, 12, false, NOW() - INTERVAL '12 days', NOW() - INTERVAL '35 days', false),
+
+    ('9532fff5-e5cd-49d7-a121-96ade735a4af', '990d754f-9e7a-4a54-92f7-d27d141c5ba5', 'Bosch Professional GBH 8-45 D Rotary Hammer', 'Heavy 1500W SDS-Max demolition hammer for concrete drilling and chiselling.', '6550f572-d602-4ec8-88e5-d3183a807787', 4200.00, 120000.00, 'Available', 'Kandy', '{"weight": "8.2 kg", "power": "1500W"}'::jsonb, 62, true, NULL, NOW() - INTERVAL '40 days', false),
+
+    ('aea6d444-997e-48a1-a834-873df6edcf10', '990d754f-9e7a-4a54-92f7-d27d141c5ba5', 'Karcher HD 5/15 C Pressure Washer', 'Compact, commercial cold-water high pressure washer. Ideal for construction site cleaning.', '5fcc78e0-06b4-4db7-b6bf-31c3fac5524d', 3500.00, 75000.00, 'Available', 'Colombo 03', '{"pressure": "150 bar", "flow": "500 l/h"}'::jsonb, 24, false, NULL, NOW() - INTERVAL '25 days', false)
 ON CONFLICT (id) DO NOTHING;
 
--- 5. ACTIVE & COMPLETED BOOKINGS
+-- ------------------------------------------------------------------------------
+-- 6. ACTIVE & COMPLETED BOOKINGS
+-- ------------------------------------------------------------------------------
 INSERT INTO bookings (id, equipment_id, renter_id, owner_id, start_date, end_date, daily_rate, total_rental_fee, status, cancellation_reason, created_at_utc, is_deleted)
 VALUES
     ('33333333-3333-3333-3333-333333333301', '22222222-2222-2222-2222-222222222201', '11111111-1111-1111-1111-111111111101', '11111111-1111-1111-1111-111111111102', NOW() - INTERVAL '3 days', NOW() + INTERVAL '4 days', 32000.00, 224000.00, 'Active', NULL, NOW() - INTERVAL '4 days', false),
@@ -91,7 +143,9 @@ VALUES
     ('33333333-3333-3333-3333-333333333305', '22222222-2222-2222-2222-222222222202', '11111111-1111-1111-1111-111111111105', '11111111-1111-1111-1111-111111111102', NOW() - INTERVAL '5 days', NOW() + INTERVAL '1 day', 14500.00, 87000.00, 'Active', NULL, NOW() - INTERVAL '6 days', false)
 ON CONFLICT (id) DO NOTHING;
 
--- 6. KYC VERIFICATION DOSSIERS (Component 1 / Desk 02)
+-- ------------------------------------------------------------------------------
+-- 7. KYC VERIFICATION DOSSIERS (Component 1 / Desk 02)
+-- ------------------------------------------------------------------------------
 INSERT INTO kyc_records (id, user_id, document_type, document_number, front_image_url, back_image_url, status, verified_by_admin_id, rejection_reason, verified_at_utc, created_at_utc, is_deleted)
 VALUES
     ('44444444-4444-4444-4444-444444444401', '11111111-1111-1111-1111-111111111101', 'NIC', '198842109923', 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80', NULL, 'Approved', 'd16fc821-96e2-4a80-95e1-d3fa782e048f', NULL, NOW() - INTERVAL '30 days', NOW() - INTERVAL '35 days', false),
@@ -105,7 +159,9 @@ VALUES
     ('44444444-4444-4444-4444-444444444405', '11111111-1111-1111-1111-111111111105', 'NIC', '199310804422', 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80', NULL, 'Pending', NULL, NULL, NULL, NOW() - INTERVAL '1 day', false)
 ON CONFLICT (id) DO NOTHING;
 
--- 7. ESCROW HOLDS & SECURITY DEPOSITS (Component 4)
+-- ------------------------------------------------------------------------------
+-- 8. ESCROW HOLDS & SECURITY DEPOSITS (Component 4)
+-- ------------------------------------------------------------------------------
 INSERT INTO escrow_holds (id, booking_id, renter_id, owner_id, deposit_amount, pre_auth_transaction_id, status, held_at_utc, settled_at_utc, created_at_utc, is_deleted)
 VALUES
     ('55555555-5555-5555-5555-555555555501', '33333333-3333-3333-3333-333333333301', '11111111-1111-1111-1111-111111111101', '11111111-1111-1111-1111-111111111102', 100000.00, 'PA-LK-202609-00192', 'Held', NOW() - INTERVAL '3 days', NULL, NOW() - INTERVAL '4 days', false),
@@ -119,7 +175,9 @@ VALUES
     ('55555555-5555-5555-5555-555555555505', '33333333-3333-3333-3333-333333333305', '11111111-1111-1111-1111-111111111105', '11111111-1111-1111-1111-111111111102', 50000.00, 'PA-LK-202609-00195', 'Held', NOW() - INTERVAL '5 days', NULL, NOW() - INTERVAL '6 days', false)
 ON CONFLICT (id) DO NOTHING;
 
--- 8. DAMAGE DISPUTES & ARBITRATION CLAIMS (Component 4 / Desk 04)
+-- ------------------------------------------------------------------------------
+-- 9. DAMAGE DISPUTES & ARBITRATION CLAIMS (Component 4 / Desk 04)
+-- ------------------------------------------------------------------------------
 INSERT INTO damage_claims (id, booking_id, filed_by_user_id, damage_description, evidence_photos_json, proposed_deduction, final_deduction, status, adjudication_notes, adjudicated_by_user_id, adjudicated_at_utc, created_at_utc, is_deleted)
 VALUES
     ('66666666-6666-6666-6666-666666666601', '33333333-3333-3333-3333-333333333304', '990d754f-9e7a-4a54-92f7-d27d141c5ba5', 'Cracked brass high-pressure pump head assembly and severe outer casing fracture caused by drop from truck bed.', '["https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80"]'::jsonb, 18500.00, NULL, 'Filed', NULL, NULL, NULL, NOW() - INTERVAL '2 days', false),
