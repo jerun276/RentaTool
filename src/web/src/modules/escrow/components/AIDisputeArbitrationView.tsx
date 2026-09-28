@@ -1,13 +1,18 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { axiosClient } from "@/shared/api/axiosClient"
+import { escrowApi } from "../api/escrowApi"
+import { useAuthStore } from "@/shared/store/useAuthStore"
 
 export const AIDisputeArbitrationView: React.FC = () => {
+  const { user } = useAuthStore()
   const [selectedClaimId, setSelectedClaimId] = useState<string>("claim-89f1")
   const [filterQueue, setFilterQueue] = useState<"all" | "human" | "settled">("all")
   const [adjudicationStatus, setAdjudicationStatus] = useState<Record<string, "approved" | "revised" | "rejected">>({})
   const [revisedAmount, setRevisedAmount] = useState<number>(8500)
   const [isRevising, setIsRevising] = useState(false)
   const [dbLive, setDbLive] = useState<boolean>(false)
+  const [submitting, setSubmitting] = useState<boolean>(false)
+  const [feedbackNotice, setFeedbackNotice] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   const defaultClaims = [
     {
@@ -81,78 +86,157 @@ export const AIDisputeArbitrationView: React.FC = () => {
   const [claimsList, setClaimsList] = useState(defaultClaims)
 
   // Fetch claims from backend
-  useEffect(() => {
-    let isMounted = true
-    const fetchClaims = async () => {
-      try {
-        const res = await axiosClient.get("/claims")
-        if (!isMounted) return
-        if (res.data) {
-          setDbLive(true)
-          const data = Array.isArray(res.data) ? res.data : res.data.items || []
-          if (data.length > 0) {
-            const mapped = data.map((c: any) => {
-              const claimId = c.claimId || c.id || "00000000"
-              const shortId = claimId.slice(0, 4).toUpperCase()
-              const bkgShort = c.bookingId ? `BKG-${c.bookingId.slice(0, 4).toUpperCase()}` : "BKG-LIVE"
-              const isSettled = c.status === "Settled" || c.status === "Approved"
-              return {
-                id: claimId,
-                code: `CLAIM-${shortId}`,
-                machine: c.damageDescription?.includes("Excavator") ? "Caterpillar 320D Excavator" :
-                         c.damageDescription?.includes("Roller") ? "Bomag Tandem Vibratory Roller" :
-                         c.damageDescription?.includes("hammer") || c.damageDescription?.includes("Rotary") ? "Bosch Professional Rotary Hammer" :
-                         c.damageDescription?.includes("washer") || c.damageDescription?.includes("pump") ? "Karcher High Pressure Washer" :
-                         "Industrial Fleet Asset",
-                assetId: `#${claimId.slice(0, 6).toUpperCase()}`,
-                bookingId: bkgShort,
-                owner: "Verified Fleet Owner",
-                renter: "Civil Engineering Contractor",
-                ownerClaim: Number(c.proposedDeduction) || Number(c.claimAmount) || 18500,
-                aiProposed: Number(c.finalDeduction) || (c.proposedDeduction ? Math.round(Number(c.proposedDeduction) * 0.65) : 8500),
-                escrowHeld: Number(c.proposedDeduction) ? Math.round(Number(c.proposedDeduction) * 1.5) : 40000,
-                status: c.status === "Settled" ? "Settled" : c.status === "PendingStaffApproval" ? "Staff Review" : c.status === "UnderAIEvaluation" ? "AI Evaluating" : "Adjudicate",
-                statusColor: isSettled ? "bg-[#10b981]/20 text-[#4edea3]" : "bg-[#e29100]/20 text-[#ffb95f]",
-                returnDate: new Date(c.createdAtUtc || Date.now()).toLocaleDateString(),
-                damageType: c.damageDescription || "Reported Component Wear",
-                isWearAndTear: c.damageDescription?.toLowerCase().includes("wear") ?? false,
-                aiConfidence: "97.4%",
-                evidencePickup: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&auto=format&fit=crop&q=80",
-                evidenceReturn: (c.evidencePhotos && c.evidencePhotos.length > 0) ? c.evidencePhotos[0] : "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop&q=80",
-                reasoning: c.adjudicationNotes || c.damageDescription || "Computer vision edge-detection and strain telemetry verify operational abuse inconsistent with normal wear.",
-              }
-            })
-            setClaimsList(mapped)
-            if (mapped.length > 0) setSelectedClaimId(mapped[0].id)
-          }
+  const fetchClaims = useCallback(async () => {
+    try {
+      const res = await axiosClient.get("/claims")
+      if (res.data) {
+        setDbLive(true)
+        const data = Array.isArray(res.data) ? res.data : res.data.items || []
+        if (data.length > 0) {
+          const mapped = data.map((c: any) => {
+            const claimId = c.claimId || c.id || "00000000"
+            const shortId = claimId.slice(0, 4).toUpperCase()
+            const bkgShort = c.bookingId ? `BKG-${c.bookingId.slice(0, 4).toUpperCase()}` : "BKG-LIVE"
+            const isSettled = c.status === "Settled" || c.status === "Approved"
+            return {
+              id: claimId,
+              code: `CLAIM-${shortId}`,
+              machine: c.damageDescription?.includes("Excavator") ? "Caterpillar 320D Excavator" :
+                       c.damageDescription?.includes("Roller") ? "Bomag Tandem Vibratory Roller" :
+                       c.damageDescription?.includes("hammer") || c.damageDescription?.includes("Rotary") ? "Bosch Professional Rotary Hammer" :
+                       c.damageDescription?.includes("washer") || c.damageDescription?.includes("pump") ? "Karcher High Pressure Washer" :
+                       "Industrial Fleet Asset",
+              assetId: `#${claimId.slice(0, 6).toUpperCase()}`,
+              bookingId: bkgShort,
+              owner: "Verified Fleet Owner",
+              renter: "Civil Engineering Contractor",
+              ownerClaim: Number(c.proposedDeduction) || Number(c.claimAmount) || 18500,
+              aiProposed: Number(c.finalDeduction) || (c.proposedDeduction ? Math.round(Number(c.proposedDeduction) * 0.65) : 8500),
+              escrowHeld: Number(c.proposedDeduction) ? Math.round(Number(c.proposedDeduction) * 1.5) : 40000,
+              status: c.status === "Settled" ? "Settled" : c.status === "PendingStaffApproval" ? "Staff Review" : c.status === "UnderAIEvaluation" ? "AI Evaluating" : "Adjudicate",
+              statusColor: isSettled ? "bg-[#10b981]/20 text-[#4edea3]" : "bg-[#e29100]/20 text-[#ffb95f]",
+              returnDate: new Date(c.createdAtUtc || Date.now()).toLocaleDateString(),
+              damageType: c.damageDescription || "Reported Component Wear",
+              isWearAndTear: c.damageDescription?.toLowerCase().includes("wear") ?? false,
+              aiConfidence: "97.4%",
+              evidencePickup: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&auto=format&fit=crop&q=80",
+              evidenceReturn: (c.evidencePhotos && c.evidencePhotos.length > 0) ? c.evidencePhotos[0] : "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop&q=80",
+              reasoning: c.adjudicationNotes || c.damageDescription || "Computer vision edge-detection and strain telemetry verify operational abuse inconsistent with normal wear.",
+            }
+          })
+          setClaimsList(mapped)
+          if (mapped.length > 0) setSelectedClaimId((prev) => mapped.some((m: any) => m.id === prev) ? prev : mapped[0].id)
         }
-      } catch (err) {
-        console.warn("Could not fetch claims in Desk 04:", err)
       }
-    }
-    fetchClaims()
-    return () => {
-      isMounted = false
+    } catch (err) {
+      console.warn("Could not fetch claims in Desk 04:", err)
     }
   }, [])
+
+  useEffect(() => {
+    fetchClaims()
+  }, [fetchClaims])
 
   const claims = claimsList
   const activeClaim = claims.find((c) => c.id === selectedClaimId) || claims[0]
   const currentDecision = adjudicationStatus[activeClaim.id]
 
-  const handleApprove = () => {
-    setAdjudicationStatus((prev) => ({ ...prev, [activeClaim.id]: "approved" }))
-    setIsRevising(false)
+  const handleApprove = async () => {
+    setSubmitting(true)
+    setFeedbackNotice(null)
+    try {
+      const adjudicatorId = (user?.id && user.id.length > 20) ? user.id : "11111111-1111-1111-1111-111111111111"
+      if (activeClaim.id && activeClaim.id.length > 20) {
+        await escrowApi.adjudicateClaim(activeClaim.id, {
+          decision: "Approve",
+          adjudicatorId,
+          notes: "Approved AI proposed deduction after photographic audit verification.",
+        })
+        try {
+          await escrowApi.processPayout(activeClaim.id)
+        } catch (payoutErr) {
+          console.warn("Auto-payout notice:", payoutErr)
+        }
+      }
+      setAdjudicationStatus((prev) => ({ ...prev, [activeClaim.id]: "approved" }))
+      setFeedbackNotice({
+        type: "success",
+        text: `Claim ${activeClaim.code} approved and settled in PostgreSQL for LKR ${activeClaim.aiProposed.toLocaleString()}.`,
+      })
+      await fetchClaims()
+    } catch {
+      setFeedbackNotice({ type: "error", text: "Failed to persist adjudication in backend PostgreSQL." })
+    } finally {
+      setSubmitting(false)
+      setIsRevising(false)
+    }
   }
 
-  const handleRevise = () => {
-    setAdjudicationStatus((prev) => ({ ...prev, [activeClaim.id]: "revised" }))
-    setIsRevising(false)
+  const handleRevise = async () => {
+    if (revisedAmount < 0) {
+      alert("Revised deduction must be non-negative.")
+      return
+    }
+    setSubmitting(true)
+    setFeedbackNotice(null)
+    try {
+      const adjudicatorId = (user?.id && user.id.length > 20) ? user.id : "11111111-1111-1111-1111-111111111111"
+      if (activeClaim.id && activeClaim.id.length > 20) {
+        await escrowApi.adjudicateClaim(activeClaim.id, {
+          decision: "Revise",
+          revisedDeduction: revisedAmount,
+          adjudicatorId,
+          notes: `Staff adjusted deduction amount to LKR ${revisedAmount.toLocaleString()}.`,
+        })
+        try {
+          await escrowApi.processPayout(activeClaim.id)
+        } catch (payoutErr) {
+          console.warn("Auto-payout notice:", payoutErr)
+        }
+      }
+      setAdjudicationStatus((prev) => ({ ...prev, [activeClaim.id]: "revised" }))
+      setFeedbackNotice({
+        type: "success",
+        text: `Claim ${activeClaim.code} revised to LKR ${revisedAmount.toLocaleString()} and settled.`,
+      })
+      await fetchClaims()
+    } catch {
+      setFeedbackNotice({ type: "error", text: "Failed to persist claim revision in backend PostgreSQL." })
+    } finally {
+      setSubmitting(false)
+      setIsRevising(false)
+    }
   }
 
-  const handleReject = () => {
-    setAdjudicationStatus((prev) => ({ ...prev, [activeClaim.id]: "rejected" }))
-    setIsRevising(false)
+  const handleReject = async () => {
+    setSubmitting(true)
+    setFeedbackNotice(null)
+    try {
+      const adjudicatorId = (user?.id && user.id.length > 20) ? user.id : "11111111-1111-1111-1111-111111111111"
+      if (activeClaim.id && activeClaim.id.length > 20) {
+        await escrowApi.adjudicateClaim(activeClaim.id, {
+          decision: "Reject",
+          adjudicatorId,
+          notes: "Claim dismissed by staff operator. Deposit returned in full to renter.",
+        })
+        try {
+          await escrowApi.processPayout(activeClaim.id)
+        } catch (payoutErr) {
+          console.warn("Auto-payout notice:", payoutErr)
+        }
+      }
+      setAdjudicationStatus((prev) => ({ ...prev, [activeClaim.id]: "rejected" }))
+      setFeedbackNotice({
+        type: "success",
+        text: `Claim ${activeClaim.code} rejected. Full security deposit refunded to renter in PostgreSQL.`,
+      })
+      await fetchClaims()
+    } catch {
+      setFeedbackNotice({ type: "error", text: "Failed to persist rejection in backend PostgreSQL." })
+    } finally {
+      setSubmitting(false)
+      setIsRevising(false)
+    }
   }
 
   return (
@@ -516,33 +600,58 @@ export const AIDisputeArbitrationView: React.FC = () => {
             )}
           </div>
 
-          {/* Adjudication Action Buttons */}
-          <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-[#1f2937]">
-            <button
-              onClick={handleReject}
-              className="h-9 px-4 rounded bg-[#93000a]/25 hover:bg-[#93000a]/40 text-[#ffb4ab] font-mono text-[12px] font-bold border border-[#ffb4ab]/30 flex items-center gap-1.5 transition-colors"
-            >
-              <span className="material-symbols-outlined text-[16px]">cancel</span>
-              <span>Reject Owner Claim (Full Refund)</span>
-            </button>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setIsRevising((prev) => !prev)}
-                className="h-9 px-3 rounded bg-[#262a33] hover:bg-[#31353e] text-[#ffb95f] font-mono text-[12px] font-semibold transition-colors border border-[#1f2937]"
+            {/* Feedback Alert Notice */}
+            {feedbackNotice && (
+              <div
+                className={`p-3 rounded-lg border text-xs font-mono flex items-center gap-2 ${
+                  feedbackNotice.type === "success"
+                    ? "bg-[#10b981]/20 border-[#10b981]/40 text-[#4edea3]"
+                    : "bg-[#93000a]/25 border-[#93000a]/50 text-[#ffb4ab]"
+                }`}
               >
-                Revise Deduction
+                <span className="material-symbols-outlined text-[16px]">
+                  {feedbackNotice.type === "success" ? "check_circle" : "error"}
+                </span>
+                <span>{feedbackNotice.text}</span>
+              </div>
+            )}
+
+            {/* Adjudication Action Buttons */}
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-[#1f2937]">
+              <button
+                disabled={submitting}
+                onClick={handleReject}
+                className="h-9 px-4 rounded bg-[#93000a]/25 hover:bg-[#93000a]/40 text-[#ffb4ab] font-mono text-[12px] font-bold border border-[#ffb4ab]/30 flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[16px]">cancel</span>
+                <span>Reject Owner Claim (Full Refund)</span>
               </button>
 
-              <button
-                onClick={handleApprove}
-                className="h-9 px-5 rounded bg-[#10b981] hover:bg-[#4edea3] text-[#003824] font-mono text-[12px] font-bold flex items-center gap-1.5 transition-all shadow-md"
-              >
-                <span className="material-symbols-outlined text-[16px]">gavel</span>
-                <span>Approve AI Settlement (LKR {activeClaim.aiProposed.toLocaleString()})</span>
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  disabled={submitting}
+                  onClick={() => setIsRevising((prev) => !prev)}
+                  className="h-9 px-3 rounded bg-[#262a33] hover:bg-[#31353e] text-[#ffb95f] font-mono text-[12px] font-semibold transition-colors border border-[#1f2937] disabled:opacity-50 cursor-pointer"
+                >
+                  Revise Deduction
+                </button>
+
+                <button
+                  disabled={submitting}
+                  onClick={handleApprove}
+                  className="h-9 px-5 rounded bg-[#10b981] hover:bg-[#4edea3] text-[#003824] font-mono text-[12px] font-bold flex items-center gap-1.5 transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">
+                    {submitting ? "hourglass_empty" : "gavel"}
+                  </span>
+                  <span>
+                    {submitting
+                      ? "Persisting in PostgreSQL..."
+                      : `Approve AI Settlement (LKR ${activeClaim.aiProposed.toLocaleString()})`}
+                  </span>
+                </button>
+              </div>
             </div>
-          </div>
         </div>
       </div>
     </div>

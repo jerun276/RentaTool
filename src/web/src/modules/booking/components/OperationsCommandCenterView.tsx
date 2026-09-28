@@ -108,38 +108,48 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
     setStandbyDispatched(true)
   }
 
-  // Open modal helpers
-  const handleOpenHandover = () => {
-    setSelectedBooking({
-      id: "77777777-7777-7777-7777-777777777777",
-      equipmentId: "EX-782 (CAT 320D Excavator)",
-      renterId: "maga-engineering-id",
-      ownerId: "owner-9999-id",
-      startDate: new Date().toISOString(),
-      endDate: new Date(Date.now() + 4 * 86400000).toISOString(),
-      totalRentalFee: 280000,
-      status: "Active",
-      pickupVerified: true,
-      returnVerified: false,
-      createdAtUtc: new Date().toISOString(),
-    })
+  // Open modal helpers with dynamic selected booking support
+  const handleOpenHandover = (bookingToOpen?: ActiveBookingSummaryDto) => {
+    const booking = bookingToOpen || (realBookings.length > 0 ? realBookings[0] : null)
+    if (booking) {
+      setSelectedBooking(booking)
+    } else {
+      setSelectedBooking({
+        id: "77777777-7777-7777-7777-777777777777",
+        equipmentId: "EX-782 (CAT 320D Excavator)",
+        renterId: "maga-engineering-id",
+        ownerId: "owner-9999-id",
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 4 * 86400000).toISOString(),
+        totalRentalFee: 280000,
+        status: "Active",
+        pickupVerified: true,
+        returnVerified: false,
+        createdAtUtc: new Date().toISOString(),
+      })
+    }
     setIsQRModalOpen(true)
   }
 
-  const handleOpenExtend = () => {
-    setSelectedBooking({
-      id: "44444444-4444-4444-4444-444444444444",
-      equipmentId: "EX-409 (Komatsu PC200)",
-      renterId: "ds-builders-id",
-      ownerId: "owner-9999-id",
-      startDate: new Date().toISOString(),
-      endDate: new Date(Date.now() + 2 * 86400000).toISOString(),
-      totalRentalFee: 210000,
-      status: "Active",
-      pickupVerified: true,
-      returnVerified: false,
-      createdAtUtc: new Date().toISOString(),
-    })
+  const handleOpenExtend = (bookingToOpen?: ActiveBookingSummaryDto) => {
+    const booking = bookingToOpen || (realBookings.length > 0 ? realBookings[0] : null)
+    if (booking) {
+      setSelectedBooking(booking)
+    } else {
+      setSelectedBooking({
+        id: "44444444-4444-4444-4444-444444444444",
+        equipmentId: "EX-409 (Komatsu PC200)",
+        renterId: "ds-builders-id",
+        ownerId: "owner-9999-id",
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 2 * 86400000).toISOString(),
+        totalRentalFee: 210000,
+        status: "Active",
+        pickupVerified: true,
+        returnVerified: false,
+        createdAtUtc: new Date().toISOString(),
+      })
+    }
     setIsExtendModalOpen(true)
   }
 
@@ -582,8 +592,8 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
 
                   <div className="flex items-center gap-2 shrink-0">
                     <button
-                      onClick={handleOpenExtend}
-                      className="h-7 px-3 rounded bg-[#262a33] hover:bg-[#31353e] text-white font-mono text-[11px] transition-colors border border-[#1f2937] shrink-0"
+                      onClick={() => handleOpenExtend()}
+                      className="h-7 px-3 rounded bg-[#262a33] hover:bg-[#31353e] text-white font-mono text-[11px] transition-colors border border-[#1f2937] shrink-0 cursor-pointer"
                     >
                       Arbitrate Extension
                     </button>
@@ -808,8 +818,8 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
                 <span>Feed: Latency 14ms</span>
               </div>
               <button
-                onClick={handleOpenHandover}
-                className="h-7 px-2.5 rounded bg-[#10b981]/15 hover:bg-[#10b981]/25 text-[#4edea3] font-mono text-[11px] font-semibold border border-[#10b981]/30 transition-colors flex items-center gap-1"
+                onClick={() => handleOpenHandover()}
+                className="h-7 px-2.5 rounded bg-[#10b981]/15 hover:bg-[#10b981]/25 text-[#4edea3] font-mono text-[11px] font-semibold border border-[#10b981]/30 transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[14px]">qr_code_2</span>
                 <span>Issue QR Token</span>
@@ -819,95 +829,142 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
 
           {/* Feed Rows */}
           <div className="space-y-2.5">
-            {/* Log Item 1 */}
-            <div className="p-3 bg-[#1c2028] hover:bg-[#262a33] rounded-lg border border-[#1f2937] transition-all space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded bg-[#10b981]/15 text-[#4edea3] font-mono text-[11px] font-bold">
-                    QR-HANDOVER-9021
-                  </span>
-                  <span className="text-[13px] text-[#dfe2ee] font-semibold">
-                    CAT 320D #EX-782
-                  </span>
+            {realBookings.length > 0 ? (
+              realBookings.slice(0, 5).map((bkg) => (
+                <div
+                  key={bkg.id}
+                  className="p-3 bg-[#1c2028] hover:bg-[#262a33] rounded-lg border border-[#1f2937] transition-all space-y-2"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-[#10b981]/15 text-[#4edea3] font-mono text-[11px] font-bold">
+                        BKG-{bkg.id.slice(0, 8).toUpperCase()}
+                      </span>
+                      <span className="text-[13px] text-[#dfe2ee] font-semibold truncate max-w-[200px]">
+                        {bkg.equipmentId}
+                      </span>
+                    </div>
+                    <span className="font-mono text-[10px] text-[#86948a]">
+                      {new Date(bkg.startDate).toLocaleDateString()} – {new Date(bkg.endDate).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[12px] text-[#bbcabf]">
+                    <div>
+                      Rental Status:{" "}
+                      <strong className={bkg.status === "Active" ? "text-[#4edea3]" : "text-white"}>
+                        {bkg.status}
+                      </strong>
+                    </div>
+                    <div className="font-mono text-[11px]">
+                      Rental Fee: <span className="text-white font-bold">LKR {Number(bkg.totalRentalFee || 0).toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono border-t border-[#1f2937]">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                          bkg.pickupVerified
+                            ? "bg-[#10b981]/15 text-[#4edea3]"
+                            : "bg-[#e29100]/20 text-[#ffb95f]"
+                        }`}
+                      >
+                        {bkg.pickupVerified ? "✓ Pickup Verified" : "Pending Pickup"}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                          bkg.returnVerified
+                            ? "bg-[#10b981]/15 text-[#4edea3]"
+                            : "bg-[#86948a]/20 text-[#bbcabf]"
+                        }`}
+                      >
+                        {bkg.returnVerified ? "✓ Return Verified" : "Pending Return"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleOpenHandover(bkg)}
+                        className="px-2.5 py-1 rounded bg-[#10b981]/15 hover:bg-[#10b981]/25 text-[#4edea3] text-[11px] font-semibold border border-[#10b981]/30 transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">qr_code_2</span>
+                        <span>QR Token</span>
+                      </button>
+                      <button
+                        onClick={() => handleOpenExtend(bkg)}
+                        className="px-2.5 py-1 rounded bg-[#262a33] hover:bg-[#31353e] text-[#d0bcff] text-[11px] font-semibold border border-[#1f2937] transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">schedule</span>
+                        <span>Extend</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <span className="font-mono text-[10px] text-[#86948a]">14 mins ago</span>
-              </div>
+              ))
+            ) : (
+              <>
+                {/* Fallback Sample Item 1 */}
+                <div className="p-3 bg-[#1c2028] hover:bg-[#262a33] rounded-lg border border-[#1f2937] transition-all space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-[#10b981]/15 text-[#4edea3] font-mono text-[11px] font-bold">
+                        QR-HANDOVER-9021
+                      </span>
+                      <span className="text-[13px] text-[#dfe2ee] font-semibold">
+                        CAT 320D #EX-782
+                      </span>
+                    </div>
+                    <span className="font-mono text-[10px] text-[#86948a]">14 mins ago</span>
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[12px] text-[#bbcabf]">
-                <div>Contractor: <strong className="text-white">Maga Engineering</strong></div>
-                <div className="font-mono text-[11px]">
-                  GPS: <span className="text-white">6.9271° N, 79.8612° E</span> (Port City)
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[12px] text-[#bbcabf]">
+                    <div>Contractor: <strong className="text-white">Maga Engineering</strong></div>
+                    <div className="font-mono text-[11px]">
+                      GPS: <span className="text-white">6.9271° N, 79.8612° E</span> (Port City)
+                    </div>
+                  </div>
+
+                  <div className="pt-1 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono border-t border-[#1f2937]">
+                    <span className="text-[#86948a] truncate">Hash: 0x8f9c...4e1a72b8d90</span>
+                    <span className="px-2 py-0.5 rounded bg-[#10b981]/15 text-[#4edea3] flex items-center gap-1 font-semibold">
+                      <span className="material-symbols-outlined text-[12px]">verified</span>
+                      Dual Key Verified (Both Parties)
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="pt-1 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono border-t border-[#1f2937]">
-                <span className="text-[#86948a] truncate">Hash: 0x8f9c...4e1a72b8d90</span>
-                <span className="px-2 py-0.5 rounded bg-[#10b981]/15 text-[#4edea3] flex items-center gap-1 font-semibold">
-                  <span className="material-symbols-outlined text-[12px]">verified</span>
-                  Dual Key Verified (Both Parties)
-                </span>
-              </div>
-            </div>
+                {/* Fallback Sample Item 2 */}
+                <div className="p-3 bg-[#1c2028] hover:bg-[#262a33] rounded-lg border border-[#1f2937] transition-all space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-[#e29100]/20 text-[#ffb95f] font-mono text-[11px] font-bold">
+                        QR-RETURN-3318
+                      </span>
+                      <span className="text-[13px] text-[#dfe2ee] font-semibold">
+                        Makita HM1812 Breaker
+                      </span>
+                    </div>
+                    <span className="font-mono text-[10px] text-[#86948a]">38 mins ago</span>
+                  </div>
 
-            {/* Log Item 2 */}
-            <div className="p-3 bg-[#1c2028] hover:bg-[#262a33] rounded-lg border border-[#1f2937] transition-all space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded bg-[#e29100]/20 text-[#ffb95f] font-mono text-[11px] font-bold">
-                    QR-RETURN-3318
-                  </span>
-                  <span className="text-[13px] text-[#dfe2ee] font-semibold">
-                    Makita HM1812 Breaker
-                  </span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[12px] text-[#bbcabf]">
+                    <div>Contractor: <strong className="text-white">Sanken Construction</strong></div>
+                    <div className="font-mono text-[11px]">
+                      GPS: <span className="text-white">6.9147° N, 79.9733° E</span> (Kaduwela)
+                    </div>
+                  </div>
+
+                  <div className="pt-1 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono border-t border-[#1f2937]">
+                    <span className="text-[#86948a]">Inspection: AI Surface Wear Scan In-Progress</span>
+                    <span className="px-2 py-0.5 rounded bg-[#e29100]/20 text-[#ffb95f] flex items-center gap-1 font-semibold">
+                      <span className="material-symbols-outlined text-[12px]">pending</span>
+                      Return Hold Applied
+                    </span>
+                  </div>
                 </div>
-                <span className="font-mono text-[10px] text-[#86948a]">38 mins ago</span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[12px] text-[#bbcabf]">
-                <div>Contractor: <strong className="text-white">Sanken Construction</strong></div>
-                <div className="font-mono text-[11px]">
-                  GPS: <span className="text-white">6.9147° N, 79.9733° E</span> (Kaduwela)
-                </div>
-              </div>
-
-              <div className="pt-1 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono border-t border-[#1f2937]">
-                <span className="text-[#86948a]">Inspection: AI Surface Wear Scan In-Progress</span>
-                <span className="px-2 py-0.5 rounded bg-[#e29100]/20 text-[#ffb95f] flex items-center gap-1 font-semibold">
-                  <span className="material-symbols-outlined text-[12px]">pending</span>
-                  Return Hold Applied
-                </span>
-              </div>
-            </div>
-
-            {/* Log Item 3 */}
-            <div className="p-3 bg-[#1c2028] hover:bg-[#262a33] rounded-lg border border-[#1f2937] transition-all space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded bg-[#571bc1]/30 text-[#d0bcff] font-mono text-[11px] font-bold">
-                    QR-EXTENSION-7712
-                  </span>
-                  <span className="text-[13px] text-[#dfe2ee] font-semibold">
-                    Dynapac CA250 Roller
-                  </span>
-                </div>
-                <span className="font-mono text-[10px] text-[#86948a]">1 hr 12m ago</span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[12px] text-[#bbcabf]">
-                <div>Site: <strong className="text-white">Homagama Expressway</strong></div>
-                <div className="font-mono text-[11px]">
-                  Escrow Top-up: <span className="text-[#4edea3] font-bold">LKR 35,000.00</span>
-                </div>
-              </div>
-
-              <div className="pt-1 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono border-t border-[#1f2937]">
-                <span className="text-[#86948a]">Dynamic Surge Smart Contract Executed (+25%)</span>
-                <span className="px-2 py-0.5 rounded bg-[#10b981]/15 text-[#4edea3] flex items-center gap-1 font-semibold">
-                  <span className="material-symbols-outlined text-[12px]">check_circle</span>
-                  Bank Guarantee Locked
-                </span>
-              </div>
-            </div>
+              </>
+            )}
           </div>
         </section>
 
