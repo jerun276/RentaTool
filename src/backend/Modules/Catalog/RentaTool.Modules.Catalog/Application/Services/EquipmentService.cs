@@ -11,6 +11,7 @@ public interface IEquipmentService
     Task<EquipmentResponseDto> CreateAsync(CreateEquipmentDto dto, Guid ownerId);
     Task<EquipmentResponseDto?> GetByIdAsync(Guid id);
     Task<PagedResult<EquipmentResponseDto>> GetPagedListAsync(EquipmentFilterDto filter);
+    Task<bool> CompleteMaintenanceAsync(Guid id);
 }
 
 public class EquipmentService : IEquipmentService
@@ -125,6 +126,16 @@ public class EquipmentService : IEquipmentService
             Page = page,
             PageSize = pageSize
         };
+    }
+
+    public async Task<bool> CompleteMaintenanceAsync(Guid id)
+    {
+        var equipment = await _context.Set<Equipment>().FindAsync(id);
+        if (equipment == null || equipment.IsDeleted) return false;
+
+        equipment.CompleteMaintenance();
+        await _context.SaveChangesAsync();
+        return true;
     }
 
     private static EquipmentResponseDto MapToDto(Equipment e, string categoryName)

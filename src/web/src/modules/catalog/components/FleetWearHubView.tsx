@@ -7,6 +7,11 @@ export const FleetWearHubView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [overrides, setOverrides] = useState<Record<string, boolean>>({})
   const [dbLive, setDbLive] = useState<boolean>(false)
+  const [isOverriding, setIsOverriding] = useState<Record<string, boolean>>({})
+  const [actionFeedback, setActionFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null)
+  const [historyModalOpen, setHistoryModalOpen] = useState(false)
+  const [selectedToolHistory, setSelectedToolHistory] = useState<any | null>(null)
+  const [loadingHistory, setLoadingHistory] = useState(false)
 
   const [fleetList, setFleetList] = useState([
     {
@@ -81,61 +86,105 @@ export const FleetWearHubView: React.FC = () => {
     },
   ])
 
-  // Fetch live PostgreSQL equipment records
-  useEffect(() => {
-    let isMounted = true
-    const fetchEquipment = async () => {
-      try {
-        const res = await axiosClient.get("/equipment")
-        if (!isMounted) return
-        if (res.data) {
-          setDbLive(true)
-          const items = res.data.items || (Array.isArray(res.data) ? res.data : [])
-          if (items.length > 0) {
-            const mapped = items.map((eq: any) => {
-              const isLocked = eq.requiresMaintenanceCheck || eq.status === "UnderMaintenance" || (eq.totalRentalDaysAccumulated || 0) >= 60
-              return {
-                id: `EQ-${eq.id.slice(0, 4).toUpperCase()}`,
-                dbId: eq.id,
-                name: eq.title,
-                category: eq.categoryName || "Heavy Machinery",
-                serial: `SN-${eq.id.slice(0, 8).toUpperCase()}`,
-                custodian: "Western Province Operations Hub",
-                location: eq.location || "Colombo",
-                dailyRate: eq.dailyRate || 5000,
-                valuation: eq.replacementValue || 200000,
-                daysRented: eq.totalRentalDaysAccumulated || 0,
-                isLocked,
-                image: eq.images && eq.images.length > 0 ? eq.images[0] :
-                  eq.title.toLowerCase().includes("excavator") ? "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=150&auto=format&fit=crop&q=80" :
-                  eq.title.toLowerCase().includes("roller") || eq.title.toLowerCase().includes("compactor") ? "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&auto=format&fit=crop&q=80" :
-                  "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=150&auto=format&fit=crop&q=80",
-              }
-            })
-            setFleetList(mapped)
-          }
+  const fetchEquipment = async () => {
+    try {
+      const res = await axiosClient.get("/equipment")
+      if (res.data) {
+        setDbLive(true)
+        const items = res.data.items || (Array.isArray(res.data) ? res.data : [])
+        if (items.length > 0) {
+          const mapped = items.map((eq: any) => {
+            const isLocked = eq.requiresMaintenanceCheck || eq.status === "UnderMaintenance" || (eq.totalRentalDaysAccumulated || 0) >= 60
+            return {
+              id: `EQ-${eq.id.slice(0, 4).toUpperCase()}`,
+              dbId: eq.id,
+              name: eq.title,
+              category: eq.categoryName || "Heavy Machinery",
+              serial: `SN-${eq.id.slice(0, 8).toUpperCase()}`,
+              custodian: "Western Province Operations Hub",
+              location: eq.location || "Colombo",
+              dailyRate: eq.dailyRate || 5000,
+              valuation: eq.replacementValue || 200000,
+              daysRented: eq.totalRentalDaysAccumulated || 0,
+              isLocked,
+              image: eq.images && eq.images.length > 0 ? eq.images[0] :
+                eq.title.toLowerCase().includes("excavator") ? "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=150&auto=format&fit=crop&q=80" :
+                eq.title.toLowerCase().includes("roller") || eq.title.toLowerCase().includes("compactor") ? "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&auto=format&fit=crop&q=80" :
+                "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=150&auto=format&fit=crop&q=80",
+            }
+          })
+          setFleetList(mapped)
         }
-      } catch (err) {
-        console.warn("Could not fetch equipment in Desk 03:", err)
       }
+    } catch (err) {
+      console.warn("Could not fetch equipment in Desk 03:", err)
     }
+  }
+
+  // Fetch live PostgreSQL equipment records on mount
+  useEffect(() => {
     fetchEquipment()
-    return () => {
-      isMounted = false
-    }
   }, [])
 
-  const handleEngineerOverride = (id: string) => {
+  // Auto-dismiss action feedback notification
+  useEffect(() => {
+    if (!actionFeedback) return
+    const timer = setTimeout(() => setActionFeedback(null), 5000)
+    return () => clearTimeout(timer)
+  }, [actionFeedback])
+
+  const handleEngineerOverride = async (tool: any) => {
     const confirm = window.confirm(
-      `Issue authorized Mechanical Engineer Dye-Penetrant Certification for asset #${id}? This will recalibrate cumulative operational days to 0 and remove fail-safe lock.`
+      `Issue authorized Mechanical Engineer Dye-Penetrant Certification for asset ${tool.name} (#${tool.id})? This will recalibrate cumulative operational days to 0 and remove fail-safe lock in PostgreSQL.`
     )
-    if (confirm) {
-      setOverrides((prev) => ({ ...prev, [id]: true }))
-      setFleetList((prev) =>
-        prev.map((item) =>
-          item.id === id ? { ...item, daysRented: 0, isLocked: false } : item
+    if (!confirm) return
+
+    setIsOverriding((prev) => ({ ...prev, [tool.id]: true }))
+    try {
+      if (tool.dbId && tool.dbId.length > 20) {
+        await axiosClient.post(`/equipment/${tool.dbId}/maintenance/complete`)
+        setActionFeedback({
+          type: "success",
+          message: `Mechanical Overhaul successfully certified for ${tool.name}. Wear counter reset to 0 in PostgreSQL.`,
+        })
+        await fetchEquipment()
+      } else {
+        setOverrides((prev) => ({ ...prev, [tool.id]: true }))
+        setFleetList((prev) =>
+          prev.map((item) =>
+            item.id === tool.id ? { ...item, daysRented: 0, isLocked: false } : item
+          )
         )
-      )
+        setActionFeedback({
+          type: "success",
+          message: `Local simulated certification applied for ${tool.name}.`,
+        })
+      }
+    } catch (err: any) {
+      setActionFeedback({
+        type: "error",
+        message: err.response?.data?.message || `Failed to complete maintenance certification for #${tool.id}.`,
+      })
+    } finally {
+      setIsOverriding((prev) => ({ ...prev, [tool.id]: false }))
+    }
+  }
+
+  const handleInspectLogs = async (tool: any) => {
+    setHistoryModalOpen(true)
+    setSelectedToolHistory({ title: tool.name, id: tool.id, inspectionTimeline: [] })
+    if (tool.dbId && tool.dbId.length > 20) {
+      setLoadingHistory(true)
+      try {
+        const res = await axiosClient.get(`/equipment/${tool.dbId}/history`)
+        if (res.data) {
+          setSelectedToolHistory(res.data)
+        }
+      } catch (err) {
+        console.warn("Could not fetch equipment history from DB:", err)
+      } finally {
+        setLoadingHistory(false)
+      }
     }
   }
 
@@ -218,6 +267,29 @@ export const FleetWearHubView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {actionFeedback && (
+        <div
+          className={`p-4 rounded-xl border flex items-center justify-between text-xs font-mono transition-all ${
+            actionFeedback.type === "success"
+              ? "bg-[#10b981]/15 border-[#10b981]/40 text-[#4edea3]"
+              : "bg-[#93000a]/20 border-[#ffb4ab]/30 text-[#ffb4ab]"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">
+              {actionFeedback.type === "success" ? "check_circle" : "error"}
+            </span>
+            <span>{actionFeedback.message}</span>
+          </div>
+          <button
+            onClick={() => setActionFeedback(null)}
+            className="text-[#86948a] hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* 2. REGULATORY SOP NOTICE BANNER */}
       <div className="relative overflow-hidden rounded-xl bg-[#181c24] border border-[#1f2937] p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-md">
@@ -489,14 +561,18 @@ export const FleetWearHubView: React.FC = () => {
                     <td className="px-4 py-2 text-right">
                       {isLocked ? (
                         <button
-                          onClick={() => handleEngineerOverride(tool.id)}
-                          className="px-2.5 py-1 rounded bg-[#e29100]/20 hover:bg-[#e29100]/30 text-[#ffb95f] text-[11px] font-bold border border-[#e29100]/40 transition-colors inline-flex items-center gap-1"
+                          onClick={() => handleEngineerOverride(tool)}
+                          disabled={isOverriding[tool.id]}
+                          className="px-2.5 py-1 rounded bg-[#e29100]/20 hover:bg-[#e29100]/30 text-[#ffb95f] text-[11px] font-bold border border-[#e29100]/40 transition-colors inline-flex items-center gap-1 disabled:opacity-50"
                         >
                           <span className="material-symbols-outlined text-[14px]">build</span>
-                          <span>Engineer Override</span>
+                          <span>{isOverriding[tool.id] ? "Recalibrating..." : "Engineer Override"}</span>
                         </button>
                       ) : (
-                        <button className="px-2.5 py-1 rounded bg-[#262a33] hover:bg-[#31353e] text-white text-[11px] transition-colors border border-[#1f2937]">
+                        <button
+                          onClick={() => handleInspectLogs(tool)}
+                          className="px-2.5 py-1 rounded bg-[#262a33] hover:bg-[#31353e] text-white text-[11px] transition-colors border border-[#1f2937]"
+                        >
                           Inspect Logs
                         </button>
                       )}
@@ -508,6 +584,83 @@ export const FleetWearHubView: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* 5. INSPECTION LOGS & MAINTENANCE HISTORY MODAL */}
+      {historyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="bg-[#181c24] border border-[#1f2937] rounded-xl max-w-2xl w-full p-6 space-y-5 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-[#1f2937] pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded bg-[#10b981]/20 flex items-center justify-center text-[#4edea3]">
+                  <span className="material-symbols-outlined text-[18px]">history</span>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Equipment Inspection & Overhaul Ledger</h3>
+                  <p className="text-xs text-[#86948a] font-mono">
+                    {selectedToolHistory?.title || "Asset"} • Asset #{selectedToolHistory?.id || ""}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setHistoryModalOpen(false)}
+                className="text-[#86948a] hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {loadingHistory ? (
+              <div className="py-12 flex flex-col items-center justify-center space-y-2 text-[#86948a]">
+                <div className="w-6 h-6 border-2 border-[#10b981] border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs font-mono">Querying PostgreSQL inspection logs...</span>
+              </div>
+            ) : selectedToolHistory?.inspectionTimeline && selectedToolHistory.inspectionTimeline.length > 0 ? (
+              <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                {selectedToolHistory.inspectionTimeline.map((log: any, idx: number) => (
+                  <div
+                    key={log.id || idx}
+                    className="p-3 bg-[#0a0e16] border border-[#1f2937] rounded-lg space-y-1.5 font-mono text-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded bg-[#10b981]/15 text-[#4edea3] font-bold text-[10px]">
+                        {log.type || "Inspection"}
+                      </span>
+                      <span className="text-[#86948a] text-[11px]">
+                        {new Date(log.createdAtUtc).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-[#dfe2ee] font-sans text-xs">
+                      {log.conditionNotes || "Standard pre-rental check passed without defects."}
+                    </p>
+                    {log.severity && (
+                      <span className="inline-block text-[10px] text-[#ffb95f]">
+                        Severity: {log.severity}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-6 bg-[#0a0e16] rounded-lg border border-[#1f2937] text-center space-y-2 font-mono text-xs">
+                <span className="material-symbols-outlined text-[32px] text-[#86948a]">verified</span>
+                <p className="text-[#dfe2ee]">No historical defects or mechanical breakdown alerts logged.</p>
+                <p className="text-[#86948a] text-[11px]">
+                  All duty cycles and operational hours currently meet Ceylon Institute of Engineers standards.
+                </p>
+              </div>
+            )}
+
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => setHistoryModalOpen(false)}
+                className="px-4 py-2 bg-[#262a33] hover:bg-[#31353e] text-white text-xs font-mono rounded border border-[#1f2937] transition-colors"
+              >
+                Close Timeline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

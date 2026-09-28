@@ -149,6 +149,23 @@ public class EquipmentController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// 6. Completes maintenance on an equipment item, resetting wear counters and clearing lockouts.
+    /// </summary>
+    [HttpPost("{id:guid}/maintenance/complete")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CompleteMaintenance(Guid id)
+    {
+        var result = await _equipmentService.CompleteMaintenanceAsync(id);
+        if (!result)
+        {
+            return NotFound(new { message = $"Equipment with ID {id} was not found." });
+        }
+
+        return Ok(new { message = "Maintenance successfully completed. Equipment status set to Available and wear counter reset." });
+    }
+
     private Guid GetCurrentUserId()
     {
         // 1. Read from JWT Claim if authenticated

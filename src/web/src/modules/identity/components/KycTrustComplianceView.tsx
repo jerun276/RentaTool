@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { axiosClient } from "@/shared/api/axiosClient"
+import { identityApi, apiErrorMessage } from "../api/identityApi"
 import { UserManagementDirectoryView } from "./UserManagementDirectoryView"
 
 export const KycTrustComplianceView: React.FC = () => {
@@ -11,6 +12,10 @@ export const KycTrustComplianceView: React.FC = () => {
   const [dbLive, setDbLive] = useState<boolean>(false)
   const [dbCandidates, setDbCandidates] = useState<any[]>([])
   const [loading, setLoading] = useState<boolean>(true)
+  const [isProcessing, setIsProcessing] = useState<boolean>(false)
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null)
+  const [rejectModalOpen, setRejectModalOpen] = useState<boolean>(false)
+  const [rejectionReasonText, setRejectionReasonText] = useState<string>("Document illegible or failed biometric threshold")
 
   const defaultCandidates = [
     {
@@ -84,80 +89,154 @@ export const KycTrustComplianceView: React.FC = () => {
   ]
 
   // Fetch real submissions from ASP.NET Core Backend
-  useEffect(() => {
-    let isMounted = true
-    const fetchKycQueue = async () => {
-      try {
-        setLoading(true)
-        const res = await axiosClient.get("/users/kyc-submissions")
-        if (!isMounted) return
-        if (res.data && Array.isArray(res.data)) {
-          setDbLive(true)
-          if (res.data.length > 0) {
-            const mapped = res.data.map((sub: any) => ({
-              id: sub.kycRecordId || sub.userId,
-              userId: sub.userId,
-              name: sub.name,
-              company: sub.role === "Owner" ? "Equipment Partner" : "Civil Contractor",
-              province: "LK-WP",
-              role: (sub.role || "RENTER").toUpperCase(),
-              nic: sub.documentNumber || "198842109923",
-              trustScore: 85,
-              trustTier: "Trust A",
-              status: sub.status === "Approved" ? "VERIFIED" : sub.status === "Pending" ? "IN DRAWER" : "FLAGGED",
-              statusColor: sub.status === "Approved" ? "text-[#4edea3] bg-[#10b981]/20" : "text-[#ffb95f] bg-[#e29100]/20",
-              faceMatch: "98.2%",
-              ocrConfidence: "99.1%",
-              docFront: sub.frontImageUrl || "https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80",
-              avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-            }))
-            setDbCandidates(mapped)
-            if (mapped.length > 0) {
-              setSelectedCandidateId(mapped[0].id)
-            }
+  const fetchKycQueue = async () => {
+    try {
+      setLoading(true)
+      const res = await axiosClient.get("/users/kyc-submissions")
+      if (res.data && Array.isArray(res.data)) {
+        setDbLive(true)
+        if (res.data.length > 0) {
+          const mapped = res.data.map((sub: any) => ({
+            id: sub.kycRecordId || sub.userId,
+            userId: sub.userId,
+            name: sub.name,
+            company: sub.role === "Owner" ? "Equipment Partner" : "Civil Contractor",
+            province: "LK-WP",
+            role: (sub.role || "RENTER").toUpperCase(),
+            nic: sub.documentNumber || "198842109923",
+            trustScore: sub.status === "Approved" ? 95 : 85,
+            trustTier: sub.status === "Approved" ? "Trust A+" : "Trust A",
+            status: sub.status === "Approved" ? "VERIFIED" : sub.status === "Pending" ? "IN DRAWER" : "FLAGGED",
+            statusColor: sub.status === "Approved" ? "text-[#4edea3] bg-[#10b981]/20" : "text-[#ffb95f] bg-[#e29100]/20",
+            faceMatch: "98.2%",
+            ocrConfidence: "99.1%",
+            docFront: sub.frontImageUrl || "https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80",
+            avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+          }))
+          setDbCandidates(mapped)
+          if (mapped.length > 0) {
+            setSelectedCandidateId(mapped[0].id)
           }
         }
-      } catch {
-        // Fallback gracefully to default candidates
-      } finally {
-        if (isMounted) setLoading(false)
       }
-    }
-    fetchKycQueue()
-    return () => {
-      isMounted = false
-    }
-  }, [])
-
-  const candidates = dbCandidates.length > 0 ? dbCandidates : defaultCandidates
-  const activeCandidate = candidates.find((c) => c.id === selectedCandidateId) || candidates[0]
-  const currentApproval = approvalStatus[activeCandidate.id]
-
-  const handleApprove = async () => {
-    setApprovalStatus((prev) => ({ ...prev, [activeCandidate.id]: "approved" }))
-    if (activeCandidate.userId && activeCandidate.userId.length > 20) {
-      try {
-        await axiosClient.patch(`/users/${activeCandidate.userId}/verification-status`, {
-          status: "Approved",
-        })
-      } catch (err) {
-        console.warn("Could not patch verification status in DB:", err)
-      }
+    } catch {
+      // Fallback gracefully to default candidates
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleReject = async () => {
-    setApprovalStatus((prev) => ({ ...prev, [activeCandidate.id]: "rejected" }))
-    if (activeCandidate.userId && activeCandidate.userId.length > 20) {
-      try {
-        await axiosClient.patch(`/users/${activeCandidate.userId}/verification-status`, {
-          status: "Rejected",
-          rejectionReason: "Document illegible or failed biometric threshold",
+  useEffect(() => {
+    fetchKycQueue()
+  }, [])
+
+  // Auto-dismiss feedback notification
+  useEffect(() => {
+    if (!feedback) return
+    const timer = setTimeout(() => setFeedback(null), 5000)
+    return () => clearTimeout(timer)
+  }, [feedback])
+
+  const candidates = dbCandidates.length > 0 ? dbCandidates : defaultCandidates
+
+  // Filtering by search & tab
+  const filteredCandidates = useMemo(() => {
+    return candidates.filter((c) => {
+      const matchesSearch =
+        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.nic.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.company && c.company.toLowerCase().includes(searchQuery.toLowerCase()))
+
+      if (!matchesSearch) return false
+
+      const currentStatus = approvalStatus[c.id] || (c.status === "VERIFIED" ? "approved" : c.status === "FLAGGED" ? "rejected" : "pending")
+
+      if (filterTab === "pending") return currentStatus === "pending" || c.status === "IN DRAWER" || c.status === "DOC BLURRY"
+      if (filterTab === "verified") return currentStatus === "approved" || c.status === "VERIFIED"
+      if (filterTab === "flagged") return currentStatus === "rejected" || c.status === "FLAGGED" || c.status === "HIGH FRAUD RISK"
+
+      return true
+    })
+  }, [candidates, searchQuery, filterTab, approvalStatus])
+
+  // Dynamic counts for tabs
+  const tabCounts = useMemo(() => {
+    let pending = 0
+    let verified = 0
+    let flagged = 0
+    candidates.forEach((c) => {
+      const s = approvalStatus[c.id] || (c.status === "VERIFIED" ? "approved" : c.status === "FLAGGED" || c.status === "HIGH FRAUD RISK" ? "rejected" : "pending")
+      if (s === "approved") verified++
+      else if (s === "rejected") flagged++
+      else pending++
+    })
+    return { all: candidates.length, pending, verified, flagged }
+  }, [candidates, approvalStatus])
+
+  const activeCandidate = filteredCandidates.find((c) => c.id === selectedCandidateId) || filteredCandidates[0] || candidates[0]
+  const currentApproval = activeCandidate ? approvalStatus[activeCandidate.id] : undefined
+
+  const handleApprove = async () => {
+    if (!activeCandidate) return
+    setIsProcessing(true)
+    try {
+      if (activeCandidate.userId && activeCandidate.userId.length > 20) {
+        await identityApi.reviewKyc(activeCandidate.userId, "Approved")
+        setFeedback({
+          type: "success",
+          message: `KYC credential for ${activeCandidate.name} successfully approved & verified in PostgreSQL!`,
         })
-      } catch (err) {
-        console.warn("Could not patch rejection in DB:", err)
+        await fetchKycQueue()
+      } else {
+        setApprovalStatus((prev) => ({ ...prev, [activeCandidate.id]: "approved" }))
+        setFeedback({
+          type: "success",
+          message: `Local simulated KYC approval applied for ${activeCandidate.name}.`,
+        })
       }
+    } catch (err: any) {
+      setFeedback({
+        type: "error",
+        message: apiErrorMessage(err),
+      })
+    } finally {
+      setIsProcessing(false)
     }
+  }
+
+  const handleConfirmReject = async () => {
+    if (!activeCandidate) return
+    setIsProcessing(true)
+    try {
+      if (activeCandidate.userId && activeCandidate.userId.length > 20) {
+        await identityApi.reviewKyc(activeCandidate.userId, "Rejected", rejectionReasonText)
+        setFeedback({
+          type: "success",
+          message: `KYC submission for ${activeCandidate.name} was rejected. Reason logged in PostgreSQL.`,
+        })
+        setRejectModalOpen(false)
+        await fetchKycQueue()
+      } else {
+        setApprovalStatus((prev) => ({ ...prev, [activeCandidate.id]: "rejected" }))
+        setRejectModalOpen(false)
+        setFeedback({
+          type: "success",
+          message: `Local simulated KYC rejection applied for ${activeCandidate.name}.`,
+        })
+      }
+    } catch (err: any) {
+      setFeedback({
+        type: "error",
+        message: apiErrorMessage(err),
+      })
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handleRequestReupload = async () => {
+    setRejectionReasonText("Document quality insufficient or blurry - please re-upload clear photographs of your NIC.")
+    setRejectModalOpen(true)
   }
 
   return (
@@ -228,6 +307,29 @@ export const KycTrustComplianceView: React.FC = () => {
         </div>
       </div>
 
+      {feedback && (
+        <div
+          className={`p-4 rounded-xl border flex items-center justify-between text-xs font-mono transition-all ${
+            feedback.type === "success"
+              ? "bg-[#10b981]/15 border-[#10b981]/40 text-[#4edea3]"
+              : "bg-[#93000a]/20 border-[#ffb4ab]/30 text-[#ffb4ab]"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">
+              {feedback.type === "success" ? "check_circle" : "error"}
+            </span>
+            <span>{feedback.message}</span>
+          </div>
+          <button
+            onClick={() => setFeedback(null)}
+            className="text-[#86948a] hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* SUB-NAVIGATION TABS */}
       <div className="flex items-center gap-2 border-b border-[#1f2937] pb-3">
         <button
@@ -264,10 +366,10 @@ export const KycTrustComplianceView: React.FC = () => {
         {/* Filter Tabs */}
         <div className="flex items-center gap-2 overflow-x-auto">
           {[
-            { id: "pending", label: "Pending Verification", count: 4, badgeBg: "bg-[#e29100]/25 text-[#ffb95f]" },
-            { id: "all", label: "All Registrations", count: 142, badgeBg: "bg-[#31353e] text-[#bbcabf]" },
-            { id: "verified", label: "Verified Members", count: 132, badgeBg: "bg-[#10b981]/20 text-[#4edea3]" },
-            { id: "flagged", label: "Flagged & Suspended", count: 6, badgeBg: "bg-[#93000a]/30 text-[#ffb4ab]" },
+            { id: "pending", label: "Pending Verification", count: tabCounts.pending, badgeBg: "bg-[#e29100]/25 text-[#ffb95f]" },
+            { id: "all", label: "All Registrations", count: tabCounts.all, badgeBg: "bg-[#31353e] text-[#bbcabf]" },
+            { id: "verified", label: "Verified Members", count: tabCounts.verified, badgeBg: "bg-[#10b981]/20 text-[#4edea3]" },
+            { id: "flagged", label: "Flagged & Suspended", count: tabCounts.flagged, badgeBg: "bg-[#93000a]/30 text-[#ffb4ab]" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -307,7 +409,7 @@ export const KycTrustComplianceView: React.FC = () => {
         <div className="xl:col-span-5 bg-[#181c24] rounded-xl border border-[#1f2937] shadow-lg overflow-hidden flex flex-col">
           <div className="px-4 py-3 bg-[#0a0e16] border-b border-[#1f2937] flex items-center justify-between">
             <span className="text-[11px] font-mono text-[#86948a] uppercase tracking-wider font-bold">
-              REGISTRY CANDIDATES (4 ACTIVE)
+              REGISTRY CANDIDATES ({filteredCandidates.length} DISPLAYED)
             </span>
             <span className="text-[10px] font-mono text-[#4edea3] flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse" />
@@ -316,7 +418,7 @@ export const KycTrustComplianceView: React.FC = () => {
           </div>
 
           <div className="divide-y divide-[#1f2937]">
-            {candidates.map((candidate) => {
+            {filteredCandidates.map((candidate) => {
               const isSelected = candidate.id === selectedCandidateId
               const status = approvalStatus[candidate.id]
               return (
@@ -494,30 +596,122 @@ export const KycTrustComplianceView: React.FC = () => {
           {/* Action Approval Bar */}
           <div className="pt-3 border-t border-[#1f2937] flex flex-wrap items-center justify-between gap-3">
             <button
-              onClick={handleReject}
-              className="h-9 px-4 rounded bg-[#93000a]/25 hover:bg-[#93000a]/40 text-[#ffb4ab] font-mono text-[12px] font-semibold border border-[#ffb4ab]/30 flex items-center gap-1.5 transition-colors"
+              onClick={() => {
+                setRejectionReasonText("Document illegible or failed biometric threshold")
+                setRejectModalOpen(true)
+              }}
+              disabled={isProcessing}
+              className="h-9 px-4 rounded bg-[#93000a]/25 hover:bg-[#93000a]/40 text-[#ffb4ab] font-mono text-[12px] font-semibold border border-[#ffb4ab]/30 flex items-center gap-1.5 transition-colors disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[16px]">cancel</span>
               <span>Flag Suspicious / Reject</span>
             </button>
 
             <div className="flex items-center gap-3">
-              <button className="h-9 px-3 rounded bg-[#262a33] hover:bg-[#31353e] text-white font-mono text-[12px] transition-colors border border-[#1f2937]">
+              <button
+                onClick={handleRequestReupload}
+                disabled={isProcessing}
+                className="h-9 px-3 rounded bg-[#262a33] hover:bg-[#31353e] text-white font-mono text-[12px] transition-colors border border-[#1f2937] disabled:opacity-50"
+              >
                 Request Re-upload
               </button>
 
               <button
                 onClick={handleApprove}
-                className="h-9 px-5 rounded bg-[#10b981] hover:bg-[#4edea3] text-[#003824] font-mono text-[12px] font-bold flex items-center gap-1.5 transition-all shadow-md"
+                disabled={isProcessing}
+                className="h-9 px-5 rounded bg-[#10b981] hover:bg-[#4edea3] text-[#003824] font-mono text-[12px] font-bold flex items-center gap-1.5 transition-all shadow-md disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[16px]">verified</span>
-                <span>Approve & Issue Trust Credential</span>
+                <span>{isProcessing ? "Persisting in PostgreSQL..." : "Approve & Issue Trust Credential"}</span>
               </button>
             </div>
           </div>
         </div>
       </div>
         </>
+      )}
+
+      {/* KYC REJECTION / FLAG MODAL */}
+      {rejectModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="bg-[#181c24] border border-[#ffb4ab]/30 rounded-xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-[#1f2937] pb-3">
+              <div className="flex items-center gap-2 text-[#ffb4ab]">
+                <span className="material-symbols-outlined text-[20px]">warning</span>
+                <h3 className="text-base font-bold text-white">Reject KYC Verification</h3>
+              </div>
+              <button
+                onClick={() => setRejectModalOpen(false)}
+                className="text-[#86948a] hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-[#bbcabf] font-mono">
+              Rejecting KYC for <strong className="text-white">{activeCandidate.name}</strong> (NIC: {activeCandidate.nic}). Please document the audit reason for compliance.
+            </p>
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-mono text-[#86948a] uppercase tracking-wider block">
+                Standard Rejection Templates
+              </label>
+              <div className="grid grid-cols-1 gap-1.5 font-mono text-xs">
+                {[
+                  "Document illegible or failed biometric threshold",
+                  "Photo does not match registered contractor profile",
+                  "Document expired or damaged beyond verification standards",
+                  "Document quality insufficient or blurry - please re-upload clear photographs of your NIC.",
+                ].map((reason) => (
+                  <button
+                    key={reason}
+                    type="button"
+                    onClick={() => setRejectionReasonText(reason)}
+                    className={`p-2 rounded text-left text-[11px] transition-colors border ${
+                      rejectionReasonText === reason
+                        ? "bg-[#93000a]/20 border-[#ffb4ab]/50 text-white font-semibold"
+                        : "bg-[#0a0e16] border-[#1f2937] text-[#bbcabf] hover:text-white"
+                    }`}
+                  >
+                    {reason}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-mono text-[#86948a] uppercase tracking-wider block">
+                Custom Audit Note / Feedback
+              </label>
+              <textarea
+                rows={3}
+                value={rejectionReasonText}
+                onChange={(e) => setRejectionReasonText(e.target.value)}
+                placeholder="Enter rejection explanation to be recorded in trust audit ledger..."
+                className="w-full p-2.5 bg-[#0a0e16] border border-[#1f2937] rounded text-white text-xs font-mono focus:outline-none focus:border-[#ffb4ab]"
+              />
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setRejectModalOpen(false)}
+                className="px-4 py-2 bg-[#262a33] hover:bg-[#31353e] text-white text-xs font-mono rounded border border-[#1f2937] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReject}
+                disabled={isProcessing || !rejectionReasonText.trim()}
+                className="px-4 py-2 bg-[#93000a] hover:bg-[#b00020] text-white text-xs font-mono font-bold rounded transition-colors disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[16px]">gavel</span>
+                <span>{isProcessing ? "Persisting..." : "Confirm & Log Rejection"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
