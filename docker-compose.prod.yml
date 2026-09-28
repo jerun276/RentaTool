@@ -1,0 +1,94 @@
+services:
+  # ------------------------------------------------------------------------------
+  # 1. PostgreSQL 16 Relational & JSONB Storage
+  # ------------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: rentatool_prod_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rentatool_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rentatool_prod_secret_password}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-rentatool_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rentatool_network
+
+  # ------------------------------------------------------------------------------
+  # 2. Python LangGraph AI Subsystem Microservice (FastAPI Port 8000)
+  # ------------------------------------------------------------------------------
+  ai_service:
+    build:
+      context: ./src/ai_service
+      dockerfile: Dockerfile
+    container_name: rentatool_prod_ai
+    restart: always
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      PORT: 8000
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - rentatool_network
+
+  # ------------------------------------------------------------------------------
+  # 3. ASP.NET Core 9.0 Modular Monolith Backend API (Port 5000)
+  # ------------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+    container_name: rentatool_prod_backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai_service:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:5000
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-rentatool_db};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-rentatool_prod_secret_password};Include Error Detail=true
+      Jwt__SecretKey: ${JWT_SECRET:-RentaToolLK_SuperSecret_Jwt_SecurityKey_SE3090_2026_Minimum32Chars!}
+      Jwt__Issuer: ${JWT_ISSUER:-https://rentatool.lk}
+      Jwt__Audience: ${JWT_AUDIENCE:-https://rentatool.lk}
+      AiService__BaseUrl: http://ai_service:8000
+    ports:
+      - "5000:5000"
+    networks:
+      - rentatool_network
+
+  # ------------------------------------------------------------------------------
+  # 4. React 18 Admin Operations Web Portal + Reverse Proxy (Port 80 & 3000)
+  # ------------------------------------------------------------------------------
+  web:
+    build:
+      context: ./src/web
+      dockerfile: Dockerfile
+    container_name: rentatool_prod_web
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "3000:80"
+    networks:
+      - rentatool_network
+
+volumes:
+  postgres_prod_data:
+    driver: local
+
+networks:
+  rentatool_network:
+    driver: bridge
