@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 
 namespace RentaTool.Modules.Identity.Security;
 
-internal static class PasswordHasher
+public static class PasswordHasher
 {
     private const int Iterations = 210_000;
 

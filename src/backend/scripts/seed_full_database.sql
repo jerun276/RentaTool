@@ -16,53 +16,55 @@ ROLLBACK;
 BEGIN;
 
 -- ------------------------------------------------------------------------------
--- 1. USERS & PASSWORDS (PBKDF2 hash compatible with PasswordHasher)
--- Password for all seed users is: Password@123
+-- 1. USERS & PASSWORDS (PBKDF2 SHA512, 210,000 iterations compatible with PasswordHasher)
+-- Admin password: Admin@123
+-- General seed users password: Password@123
 -- ------------------------------------------------------------------------------
 DO $$
 DECLARE
-    pwd_hash text := 'JZD4TpMjL0UtrX+jG4NVnQ==.og7c86x4PD/DeD4T6eVBhuCiMBER8EgWPMUmAMrjw/A=';
+    pwd_hash text := '0tAF0LRWazNiK2p6tA4lEw==.Veg5XmN9ur0m0hsRZHKzsD5Vtc/8/XJNGjCQwf2qaYQ='; -- Password@123
+    admin_pwd_hash text := 'IA/5n/Vi8ovra3hNFcF5IA==.YLfSoQq9fZMfIEr5wmph9UT7oyhvM3/238UNpr0ioZc='; -- Admin@123
 BEGIN
 
-    -- 0. System Admin
+    -- 0. System Admin (Password: Admin@123)
     INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
-    VALUES ('d16fc821-96e2-4a80-95e1-d3fa782e048f', 'System Admin', 'admin@rentatool.lk', pwd_hash, 'Admin', '0770000000', true, true, NULL, NOW() - INTERVAL '180 days', false)
-    ON CONFLICT (email) DO UPDATE SET is_active = true, is_verified = true;
+    VALUES ('d16fc821-96e2-4a80-95e1-d3fa782e048f', 'System Admin', 'admin@rentatool.lk', admin_pwd_hash, 'Admin', '0770000000', true, true, NULL, NOW() - INTERVAL '180 days', false)
+    ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, is_active = true, is_verified = true;
 
-    -- 1. Duminda Bandara (Verified Renter)
+    -- 1. Duminda Bandara (Verified Renter - Password: Password@123)
     INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
     VALUES ('11111111-1111-1111-1111-111111111101', 'Duminda Bandara', 'duminda@rentatool.lk', pwd_hash, 'Renter', '0774210992', true, true, NULL, NOW() - INTERVAL '60 days', false)
-    ON CONFLICT (email) DO UPDATE SET is_active = true, is_verified = true;
+    ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, is_active = true, is_verified = true;
 
-    -- 2. Chaminda Perera (Verified Owner)
+    -- 2. Chaminda Perera (Verified Owner - Password: Password@123)
     INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
     VALUES ('11111111-1111-1111-1111-111111111102', 'Chaminda Perera', 'chaminda@rentatool.lk', pwd_hash, 'Owner', '0771280912', true, true, NULL, NOW() - INTERVAL '90 days', false)
-    ON CONFLICT (email) DO UPDATE SET is_active = true, is_verified = true;
+    ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, is_active = true, is_verified = true;
 
     -- 3. K.G. Nimal Jayasinghe (Unverified Renter - Pending KYC)
     INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
     VALUES ('11111111-1111-1111-1111-111111111103', 'K.G. Nimal Jayasinghe', 'nimal.jay@gmail.com', pwd_hash, 'Renter', '0770450811', false, true, NULL, NOW() - INTERVAL '15 days', false)
-    ON CONFLICT (email) DO UPDATE SET is_active = true, is_verified = false;
+    ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, is_active = true, is_verified = false;
 
     -- 4. Tharindu Wijesinghe (Suspended Owner)
     INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
     VALUES ('11111111-1111-1111-1111-111111111104', 'Tharindu Wijesinghe', 'tharindu.w@agriheavy.lk', pwd_hash, 'Owner', '0775223019', false, false, 'Multiple unresolved damage disputes and KYC forgery flags', NOW() - INTERVAL '120 days', false)
-    ON CONFLICT (email) DO UPDATE SET is_active = false, suspension_reason = 'Multiple unresolved damage disputes and KYC forgery flags';
+    ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, is_active = false, suspension_reason = 'Multiple unresolved damage disputes and KYC forgery flags';
 
     -- 5. Kasun Kalhara (Renter)
     INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
     VALUES ('11111111-1111-1111-1111-111111111105', 'Kasun Kalhara', 'kasun.civil@gmail.com', pwd_hash, 'Renter', '0776829104', true, true, NULL, NOW() - INTERVAL '30 days', false)
-    ON CONFLICT (email) DO UPDATE SET is_active = true, is_verified = true;
+    ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, is_active = true, is_verified = true;
 
     -- 6. Saman Dissanayake (Owner)
     INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
     VALUES ('11111111-1111-1111-1111-111111111106', 'Saman Dissanayake', 'saman.generators@sltnet.lk', pwd_hash, 'Owner', '0779920194', true, true, NULL, NOW() - INTERVAL '75 days', false)
-    ON CONFLICT (email) DO UPDATE SET is_active = true, is_verified = true;
+    ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, is_active = true, is_verified = true;
 
     -- 7. Lanka Tool Hire (Verified Plant Partner Owner)
     INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
     VALUES ('990d754f-9e7a-4a54-92f7-d27d141c5ba5', 'Lanka Tool Hire', 'tools@lankahire.lk', pwd_hash, 'Owner', '0771122334', true, true, NULL, NOW() - INTERVAL '100 days', false)
-    ON CONFLICT (email) DO UPDATE SET is_active = true, is_verified = true;
+    ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, is_active = true, is_verified = true;
 
     -- 8. Sunil Weerakkody (Verified Commercial Renter)
     INSERT INTO users (id, name, email, password_hash, role, phone_number, is_verified, is_active, suspension_reason, created_at_utc, is_deleted)
