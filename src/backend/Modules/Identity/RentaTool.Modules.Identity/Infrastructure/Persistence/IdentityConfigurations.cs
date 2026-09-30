@@ -10,6 +10,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
     {
         builder.ToTable("users"); builder.HasKey(x => x.Id); builder.Property(x => x.Name).HasMaxLength(120).IsRequired(); builder.Property(x => x.Email).HasMaxLength(255).IsRequired(); builder.HasIndex(x => x.Email).IsUnique(); builder.Property(x => x.PasswordHash).HasMaxLength(255).IsRequired(); builder.Property(x => x.PhoneNumber).HasMaxLength(25).IsRequired(); builder.Property(x => x.Role).HasConversion<string>().HasMaxLength(20).IsRequired();
         builder.Property(x => x.IsActive).HasDefaultValue(true); builder.Property(x => x.SuspensionReason).HasMaxLength(500);
+        builder.Property(x => x.ProfilePhotoUrl).HasMaxLength(2048);
     }
 }
 public sealed class UserRoleAssignmentConfiguration : IEntityTypeConfiguration<UserRoleAssignment>

@@ -61,7 +61,8 @@ public sealed class UserService(AppDbContext db) : IUserService
             u.SuspensionReason,
             scoreMap.GetValueOrDefault(u.Id, 50),
             u.CreatedAtUtc,
-            u.UpdatedAtUtc
+            u.UpdatedAtUtc,
+            u.ProfilePhotoUrl
         )).ToList();
     }
 
@@ -89,7 +90,8 @@ public sealed class UserService(AppDbContext db) : IUserService
             user.SuspensionReason,
             trustScore,
             user.CreatedAtUtc,
-            user.UpdatedAtUtc
+            user.UpdatedAtUtc,
+            user.ProfilePhotoUrl
         );
     }
 
@@ -102,7 +104,7 @@ public sealed class UserService(AppDbContext db) : IUserService
         if (user is null)
             throw new KeyNotFoundException($"User with ID '{id}' was not found.");
 
-        user.UpdateProfile(request.Name, request.PhoneNumber);
+        user.UpdateProfile(request.Name, request.PhoneNumber, request.ProfilePhotoUrl);
         await db.SaveChangesAsync(ct);
         return (await GetUserByIdAsync(id, ct))!;
     }

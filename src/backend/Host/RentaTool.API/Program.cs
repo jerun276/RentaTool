@@ -118,6 +118,7 @@ using (var scope = app.Services.CreateScope())
                 db.Database.ExecuteSqlRaw(@"
                     ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT TRUE;
                     ALTER TABLE users ADD COLUMN IF NOT EXISTS suspension_reason character varying(500);
+                    ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo_url character varying(2048);
                 ");
             }
             catch (Exception ex)
