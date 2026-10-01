@@ -10,7 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1. Database Persistence (PostgreSQL with EF Core)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Host=localhost;Port=5432;Database=rentatool_db;Username=postgres;Password=rentatool_dev_secret_password";
+    ?? "Host=127.0.0.1;Port=5433;Database=rentatool_db;Username=postgres;Password=rentatool_dev_secret_password";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
