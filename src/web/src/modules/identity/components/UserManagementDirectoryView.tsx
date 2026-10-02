@@ -96,7 +96,7 @@ export const UserManagementDirectoryView: React.FC = () => {
       }
     } catch (err) {
       // Graceful fallback to default seed dataset if backend API unauthorized or disconnected
-      setError(apiErrorMessage(err))
+      setError(`${apiErrorMessage(err)} — Displaying offline fallback demo directory.`)
       setUsers(defaultUsers)
     } finally {
       setLoading(false)

@@ -1,18 +1,19 @@
-import React from "react"
+import React, { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { Wrench, ShieldCheck, Box, Activity, User, Layers, Calendar, Scale } from "lucide-react"
+import { Wrench, Box, User, Layers, Calendar, Scale, LayoutDashboard, Users, Menu, X } from "lucide-react"
 import { useAuthStore } from "@/shared/store/useAuthStore"
 import { Badge } from "@/shared/components/ui/badge"
 
 export const Navbar: React.FC = () => {
   const location = useLocation()
   const { user, isAuthenticated, logout } = useAuthStore()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const navItems = [
-    { label: "Rental Tracker", path: "/bookings", icon: Calendar },
-    { label: "Schedule Conflicts", path: "/bookings/calendar", icon: Activity },
+    { label: "Operations Hub", path: "/operations", icon: LayoutDashboard },
+    { label: "Identity & KYC", path: "/identity", icon: Users },
     { label: "Equipment Catalog", path: "/catalog", icon: Box },
-    { label: "Inspection Timeline", path: "/catalog/inspections", icon: ShieldCheck },
+    { label: "Booking Tracker", path: "/bookings/tracker", icon: Calendar },
     { label: "Arbitration Desk", path: "/claims", icon: Scale },
   ]
 
@@ -21,7 +22,7 @@ export const Navbar: React.FC = () => {
       <div className="container flex h-16 items-center justify-between px-4 sm:px-8">
         {/* Brand */}
         <div className="flex items-center gap-6">
-          <Link to="/bookings" className="flex items-center gap-2.5 group">
+          <Link to="/" className="flex items-center gap-2.5 group">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.25)] transition-all duration-300 group-hover:scale-105">
               <Wrench className="h-5 w-5" />
             </div>
@@ -39,7 +40,7 @@ export const Navbar: React.FC = () => {
           <nav className="hidden md:flex items-center gap-1 ml-4">
             {navItems.map((item) => {
               const Icon = item.icon
-              const isActive = location.pathname === item.path
+              const isActive = location.pathname === item.path || (item.path === "/operations" && location.pathname === "/")
               return (
                 <Link
                   key={item.path}
@@ -63,9 +64,9 @@ export const Navbar: React.FC = () => {
           {/* Active Student Badge */}
           <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/40 border border-emerald-500/20 text-xs text-emerald-300">
             <Layers className="h-3.5 w-3.5 text-emerald-400 animate-pulse" />
-            <span>Component 3: Booking & Handover</span>
+            <span>RentaTool LK</span>
             <Badge variant="available" className="text-[10px] py-0 px-1.5">
-              Niro (S3)
+              Admin Portal
             </Badge>
           </div>
 
@@ -95,8 +96,43 @@ export const Navbar: React.FC = () => {
               Sign In
             </Link>
           )}
+
+          {/* Mobile Menu Hamburger Button */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            className="md:hidden p-2 rounded-lg border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            aria-label="Toggle Navigation Menu"
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile Drawer Navigation */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-border/80 bg-background/95 backdrop-blur-md px-4 py-3 space-y-1 animate-in slide-in-from-top-2 duration-200">
+          {navItems.map((item) => {
+            const Icon = item.icon
+            const isActive = location.pathname === item.path || (item.path === "/operations" && location.pathname === "/")
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-accent text-emerald-400 font-semibold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            )
+          })}
+        </div>
+      )}
     </header>
   )
 }

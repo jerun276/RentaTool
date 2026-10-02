@@ -8,12 +8,12 @@ import {
   BatchAvailabilityReport,
 } from "../types/catalogTypes"
 
-// Fallback mock categories matching PRD seed data
+// Fallback mock categories matching PRD seed data & database IDs
 export const MOCK_CATEGORIES: CategoryDto[] = [
-  { id: "cat-1111", name: "Power Tools", description: "Heavy-duty electric & cordless drilling, fastening, and cutting tools", toolCount: 14 },
-  { id: "cat-2222", name: "Heavy Machinery", description: "Earthmoving, compaction, and civil construction equipment", toolCount: 8 },
-  { id: "cat-3333", name: "Cleaning Equipment", description: "Industrial high-pressure washers, vacuum cleaners, and scrubbers", toolCount: 6 },
-  { id: "cat-4444", name: "Generators & Power", description: "Silent diesel & petrol portable power generators", toolCount: 5 },
+  { id: "6550f572-d602-4ec8-88e5-d3183a807787", name: "Power Tools", description: "Heavy-duty electric & cordless drilling, fastening, and cutting tools", toolCount: 14 },
+  { id: "352ea07e-bd97-481b-a287-027036658902", name: "Heavy Machinery", description: "Earthmoving, compaction, and civil construction equipment", toolCount: 8 },
+  { id: "5fcc78e0-06b4-4db7-b6bf-31c3fac5524d", name: "Cleaning Equipment", description: "Industrial high-pressure washers, vacuum cleaners, and scrubbers", toolCount: 6 },
+  { id: "62886944-85b4-4d2f-a700-382319ab2ddf", name: "Generators & Power", description: "Silent diesel & petrol portable power generators", toolCount: 5 },
 ]
 
 // Fallback mock equipment
@@ -22,7 +22,7 @@ export const MOCK_EQUIPMENT: EquipmentDto[] = [
     id: "eq-001",
     title: "Karcher HD 5/15 C Pressure Washer",
     description: "Compact, commercial cold-water high pressure washer. Ideal for construction site cleaning.",
-    categoryId: "cat-3333",
+    categoryId: "5fcc78e0-06b4-4db7-b6bf-31c3fac5524d",
     categoryName: "Cleaning Equipment",
     dailyRate: 3500,
     replacementValue: 75000,
@@ -42,7 +42,7 @@ export const MOCK_EQUIPMENT: EquipmentDto[] = [
     id: "eq-002",
     title: "Bosch Professional GBH 8-45 D Rotary Hammer",
     description: "Heavy 1500W SDS-Max demolition hammer for concrete drilling and chiselling.",
-    categoryId: "cat-1111",
+    categoryId: "6550f572-d602-4ec8-88e5-d3183a807787",
     categoryName: "Power Tools",
     dailyRate: 4200,
     replacementValue: 120000,
@@ -62,7 +62,7 @@ export const MOCK_EQUIPMENT: EquipmentDto[] = [
     id: "eq-003",
     title: "Mikasa Plate Compactor 90kg",
     description: "High-compaction forward plate compactor powered by Honda GX160 engine.",
-    categoryId: "cat-2222",
+    categoryId: "352ea07e-bd97-481b-a287-027036658902",
     categoryName: "Heavy Machinery",
     dailyRate: 6500,
     replacementValue: 210000,
@@ -80,7 +80,7 @@ export const MOCK_EQUIPMENT: EquipmentDto[] = [
     id: "eq-004",
     title: "Honda EU30is Inverter Generator 3kVA",
     description: "Ultra-quiet portable inverter generator with clean power output for sensitive site electronics.",
-    categoryId: "cat-4444",
+    categoryId: "62886944-85b4-4d2f-a700-382319ab2ddf",
     categoryName: "Generators & Power",
     dailyRate: 5000,
     replacementValue: 280000,

@@ -74,7 +74,7 @@ export const CatalogDashboardPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 text-xs font-mono text-emerald-400 uppercase tracking-wider mb-1">
             <ShieldCheck className="h-3.5 w-3.5" />
-            <span>Component 2 – Student 2 Portfolio</span>
+            <span>Desk 03 – Fleet & Condition Management</span>
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
             Equipment Inventory & Condition Logs

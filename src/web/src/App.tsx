@@ -7,14 +7,7 @@ const AppContent: React.FC = () => {
   const location = useLocation()
   const isAuthPage = location.pathname === "/login"
 
-  const isOperationsPortal =
-    location.pathname === "/" ||
-    location.pathname === "/operations" ||
-    location.pathname === "/bookings" ||
-    location.pathname === "/bookings/calendar" ||
-    location.pathname === "/bookings/conflicts"
-
-  if (isAuthPage || isOperationsPortal) {
+  if (isAuthPage) {
     return (
       <div className="min-h-screen bg-[#0f131c] text-[#dfe2ee]">
         <AppRoutes />
@@ -36,11 +29,11 @@ const AppContent: React.FC = () => {
             <span>Peer-to-Peer Machinery & Equipment Rental System</span>
           </div>
           <div className="flex items-center gap-4 text-[11px] font-mono">
-            <span className="text-emerald-400">Student 3: Niroshan</span>
+            <span className="text-emerald-400">Admin Operations Portal</span>
             <span>•</span>
-            <span>Component 3: Booking & Handover</span>
+            <span>SE3090 Software Engineering Frameworks</span>
             <span>•</span>
-            <span>SLIIT SE3090 (2026)</span>
+            <span>SLIIT 2026</span>
           </div>
         </div>
       </footer>

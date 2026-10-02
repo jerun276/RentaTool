@@ -35,7 +35,7 @@ export const AIDisputeArbitrationView: React.FC = () => {
       evidencePickup: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&auto=format&fit=crop&q=80",
       evidenceReturn: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop&q=80",
       reasoning:
-        "Computer vision edge-detection and strain telemetry confirm lateral chisel collar fracture exceeding fatigue threshold. Student 2 Domain Analysis confirms damage is operator misuse rather than normal 60-day wear.",
+        "Computer vision edge-detection and strain telemetry confirm lateral chisel collar fracture exceeding fatigue threshold. Equipment Wear & Telemetry Analysis confirms damage is operator misuse rather than normal 60-day wear.",
     },
     {
       id: "claim-88a4",
@@ -451,7 +451,7 @@ export const AIDisputeArbitrationView: React.FC = () => {
             <div className="flex items-center justify-between text-[11px] font-mono text-[#bbcabf]">
               <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-white">
                 <span className="material-symbols-outlined text-[16px] text-[#d0bcff]">hub</span>
-                Student 3 LangGraph Planner Agent Workflow
+                LangGraph Multi-Agent Dispute Adjudication Workflow
               </span>
               <span className="text-[#4edea3]">AI Confidence: {activeClaim.aiConfidence}</span>
             </div>

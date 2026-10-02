@@ -6,18 +6,18 @@ import { apiErrorMessage, identityApi } from "../api/identityApi"
 const DEMO_ACCOUNTS = [
   {
     role: "Admin" as UserRole,
-    title: "Primary Admin",
+    title: "System Admin",
     email: "admin@rentatool.lk",
-    pass: "Password@123",
-    badge: "DESK 01-04 ALL ACCESS",
+    pass: "Admin@123",
+    badge: "STANDARD SEED",
     badgeClass: "bg-[#10b981]/20 text-[#4edea3] border-[#10b981]/30",
   },
   {
     role: "Admin" as UserRole,
-    title: "Dev Admin",
+    title: "Dev Seed Admin",
     email: "admin@rentatool.lk",
-    pass: "Admin@123",
-    badge: "LOCAL DEV FALLBACK",
+    pass: "Password@123",
+    badge: "LEGACY SEED",
     badgeClass: "bg-[#38bdf8]/20 text-[#7dd3fc] border-[#38bdf8]/30",
   },
 ]
@@ -77,12 +77,22 @@ export const LoginPage: React.FC = () => {
         return
       }
 
+      let userTrustScore = 95
+      try {
+        const trustRes = await identityApi.getTrustScore(data.userId)
+        if (trustRes.data?.score != null) {
+          userTrustScore = trustRes.data.score
+        }
+      } catch {
+        // Fallback gracefully if trust score ledger not yet initialized for this account
+      }
+
       setAuth(data.accessToken, {
         id: data.userId,
         name: data.name,
         email: email.trim(),
         role: data.role as UserRole,
-        trustScore: 92,
+        trustScore: userTrustScore,
       })
 
       setSuccessMessage(`Authenticated as ${data.name} (Admin). Access granted.`)
@@ -177,20 +187,23 @@ export const LoginPage: React.FC = () => {
                   </span>
                   <span className="text-[9px] font-mono text-[#86948a]">Select credential</span>
                 </div>
-                <div className="grid grid-cols-3 gap-1.5">
+                <div className="grid grid-cols-2 gap-2">
                   {DEMO_ACCOUNTS.map((acc) => (
                     <button
-                      key={acc.role}
+                      key={acc.title}
                       type="button"
                       onClick={() => handleQuickFill(acc)}
-                      className={`px-2 py-1.5 rounded text-[11px] font-medium border text-left transition-all hover:scale-[1.02] flex flex-col gap-0.5 ${
-                        email === acc.email
+                      className={`px-3 py-2 rounded text-[11px] font-medium border text-left transition-all hover:scale-[1.01] flex flex-col gap-1 ${
+                        email === acc.email && password === acc.pass
                           ? "bg-[#262a33] border-[#10b981] text-[#4edea3] shadow-[0_0_8px_rgba(16,185,129,0.2)]"
                           : "bg-[#181c24] border-[#1f2937] text-[#bbcabf] hover:border-[#374151]"
                       }`}
                     >
-                      <span className="font-semibold text-[11px] leading-tight truncate">{acc.title}</span>
-                      <span className="text-[9px] font-mono opacity-80">{acc.role}</span>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-[11px] leading-tight truncate">{acc.title}</span>
+                        <span className={`text-[8px] font-mono px-1 py-0.5 rounded border ${acc.badgeClass}`}>{acc.pass}</span>
+                      </div>
+                      <span className="text-[9px] font-mono text-[#86948a]">{acc.email}</span>
                     </button>
                   ))}
                 </div>
