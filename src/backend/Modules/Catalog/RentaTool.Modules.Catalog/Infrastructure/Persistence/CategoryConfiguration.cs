@@ -25,6 +25,10 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.Property(c => c.IsActive)
             .HasDefaultValue(true);
 
+        builder.Property(c => c.SpecificationSchemaJson)
+            .HasColumnType("jsonb")
+            .HasDefaultValue("[]");
+
         builder.HasIndex(c => c.Name).IsUnique();
     }
 }

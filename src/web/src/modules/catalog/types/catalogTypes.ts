@@ -28,11 +28,23 @@ export interface EquipmentDto {
   createdAt: string
 }
 
+export interface CategorySpecFieldDto {
+  key: string
+  label: string
+  unit?: string
+  fieldType: "text" | "number" | "select" | string
+  isRequired: boolean
+  options: string[]
+}
+
 export interface CategoryDto {
   id: string
   name: string
   description?: string
   iconUrl?: string
+  isActive?: boolean
+  specificationSchemaJson?: string
+  specificationSchema?: CategorySpecFieldDto[]
   toolCount?: number
 }
 

@@ -11,5 +11,6 @@ public sealed record UserSummaryDto(
     string? SuspensionReason,
     int TrustScore,
     DateTime CreatedAtUtc,
-    DateTime? UpdatedAtUtc
+    DateTime? UpdatedAtUtc,
+    string? ProfilePhotoUrl = null
 );
