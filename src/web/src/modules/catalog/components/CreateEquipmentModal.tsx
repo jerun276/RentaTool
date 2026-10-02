@@ -30,6 +30,9 @@ export const CreateEquipmentModal: React.FC<CreateEquipmentModalProps> = ({
   const [casingImageUrl, setCasingImageUrl] = useState("https://images.unsplash.com/photo-1572981779307-38b8cabb2407?auto=format&fit=crop&w=800&q=80")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [dynamicSpecs, setDynamicSpecs] = useState<Record<string, string>>({})
+
+  const selectedCat = categories.find((c) => c.id === (categoryId || categories[0]?.id))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,6 +56,7 @@ export const CreateEquipmentModal: React.FC<CreateEquipmentModalProps> = ({
         dailyRate: Number(dailyRate),
         replacementValue: Number(replacementValue),
         location,
+        specificationsJson: JSON.stringify(dynamicSpecs),
         imageUrls: photos,
       })
 
@@ -105,8 +109,11 @@ export const CreateEquipmentModal: React.FC<CreateEquipmentModalProps> = ({
                 Category *
               </label>
               <select
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
+                value={categoryId || categories[0]?.id}
+                onChange={(e) => {
+                  setCategoryId(e.target.value)
+                  setDynamicSpecs({})
+                }}
                 className="w-full h-9 rounded-md border border-input bg-background/50 px-3 text-xs"
               >
                 {categories.map((c) => (
@@ -130,6 +137,52 @@ export const CreateEquipmentModal: React.FC<CreateEquipmentModalProps> = ({
               />
             </div>
           </div>
+
+          {/* Dynamic Technical Specifications (tailored to selected category) */}
+          {selectedCat?.specificationSchema && selectedCat.specificationSchema.length > 0 && (
+            <div className="p-3.5 rounded-xl bg-card/60 border border-border/80 space-y-2.5">
+              <span className="text-[11px] font-mono text-emerald-400 uppercase tracking-wider block font-semibold">
+                Technical Specifications ({selectedCat.name})
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {selectedCat.specificationSchema.map((field) => (
+                  <div key={field.key}>
+                    <label className="text-[11px] font-semibold text-foreground block mb-0.5">
+                      {field.label} {field.isRequired ? "*" : ""} {field.unit ? `(${field.unit})` : ""}
+                    </label>
+                    {field.fieldType === "select" ? (
+                      <select
+                        value={dynamicSpecs[field.label] || ""}
+                        onChange={(e) =>
+                          setDynamicSpecs((prev) => ({ ...prev, [field.label]: e.target.value }))
+                        }
+                        className="w-full h-8 px-2.5 rounded-md border border-input bg-background/50 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        required={field.isRequired}
+                      >
+                        <option value="">Select {field.label}</option>
+                        {field.options.map((opt, i) => (
+                          <option key={i} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Input
+                        type={field.fieldType === "number" ? "number" : "text"}
+                        placeholder={`e.g. ${field.unit ? `value in ${field.unit}` : ""}`}
+                        value={dynamicSpecs[field.label] || ""}
+                        onChange={(e) =>
+                          setDynamicSpecs((prev) => ({ ...prev, [field.label]: e.target.value }))
+                        }
+                        className="h-8 text-xs"
+                        required={field.isRequired}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>

@@ -285,4 +285,25 @@ export const catalogApi = {
       }
     }
   },
+
+  // Fetch active categories with dynamic specification schemas
+  async getCategories(): Promise<CategoryDto[]> {
+    try {
+      const response = await axiosClient.get<CategoryDto[]>("/categories")
+      return response.data
+    } catch {
+      return MOCK_CATEGORIES
+    }
+  },
+
+  // Create a new category with dynamic specification schema
+  async createCategory(data: {
+    name: string
+    description?: string
+    iconUrl?: string
+    specificationSchema?: any[]
+  }): Promise<CategoryDto> {
+    const response = await axiosClient.post<CategoryDto>("/categories", data)
+    return response.data
+  },
 }

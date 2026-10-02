@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { useAuthStore } from "@/shared/store/useAuthStore"
 
-export type DeskTab = "desk01" | "desk02" | "desk03" | "desk04"
+export type DeskTab = "desk01" | "desk02" | "desk03" | "catalog" | "desk04"
 
 interface OperationsPortalShellProps {
   activeDesk: DeskTab
@@ -134,6 +134,24 @@ export const OperationsPortalShell: React.FC<OperationsPortalShellProps> = ({
                 </div>
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#93000a]/40 text-[#ffb4ab] font-bold">
                   2 Locks
+                </span>
+              </button>
+
+              {/* Equipment Catalog (Under Fleet & Wear Hub) */}
+              <button
+                onClick={() => onSelectDesk("catalog")}
+                className={`w-full group flex items-center justify-between px-3 py-2 rounded text-left transition-all ${
+                  activeDesk === "catalog"
+                    ? "bg-[#262a33] text-[#4edea3] font-semibold border-l-2 border-[#10b981]"
+                    : "text-[#bbcabf] hover:bg-[#1c2028] hover:text-[#dfe2ee]"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="material-symbols-outlined text-[18px]">inventory_2</span>
+                  <span className="text-[13px]">Equipment Catalog</span>
+                </div>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#10b981]/20 text-[#4edea3] font-bold">
+                  Fleet
                 </span>
               </button>
 

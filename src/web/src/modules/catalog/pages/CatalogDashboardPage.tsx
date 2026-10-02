@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { Box, PlusCircle, Activity, RefreshCw, AlertTriangle, ShieldCheck, CheckCircle2 } from "lucide-react"
+import { Box, PlusCircle, Activity, RefreshCw, AlertTriangle, ShieldCheck, CheckCircle2, Layers } from "lucide-react"
 import { EquipmentDto, CategoryDto, EquipmentStatus } from "../types/catalogTypes"
 import { catalogApi, MOCK_CATEGORIES } from "../api/catalogApi"
 import { EquipmentCard } from "../components/EquipmentCard"
@@ -7,11 +7,12 @@ import { EquipmentFilters } from "../components/EquipmentFilters"
 import { InspectionTimelineModal } from "../components/InspectionTimelineModal"
 import { CreateEquipmentModal } from "../components/CreateEquipmentModal"
 import { BatchAvailabilityModal } from "../components/BatchAvailabilityModal"
+import { ManageCategoriesModal } from "../components/ManageCategoriesModal"
 import { Button } from "@/shared/components/ui/button"
 
 export const CatalogDashboardPage: React.FC = () => {
   const [equipmentList, setEquipmentList] = useState<EquipmentDto[]>([])
-  const [categories] = useState<CategoryDto[]>(MOCK_CATEGORIES)
+  const [categories, setCategories] = useState<CategoryDto[]>(MOCK_CATEGORIES)
   const [loading, setLoading] = useState(true)
 
   // Filter state
@@ -24,6 +25,18 @@ export const CatalogDashboardPage: React.FC = () => {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false)
+  const [isCategoriesModalOpen, setIsCategoriesModalOpen] = useState(false)
+
+  const loadCategories = async () => {
+    try {
+      const cats = await catalogApi.getCategories()
+      if (cats && cats.length > 0) {
+        setCategories(cats)
+      }
+    } catch (err) {
+      console.error("Failed to load categories", err)
+    }
+  }
 
   const loadData = async () => {
     setLoading(true)
@@ -40,6 +53,10 @@ export const CatalogDashboardPage: React.FC = () => {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    loadCategories()
+  }, [])
 
   useEffect(() => {
     loadData()
@@ -98,6 +115,16 @@ export const CatalogDashboardPage: React.FC = () => {
           </Button>
 
           <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsCategoriesModalOpen(true)}
+            className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-950/20 text-xs h-9"
+          >
+            <Layers className="h-4 w-4 mr-1.5 text-emerald-400" />
+            Categories & Specs
+          </Button>
+
+          <Button
             variant="glow"
             size="sm"
             onClick={() => setIsCreateModalOpen(true)}
@@ -110,7 +137,10 @@ export const CatalogDashboardPage: React.FC = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={loadData}
+            onClick={() => {
+              loadCategories()
+              loadData()
+            }}
             title="Refresh Fleet"
             className="h-9 w-9 text-muted-foreground hover:text-foreground"
           >
@@ -230,6 +260,13 @@ export const CatalogDashboardPage: React.FC = () => {
         isOpen={isBatchModalOpen}
         equipmentList={equipmentList}
         onClose={() => setIsBatchModalOpen(false)}
+      />
+
+      <ManageCategoriesModal
+        isOpen={isCategoriesModalOpen}
+        categories={categories}
+        onClose={() => setIsCategoriesModalOpen(false)}
+        onCategoriesUpdated={loadCategories}
       />
     </div>
   )

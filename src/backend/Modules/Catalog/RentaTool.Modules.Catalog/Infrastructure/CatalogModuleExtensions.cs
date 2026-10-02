@@ -8,6 +8,7 @@ public static class CatalogModuleExtensions
     public static IServiceCollection AddCatalogModule(this IServiceCollection services)
     {
         services.AddScoped<IEquipmentService, EquipmentService>();
+        services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IInspectionService, InspectionService>();
         services.AddScoped<IBatchAvailabilityService, BatchAvailabilityService>();
 

@@ -4,6 +4,7 @@ import { OperationsPortalShell, DeskTab } from "../components/OperationsPortalSh
 import { OperationsCommandCenterView } from "../components/OperationsCommandCenterView"
 import { KycTrustComplianceView } from "@/modules/identity/components/KycTrustComplianceView"
 import { FleetWearHubView } from "@/modules/catalog/components/FleetWearHubView"
+import { CatalogDashboardPage } from "@/modules/catalog/pages/CatalogDashboardPage"
 import { AIDisputeArbitrationView } from "@/modules/escrow/components/AIDisputeArbitrationView"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/shared/components/ui/dialog"
 import { ShieldCheck, Wifi, CheckCircle2, AlertTriangle } from "lucide-react"
@@ -14,13 +15,13 @@ export const OperationsPortalPage: React.FC = () => {
   const [isIncidentLogOpen, setIsIncidentLogOpen] = useState(false)
 
   const [activeDesk, setActiveDesk] = useState<DeskTab>(
-    deskParam && ["desk01", "desk02", "desk03", "desk04"].includes(deskParam)
+    deskParam && ["desk01", "desk02", "desk03", "catalog", "desk04"].includes(deskParam)
       ? deskParam
       : "desk01"
   )
 
   useEffect(() => {
-    if (deskParam && ["desk01", "desk02", "desk03", "desk04"].includes(deskParam)) {
+    if (deskParam && ["desk01", "desk02", "desk03", "catalog", "desk04"].includes(deskParam)) {
       setActiveDesk(deskParam)
     }
   }, [deskParam])
@@ -48,6 +49,8 @@ export const OperationsPortalPage: React.FC = () => {
         {activeDesk === "desk02" && <KycTrustComplianceView />}
 
         {activeDesk === "desk03" && <FleetWearHubView />}
+
+        {activeDesk === "catalog" && <CatalogDashboardPage />}
 
         {activeDesk === "desk04" && <AIDisputeArbitrationView />}
       </OperationsPortalShell>
