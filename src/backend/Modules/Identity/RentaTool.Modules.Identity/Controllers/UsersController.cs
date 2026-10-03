@@ -91,12 +91,13 @@ public class UsersController(
         catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     [HttpGet("{id:guid}/kyc-submission")]
     [ProducesResponseType(typeof(AdminKycReviewDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetKycSubmission(Guid id)
     {
+        if (CurrentUserId() != id && !User.IsInRole("Admin")) return Forbid();
         try { return Ok(await verificationService.GetSubmissionAsync(id)); }
         catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
     }
