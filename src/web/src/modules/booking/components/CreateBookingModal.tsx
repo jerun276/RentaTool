@@ -166,7 +166,9 @@ export const CreateBookingModal: React.FC<CreateBookingModalProps> = ({ open, on
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Daily Rate:</span>
-                <span className="font-mono text-foreground">LKR {selectedTool.dailyRate.toLocaleString()}</span>
+                <span className="font-mono text-foreground">
+                  LKR {(selectedTool?.dailyRate ?? 0).toLocaleString()}
+                </span>
               </div>
               <div className="flex justify-between pt-1.5 border-t border-border/40 font-bold text-sm">
                 <span>Total Rental Fee:</span>
