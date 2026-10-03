@@ -49,6 +49,13 @@ export const UserManagementDirectoryView: React.FC = () => {
     return () => clearTimeout(timer)
   }, [successMessage])
 
+  // Auto-dismiss error notification
+  useEffect(() => {
+    if (!error) return
+    const timer = setTimeout(() => setError(null), 6000)
+    return () => clearTimeout(timer)
+  }, [error])
+
   // Filtered dataset
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {

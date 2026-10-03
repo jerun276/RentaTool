@@ -16,6 +16,13 @@ export const AIDisputeArbitrationView: React.FC = () => {
   const [claimsList, setClaimsList] = useState<any[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
 
+  // Auto-dismiss feedback notification
+  useEffect(() => {
+    if (!feedbackNotice) return
+    const timer = setTimeout(() => setFeedbackNotice(null), 5000)
+    return () => clearTimeout(timer)
+  }, [feedbackNotice])
+
   // Fetch claims from backend
   const fetchClaims = useCallback(async () => {
     try {
@@ -549,16 +556,24 @@ export const AIDisputeArbitrationView: React.FC = () => {
             {/* Feedback Alert Notice */}
             {feedbackNotice && (
               <div
-                className={`p-3 rounded-lg border text-xs font-mono flex items-center gap-2 ${
+                className={`p-3 rounded-lg border text-xs font-mono flex items-center justify-between animate-in fade-in duration-200 ${
                   feedbackNotice.type === "success"
                     ? "bg-[#10b981]/20 border-[#10b981]/40 text-[#4edea3]"
                     : "bg-[#93000a]/25 border-[#93000a]/50 text-[#ffb4ab]"
                 }`}
               >
-                <span className="material-symbols-outlined text-[16px]">
-                  {feedbackNotice.type === "success" ? "check_circle" : "error"}
-                </span>
-                <span>{feedbackNotice.text}</span>
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px]">
+                    {feedbackNotice.type === "success" ? "check_circle" : "error"}
+                  </span>
+                  <span>{feedbackNotice.text}</span>
+                </div>
+                <button
+                  onClick={() => setFeedbackNotice(null)}
+                  className="text-xs hover:text-white transition-colors cursor-pointer px-1"
+                >
+                  ✕
+                </button>
               </div>
             )}
 

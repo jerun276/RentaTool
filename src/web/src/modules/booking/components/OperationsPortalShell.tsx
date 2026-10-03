@@ -1,8 +1,19 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo, useRef } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { useAuthStore } from "@/shared/store/useAuthStore"
 
 export type DeskTab = "desk01" | "desk02" | "desk03" | "catalog" | "desk04"
+
+export interface AdminNotification {
+  id: string
+  desk: DeskTab
+  title: string
+  description: string
+  timeAgo: string
+  level: "critical" | "warning" | "info" | "success"
+  icon: string
+  isRead: boolean
+}
 
 interface OperationsPortalShellProps {
   activeDesk: DeskTab
@@ -25,6 +36,110 @@ export const OperationsPortalShell: React.FC<OperationsPortalShellProps> = ({
   const [timeStr, setTimeStr] = useState<string>("")
   const [searchQuery, setSearchQuery] = useState("")
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [notifFilter, setNotifFilter] = useState<"all" | "unread" | "critical">("all")
+  const notificationRef = useRef<HTMLDivElement>(null)
+
+  const [notificationsList, setNotificationsList] = useState<AdminNotification[]>([
+    {
+      id: "notif-1",
+      desk: "desk02",
+      title: "KYC Submissions Pending Review",
+      description: "4 Sri Lankan NIC identity documents require biometric verification and clearance.",
+      timeAgo: "4m ago",
+      level: "warning",
+      icon: "verified_user",
+      isRead: false,
+    },
+    {
+      id: "notif-2",
+      desk: "desk03",
+      title: "Fleet Equipment Exceeded 60-Day Limit",
+      description: "12 machinery assets triggered mandatory mechanical lockout until dye-penetrant inspection.",
+      timeAgo: "15m ago",
+      level: "critical",
+      icon: "build_circle",
+      isRead: false,
+    },
+    {
+      id: "notif-3",
+      desk: "desk04",
+      title: "AI Escrow Dispute Awaiting Decision",
+      description: "Caterpillar 320D damage claim evidence analyzed by Gemini Arbiter. Staff sign-off pending.",
+      timeAgo: "35m ago",
+      level: "warning",
+      icon: "gavel",
+      isRead: false,
+    },
+    {
+      id: "notif-4",
+      desk: "desk01",
+      title: "Cluster Geofence Heartbeat Active",
+      description: "42 GPS telematics nodes online across Western Province. 0 breaches recorded.",
+      timeAgo: "1h ago",
+      level: "success",
+      icon: "radar",
+      isRead: true,
+    },
+    {
+      id: "notif-5",
+      desk: "catalog",
+      title: "Dynamic Machinery Specs Synchronized",
+      description: "Category schemas and attribute validator rules synced with PostgreSQL cluster.",
+      timeAgo: "2h ago",
+      level: "info",
+      icon: "category",
+      isRead: true,
+    },
+  ])
+
+  const unreadCount = notificationsList.filter((n) => !n.isRead).length
+
+  const filteredNotifs = useMemo(() => {
+    return notificationsList.filter((n) => {
+      if (notifFilter === "unread") return !n.isRead
+      if (notifFilter === "critical") return n.level === "critical"
+      return true
+    })
+  }, [notificationsList, notifFilter])
+
+  const handleNotificationClick = (notif: AdminNotification) => {
+    setNotificationsList((prev) =>
+      prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
+    )
+    onSelectDesk(notif.desk)
+    setNotificationsOpen(false)
+  }
+
+  const handleMarkAllAsRead = () => {
+    setNotificationsList((prev) => prev.map((n) => ({ ...n, isRead: true })))
+  }
+
+  const handleDismissNotification = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setNotificationsList((prev) => prev.filter((n) => n.id !== id))
+  }
+
+  const handleClearAll = () => {
+    setNotificationsList([])
+  }
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target as Node)
+      ) {
+        setNotificationsOpen(false)
+      }
+    }
+    if (notificationsOpen) {
+      document.addEventListener("mousedown", handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [notificationsOpen])
 
   const userInitials = user?.name
     ? user.name
@@ -321,13 +436,188 @@ export const OperationsPortalShell: React.FC<OperationsPortalShellProps> = ({
               <span className="hidden sm:inline">Incident Log</span>
             </button>
 
-            <div className="relative cursor-pointer p-1">
-              <span className="material-symbols-outlined text-[#bbcabf] hover:text-[#dfe2ee] text-[20px]">
-                notifications
-              </span>
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#e29100] text-[#000] font-mono text-[9px] font-bold flex items-center justify-center">
-                5
-              </span>
+            {/* Notification Bell & Center */}
+            <div className="relative" ref={notificationRef}>
+              <button
+                type="button"
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
+                className={`relative p-1.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center ${
+                  notificationsOpen
+                    ? "bg-[#262a33] border-[#10b981]/50 text-white shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+                    : "border-transparent text-[#bbcabf] hover:text-[#dfe2ee] hover:bg-[#181c24]"
+                }`}
+                title="Operations Notifications Center"
+                aria-label="Operations Notifications"
+              >
+                <span className="material-symbols-outlined text-[20px] block">
+                  notifications
+                </span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-[#e29100] text-[#000] font-mono text-[9px] font-bold flex items-center justify-center shadow-sm animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Popover Panel */}
+              {notificationsOpen && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-[#181c24] border border-[#1f2937] rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.7)] z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                  {/* Header */}
+                  <div className="p-3 bg-[#0a0e16] border-b border-[#1f2937] flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[#4edea3] text-[18px]">
+                        notifications_active
+                      </span>
+                      <span className="text-xs font-bold text-white font-mono uppercase tracking-wide">
+                        Operations Alerts
+                      </span>
+                      {unreadCount > 0 && (
+                        <span className="px-1.5 py-0.2 rounded-full bg-[#e29100]/20 text-[#ffb95f] font-mono text-[10px] font-bold">
+                          {unreadCount} new
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] font-mono">
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={handleMarkAllAsRead}
+                          className="text-[#4edea3] hover:underline cursor-pointer"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                      {notificationsList.length > 0 && (
+                        <button
+                          onClick={handleClearAll}
+                          className="text-[#86948a] hover:text-[#ffb4ab] cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Filter tabs */}
+                  <div className="flex items-center gap-1 px-3 py-1.5 bg-[#12161f] border-b border-[#1f2937] text-[11px] font-mono">
+                    <button
+                      onClick={() => setNotifFilter("all")}
+                      className={`px-2 py-0.5 rounded transition-colors cursor-pointer ${
+                        notifFilter === "all"
+                          ? "bg-[#262a33] text-[#4edea3] font-bold"
+                          : "text-[#86948a] hover:text-white"
+                      }`}
+                    >
+                      All ({notificationsList.length})
+                    </button>
+                    <button
+                      onClick={() => setNotifFilter("unread")}
+                      className={`px-2 py-0.5 rounded transition-colors cursor-pointer ${
+                        notifFilter === "unread"
+                          ? "bg-[#262a33] text-[#ffb95f] font-bold"
+                          : "text-[#86948a] hover:text-white"
+                      }`}
+                    >
+                      Unread ({unreadCount})
+                    </button>
+                    <button
+                      onClick={() => setNotifFilter("critical")}
+                      className={`px-2 py-0.5 rounded transition-colors cursor-pointer ${
+                        notifFilter === "critical"
+                          ? "bg-[#262a33] text-[#ffb4ab] font-bold"
+                          : "text-[#86948a] hover:text-white"
+                      }`}
+                    >
+                      Critical ({notificationsList.filter((n) => n.level === "critical").length})
+                    </button>
+                  </div>
+
+                  {/* Notifications list */}
+                  <div className="max-h-80 overflow-y-auto divide-y divide-[#1f2937]/50">
+                    {filteredNotifs.length === 0 ? (
+                      <div className="py-8 px-4 text-center">
+                        <span className="material-symbols-outlined text-[32px] text-[#86948a] block mb-1">
+                          done_all
+                        </span>
+                        <p className="text-xs text-[#86948a] font-mono">
+                          All systems nominal. No pending alerts.
+                        </p>
+                      </div>
+                    ) : (
+                      filteredNotifs.map((notif) => {
+                        const levelStyles = {
+                          critical: {
+                            iconColor: "text-[#ffb4ab]",
+                            bg: "bg-[#93000a]/15",
+                          },
+                          warning: {
+                            iconColor: "text-[#ffb95f]",
+                            bg: "bg-[#e29100]/10",
+                          },
+                          info: {
+                            iconColor: "text-[#93c5fd]",
+                            bg: "bg-[#1d4ed8]/10",
+                          },
+                          success: {
+                            iconColor: "text-[#4edea3]",
+                            bg: "bg-[#10b981]/10",
+                          },
+                        }[notif.level]
+
+                        return (
+                          <div
+                            key={notif.id}
+                            onClick={() => handleNotificationClick(notif)}
+                            className={`p-3 flex items-start gap-3 hover:bg-[#1c2028] transition-colors cursor-pointer group ${
+                              !notif.isRead ? "bg-[#151922]" : ""
+                            }`}
+                          >
+                            <div className={`p-2 rounded-lg ${levelStyles.bg} shrink-0 mt-0.5`}>
+                              <span className={`material-symbols-outlined text-[16px] ${levelStyles.iconColor}`}>
+                                {notif.icon}
+                              </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1 mb-0.5">
+                                <span className="text-[12px] font-bold text-white truncate">
+                                  {notif.title}
+                                </span>
+                                <span className="text-[9px] font-mono text-[#86948a] shrink-0">
+                                  {notif.timeAgo}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-[#bbcabf] line-clamp-2 leading-relaxed">
+                                {notif.description}
+                              </p>
+                              <div className="flex items-center justify-between mt-1.5">
+                                <span className="text-[9px] font-mono text-[#4edea3] group-hover:underline flex items-center gap-0.5">
+                                  Jump to Desk →
+                                </span>
+                                {!notif.isRead && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              onClick={(e) => handleDismissNotification(notif.id, e)}
+                              className="text-[#86948a] hover:text-[#ffb4ab] text-xs p-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                              title="Dismiss alert"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="p-2.5 bg-[#0a0e16] border-t border-[#1f2937] text-center">
+                    <span className="text-[10px] font-mono text-[#86948a]">
+                      RentaTool LK • High-Consequence Industrial Operations Telemetry
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Top Bar User Avatar & Menu */}
