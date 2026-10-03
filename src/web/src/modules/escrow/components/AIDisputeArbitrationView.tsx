@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { axiosClient } from "@/shared/api/axiosClient"
 import { escrowApi } from "../api/escrowApi"
 import { useAuthStore } from "@/shared/store/useAuthStore"
@@ -76,7 +76,21 @@ export const AIDisputeArbitrationView: React.FC = () => {
   }, [fetchClaims])
 
   const claims = claimsList
-  const activeClaim = claims.find((c) => c.id === selectedClaimId) || claims[0] || null
+
+  const filteredClaims = useMemo(() => {
+    return claimsList.filter((c) => {
+      if (filterQueue === "human") return c.status !== "Settled"
+      if (filterQueue === "settled") return c.status === "Settled"
+      return true
+    })
+  }, [claimsList, filterQueue])
+
+  const activeClaim =
+    filteredClaims.find((c) => c.id === selectedClaimId) ||
+    filteredClaims[0] ||
+    claimsList.find((c) => c.id === selectedClaimId) ||
+    claimsList[0] ||
+    null
   const currentDecision = activeClaim ? adjudicationStatus[activeClaim.id] : undefined
 
   const handleApprove = async () => {
@@ -284,7 +298,12 @@ export const AIDisputeArbitrationView: React.FC = () => {
 
           {/* Claim Cards Stack */}
           <div className="space-y-3">
-            {claims.map((claim) => {
+            {filteredClaims.length === 0 ? (
+              <div className="p-6 text-center text-xs font-mono text-[#86948a] bg-[#181c24] rounded-xl border border-[#1f2937]">
+                No claims found in this queue filter.
+              </div>
+            ) : (
+              filteredClaims.map((claim) => {
               const isSelected = claim.id === selectedClaimId
               const decision = adjudicationStatus[claim.id]
               return (
@@ -348,7 +367,8 @@ export const AIDisputeArbitrationView: React.FC = () => {
                   </div>
                 </div>
               )
-            })}
+            })
+          )}
           </div>
         </div>
 
