@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { useAuthStore } from "@/shared/store/useAuthStore"
+import { axiosClient } from "@/shared/api/axiosClient"
+
 
 export type DeskTab = "desk01" | "desk02" | "desk03" | "catalog" | "desk04"
 
@@ -39,6 +41,122 @@ export const OperationsPortalShell: React.FC<OperationsPortalShellProps> = ({
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [notifFilter, setNotifFilter] = useState<"all" | "unread" | "critical">("all")
   const notificationRef = useRef<HTMLDivElement>(null)
+
+  const [deskCounts, setDeskCounts] = useState<{
+    kycPending: number
+    wearLocks: number
+    activeClaims: number
+    totalFleet: number
+    loaded: boolean
+  }>({
+    kycPending: 0,
+    wearLocks: 0,
+    activeClaims: 0,
+    totalFleet: 0,
+    loaded: false,
+  })
+
+  // Poll real live counts from backend for sidebar notification badges
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchTelemetryCounts = async () => {
+      try {
+        const [kycRes, eqRes, claimsRes] = await Promise.allSettled([
+          axiosClient.get("/users/kyc-submissions"),
+          axiosClient.get("/equipment"),
+          axiosClient.get("/claims"),
+        ])
+
+        if (!isMounted) return
+
+        let kycPending = 0
+        if (kycRes.status === "fulfilled" && Array.isArray(kycRes.value.data)) {
+          kycPending = kycRes.value.data.filter((s: any) => s.status === "Pending").length
+        }
+
+        let wearLocks = 0
+        let totalFleet = 0
+        if (eqRes.status === "fulfilled" && eqRes.value.data) {
+          const items = eqRes.value.data.items || (Array.isArray(eqRes.value.data) ? eqRes.value.data : [])
+          totalFleet = items.length
+          wearLocks = items.filter(
+            (eq: any) =>
+              eq.requiresMaintenanceCheck ||
+              eq.status === "UnderMaintenance" ||
+              (eq.totalRentalDaysAccumulated || 0) >= 60
+          ).length
+        }
+
+        let activeClaims = 0
+        if (claimsRes.status === "fulfilled" && claimsRes.value.data) {
+          const claims = Array.isArray(claimsRes.value.data)
+            ? claimsRes.value.data
+            : claimsRes.value.data.items || []
+          activeClaims = claims.filter(
+            (c: any) => c.status !== "Settled" && c.status !== "Approved"
+          ).length
+        }
+
+        setDeskCounts({
+          kycPending,
+          wearLocks,
+          activeClaims,
+          totalFleet,
+          loaded: true,
+        })
+
+        // Synchronize notification messages with live values
+        setNotificationsList((prev) => {
+          return prev.map((item) => {
+            if (item.id === "notif-1") {
+              return {
+                ...item,
+                title: `${kycPending} KYC Submission${kycPending === 1 ? "" : "s"} Pending Review`,
+                description:
+                  kycPending > 0
+                    ? `${kycPending} Sri Lankan NIC identity document${kycPending === 1 ? "" : "s"} require biometric verification and clearance.`
+                    : "All identity submissions have been verified and processed.",
+                level: kycPending > 0 ? "warning" : "info",
+              }
+            }
+            if (item.id === "notif-2") {
+              return {
+                ...item,
+                title: `${wearLocks} Machinery Asset${wearLocks === 1 ? "" : "s"} Locked`,
+                description:
+                  wearLocks > 0
+                    ? `${wearLocks} fleet assets triggered mandatory lockout due to 60-day threshold or maintenance check.`
+                    : "All fleet equipment within safe operating parameters.",
+                level: wearLocks > 0 ? "critical" : "success",
+              }
+            }
+            if (item.id === "notif-3") {
+              return {
+                ...item,
+                title: `${activeClaims} Active AI Escrow Dispute${activeClaims === 1 ? "" : "s"}`,
+                description:
+                  activeClaims > 0
+                    ? `${activeClaims} claim${activeClaims === 1 ? "" : "s"} currently in AI evaluation or staff review queue.`
+                    : "No active dispute claims pending arbitration.",
+                level: activeClaims > 0 ? "warning" : "success",
+              }
+            }
+            return item
+          })
+        })
+      } catch (err) {
+        console.warn("Failed to fetch sidebar telemetry counts:", err)
+      }
+    }
+
+    fetchTelemetryCounts()
+    const pollInterval = setInterval(fetchTelemetryCounts, 30000)
+    return () => {
+      isMounted = false
+      clearInterval(pollInterval)
+    }
+  }, [])
 
   const [notificationsList, setNotificationsList] = useState<AdminNotification[]>([
     {
@@ -229,8 +347,18 @@ export const OperationsPortalShell: React.FC<OperationsPortalShellProps> = ({
                   <span className="material-symbols-outlined text-[18px]">manage_accounts</span>
                   <span className="text-[13px]">User Governance & KYC</span>
                 </div>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#e29100]/20 text-[#ffb95f] font-bold">
-                  4 Pending
+                <span
+                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold transition-colors ${
+                    deskCounts.kycPending > 0
+                      ? "bg-[#e29100]/20 text-[#ffb95f]"
+                      : "bg-[#10b981]/20 text-[#4edea3]"
+                  }`}
+                >
+                  {deskCounts.loaded
+                    ? deskCounts.kycPending > 0
+                      ? `${deskCounts.kycPending} Pending`
+                      : "Verified"
+                    : "4 Pending"}
                 </span>
               </button>
 
@@ -247,8 +375,18 @@ export const OperationsPortalShell: React.FC<OperationsPortalShellProps> = ({
                   <span className="material-symbols-outlined text-[18px]">build_circle</span>
                   <span className="text-[13px]">Fleet & Wear Hub</span>
                 </div>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#93000a]/40 text-[#ffb4ab] font-bold">
-                  2 Locks
+                <span
+                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold transition-colors ${
+                    deskCounts.wearLocks > 0
+                      ? "bg-[#93000a]/40 text-[#ffb4ab]"
+                      : "bg-[#10b981]/20 text-[#4edea3]"
+                  }`}
+                >
+                  {deskCounts.loaded
+                    ? deskCounts.wearLocks > 0
+                      ? `${deskCounts.wearLocks} Locks`
+                      : "Healthy"
+                    : "2 Locks"}
                 </span>
               </button>
 
@@ -266,7 +404,9 @@ export const OperationsPortalShell: React.FC<OperationsPortalShellProps> = ({
                   <span className="text-[13px]">Equipment Catalog</span>
                 </div>
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#10b981]/20 text-[#4edea3] font-bold">
-                  Fleet
+                  {deskCounts.loaded && deskCounts.totalFleet > 0
+                    ? `${deskCounts.totalFleet} Fleet`
+                    : "Fleet"}
                 </span>
               </button>
 
@@ -283,10 +423,21 @@ export const OperationsPortalShell: React.FC<OperationsPortalShellProps> = ({
                   <span className="material-symbols-outlined text-[18px]">gavel</span>
                   <span className="text-[13px]">AI Arbitration</span>
                 </div>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#571bc1]/40 text-[#d0bcff] font-bold">
-                  3 Claims
+                <span
+                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold transition-colors ${
+                    deskCounts.activeClaims > 0
+                      ? "bg-[#571bc1]/40 text-[#d0bcff]"
+                      : "bg-[#10b981]/20 text-[#4edea3]"
+                  }`}
+                >
+                  {deskCounts.loaded
+                    ? deskCounts.activeClaims > 0
+                      ? `${deskCounts.activeClaims} Claims`
+                      : "Settled"
+                    : "3 Claims"}
                 </span>
               </button>
+
             </nav>
           </div>
 
