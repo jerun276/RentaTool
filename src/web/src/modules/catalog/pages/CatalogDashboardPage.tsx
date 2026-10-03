@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react"
 import { Box, PlusCircle, Activity, RefreshCw, AlertTriangle, ShieldCheck, CheckCircle2, Layers } from "lucide-react"
 import { EquipmentDto, CategoryDto, EquipmentStatus } from "../types/catalogTypes"
-import { catalogApi, MOCK_CATEGORIES } from "../api/catalogApi"
+import { catalogApi } from "../api/catalogApi"
+import { apiErrorMessage } from "@/modules/identity/api/identityApi"
 import { EquipmentCard } from "../components/EquipmentCard"
 import { EquipmentFilters } from "../components/EquipmentFilters"
 import { InspectionTimelineModal } from "../components/InspectionTimelineModal"
@@ -12,8 +13,9 @@ import { Button } from "@/shared/components/ui/button"
 
 export const CatalogDashboardPage: React.FC = () => {
   const [equipmentList, setEquipmentList] = useState<EquipmentDto[]>([])
-  const [categories, setCategories] = useState<CategoryDto[]>(MOCK_CATEGORIES)
+  const [categories, setCategories] = useState<CategoryDto[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   // Filter state
   const [searchTerm, setSearchTerm] = useState("")
@@ -30,9 +32,7 @@ export const CatalogDashboardPage: React.FC = () => {
   const loadCategories = async () => {
     try {
       const cats = await catalogApi.getCategories()
-      if (cats && cats.length > 0) {
-        setCategories(cats)
-      }
+      setCategories(cats ?? [])
     } catch (err) {
       console.error("Failed to load categories", err)
     }
@@ -40,6 +40,7 @@ export const CatalogDashboardPage: React.FC = () => {
 
   const loadData = async () => {
     setLoading(true)
+    setLoadError(null)
     try {
       const res = await catalogApi.getEquipmentList({
         searchTerm: searchTerm || undefined,
@@ -48,7 +49,8 @@ export const CatalogDashboardPage: React.FC = () => {
       })
       setEquipmentList(res.items)
     } catch (err) {
-      console.error("Failed to load equipment", err)
+      setEquipmentList([])
+      setLoadError(apiErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -208,6 +210,16 @@ export const CatalogDashboardPage: React.FC = () => {
       {loading ? (
         <div className="py-20 text-center text-sm text-muted-foreground animate-pulse">
           Loading machinery catalog from PostgreSQL & EF Core...
+        </div>
+      ) : loadError ? (
+        <div className="py-16 text-center space-y-3 rounded-xl border border-red-500/30 bg-red-950/10 p-8">
+          <AlertTriangle className="h-10 w-10 text-red-400 mx-auto" />
+          <h3 className="text-base font-semibold text-foreground">Unable to load equipment catalog</h3>
+          <p className="text-xs text-muted-foreground max-w-md mx-auto">{loadError}</p>
+          <Button variant="outline" size="sm" onClick={loadData}>
+            <RefreshCw className="mr-2 h-3.5 w-3.5" />
+            Retry
+          </Button>
         </div>
       ) : equipmentList.length === 0 ? (
         <div className="py-20 text-center space-y-3 rounded-xl border border-dashed border-border p-8">

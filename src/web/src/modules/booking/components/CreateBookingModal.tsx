@@ -1,4 +1,5 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
+import { catalogApi } from "@/modules/catalog/api/catalogApi"
 import { Calendar, Wrench, CheckCircle, AlertTriangle } from "lucide-react"
 import { useBookingStore } from "../store/useBookingStore"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/shared/components/ui/dialog"
@@ -10,11 +11,7 @@ interface CreateBookingModalProps {
   onClose: () => void
 }
 
-const SAMPLE_TOOLS = [
-  { id: "3fa85f64-5717-4562-b3fc-2c963f66afa6", title: "Karcher HD 5/15 C High Pressure Washer", dailyRate: 3500 },
-  { id: "22222222-2222-2222-2222-222222222222", title: "Bosch Professional Rotary Hammer Drill", dailyRate: 2500 },
-  { id: "44444444-4444-4444-4444-444444444444", title: "Honda Silent Portable Petrol Generator", dailyRate: 5000 },
-]
+type ToolOption = { id: string; title: string; dailyRate: number; ownerId: string }
 
 export const CreateBookingModal: React.FC<CreateBookingModalProps> = ({ open, onClose }) => {
   const { createBooking, isLoading } = useBookingStore()
@@ -22,16 +19,30 @@ export const CreateBookingModal: React.FC<CreateBookingModalProps> = ({ open, on
   const todayStr = new Date().toISOString().split("T")[0]
   const tomorrowStr = new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0]
 
-  const [selectedToolId, setSelectedToolId] = useState(SAMPLE_TOOLS[0].id)
+  const [tools, setTools] = useState<ToolOption[]>([])
+  const [selectedToolId, setSelectedToolId] = useState("")
   const [startDate, setStartDate] = useState(todayStr)
   const [endDate, setEndDate] = useState(tomorrowStr)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  const selectedTool = SAMPLE_TOOLS.find((t) => t.id === selectedToolId) || SAMPLE_TOOLS[0]
+  useEffect(() => {
+    if (!open) return
+    catalogApi
+      .getEquipmentList({ pageSize: 100 } as any)
+      .then((res: any) => {
+        const items = (res?.items ?? res ?? []) as any[]
+        const opts = items.map((e) => ({ id: e.id, title: e.title, dailyRate: Number(e.dailyRate ?? 0), ownerId: e.ownerId }))
+        setTools(opts)
+        if (opts.length) setSelectedToolId((cur) => cur || opts[0].id)
+      })
+      .catch((e) => setErrorMessage(e?.message ?? "Failed to load equipment list."))
+  }, [open])
+
+  const selectedTool = tools.find((t) => t.id === selectedToolId) || tools[0]
 
   const days = Math.max(1, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 3600 * 24)))
-  const totalFee = days * selectedTool.dailyRate
+  const totalFee = days * (selectedTool?.dailyRate ?? 0)
 
   const handleCreate = async () => {
     setErrorMessage(null)
@@ -39,10 +50,14 @@ export const CreateBookingModal: React.FC<CreateBookingModalProps> = ({ open, on
       setErrorMessage("End date cannot be earlier than start date.")
       return
     }
+    if (!selectedTool) {
+      setErrorMessage("No equipment available to book.")
+      return
+    }
 
     const ok = await createBooking({
       equipmentId: selectedTool.id,
-      ownerId: "11111111-1111-1111-1111-111111111111",
+      ownerId: selectedTool.ownerId,
       startDate: new Date(startDate + "T00:00:00Z").toISOString(),
       endDate: new Date(endDate + "T23:59:59Z").toISOString(),
       dailyRate: selectedTool.dailyRate,
@@ -108,7 +123,8 @@ export const CreateBookingModal: React.FC<CreateBookingModalProps> = ({ open, on
                 onChange={(e) => setSelectedToolId(e.target.value)}
                 className="w-full h-9 rounded-md border border-border/60 bg-muted/40 px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
               >
-                {SAMPLE_TOOLS.map((t) => (
+                {tools.length === 0 && <option value="">No equipment available</option>}
+                {tools.map((t) => (
                   <option key={t.id} value={t.id} className="bg-background">
                     {t.title} (LKR {t.dailyRate}/day)
                   </option>

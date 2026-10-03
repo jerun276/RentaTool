@@ -1,6 +1,7 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { Calendar, AlertCircle, CheckCircle, Clock, Zap, ShieldAlert, Sparkles, Filter } from "lucide-react"
-import { MOCK_SCHEDULES } from "../api/bookingApi"
+import { bookingApi } from "../api/bookingApi"
+import { catalogApi } from "@/modules/catalog/api/catalogApi"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -8,7 +9,10 @@ import { Input } from "@/shared/components/ui/input"
 
 export const ScheduleCalendarConflictManager: React.FC = () => {
   const today = new Date()
-  const [selectedEquipment, setSelectedEquipment] = useState("eq-001")
+  const [selectedEquipment, setSelectedEquipment] = useState("")
+  const [equipmentOptions, setEquipmentOptions] = useState<{ id: string; name: string; dailyRate: number }[]>([])
+  const [schedules, setSchedules] = useState<any[]>([])
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [testStartDate, setTestStartDate] = useState(today.toISOString().split("T")[0])
   const [testEndDate, setTestEndDate] = useState(
     new Date(today.getTime() + 86400000 * 3).toISOString().split("T")[0]
@@ -19,17 +23,25 @@ export const ScheduleCalendarConflictManager: React.FC = () => {
     collidingSchedule?: any
   } | null>(null)
 
-  // Equipment list
-  const equipmentOptions = [
-    { id: "eq-001", name: "Karcher HD 5/15 C High Pressure Washer", dailyRate: 3500 },
-    { id: "eq-002", name: "Bosch Professional Rotary Hammer Drill", dailyRate: 2500 },
-    { id: "eq-003", name: "Honda Silent Portable Petrol Generator", dailyRate: 5000 },
-  ]
+  // Live equipment list and schedule blocks
+  useEffect(() => {
+    Promise.all([catalogApi.getEquipmentList({ pageSize: 100 } as any), bookingApi.getScheduleBlocks()])
+      .then(([eq, blocks]: [any, any[]]) => {
+        const items = (eq?.items ?? eq ?? []) as any[]
+        const opts = items.map((e) => ({ id: e.id, name: e.title, dailyRate: Number(e.dailyRate ?? 0) }))
+        setEquipmentOptions(opts)
+        setSchedules(blocks)
+        if (opts.length) setSelectedEquipment(opts[0].id)
+      })
+      .catch((e) => setLoadError(e?.message ?? "Failed to load schedule data"))
+  }, [])
 
-  const currentTool = equipmentOptions.find((e) => e.id === selectedEquipment) || equipmentOptions[0]
+  const currentTool =
+    equipmentOptions.find((e) => e.id === selectedEquipment) ||
+    equipmentOptions[0] || { id: "", name: loadError ? `Error: ${loadError}` : "No equipment available", dailyRate: 0 }
 
   // Filter schedules for the selected equipment
-  const equipmentSchedules = MOCK_SCHEDULES.filter((s) => s.equipmentId === selectedEquipment)
+  const equipmentSchedules = schedules.filter((s) => s.equipmentId === selectedEquipment)
 
   // Timeline days for the upcoming 10 days
   const timelineDays = Array.from({ length: 10 }, (_, i) => {

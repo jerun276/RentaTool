@@ -60,7 +60,7 @@ export const useEscrowStore = create<EscrowState>((set, get) => ({
       try {
         escrow = await escrowApi.getEscrowByBooking(claim.bookingId)
       } catch {
-        // May not have escrow record in mock mode
+        // Booking may not have an active escrow deposit record yet
       }
       set({ selectedClaim: claim, currentEscrow: escrow, isLoading: false })
     } catch (err: any) {

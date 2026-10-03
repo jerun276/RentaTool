@@ -10,6 +10,24 @@ import type {
   UpdateUserRolePayload,
 } from "../types/identityTypes"
 
+export interface AdminKycReviewDto {
+  kycRecordId: string
+  userId: string
+  name: string
+  email: string
+  phoneNumber: string
+  role: string
+  documentType: string
+  documentNumber: string
+  frontImageUrl: string
+  backImageUrl?: string | null
+  status: "Pending" | "Approved" | "Rejected"
+  submittedAtUtc: string
+  verifiedByAdminId?: string | null
+  verifiedAtUtc?: string | null
+  rejectionReason?: string | null
+}
+
 export const apiErrorMessage = (error: unknown) => {
   if (axios.isAxiosError(error)) {
     if (error.response?.status === 401) {
@@ -51,6 +69,8 @@ export const identityApi = {
   reviewKyc: (userId: string, status: "Approved" | "Rejected", rejectionReason?: string) =>
     axiosClient.patch(`/users/${userId}/verification-status`, { status, rejectionReason }),
   getTrustScore: (userId: string) => axiosClient.get<TrustScoreResponse>(`/users/${userId}/trust-score`),
+  getKycSubmissions: (params?: { status?: string; search?: string }) =>
+    axiosClient.get<AdminKycReviewDto[]>("/users/kyc-submissions", { params }),
   
   // User Management
   getUsers: (params?: { search?: string; role?: string; isActive?: boolean }) =>

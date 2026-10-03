@@ -24,80 +24,15 @@ export const UserManagementDirectoryView: React.FC = () => {
   const [newRole, setNewRole] = useState<"Admin" | "Owner" | "Renter">("Renter")
   const [submitting, setSubmitting] = useState(false)
 
-  // Seed default Sri Lanka users if backend queue is initially booting
-  const defaultUsers: ManagedUser[] = [
-    {
-      id: "usr-001",
-      name: "Local Admin",
-      email: "admin@rentatool.lk",
-      phoneNumber: "0770000001",
-      role: "Admin",
-      isVerified: true,
-      isActive: true,
-      trustScore: 98,
-      createdAtUtc: new Date(Date.now() - 90 * 86400000).toISOString(),
-    },
-    {
-      id: "usr-002",
-      name: "Verified Owner (Chaminda Perera)",
-      email: "owner@rentatool.lk",
-      phoneNumber: "0770000002",
-      role: "Owner",
-      isVerified: true,
-      isActive: true,
-      trustScore: 94,
-      createdAtUtc: new Date(Date.now() - 45 * 86400000).toISOString(),
-    },
-    {
-      id: "usr-003",
-      name: "Verified Renter (Duminda Bandara)",
-      email: "renter@rentatool.lk",
-      phoneNumber: "0770000003",
-      role: "Renter",
-      isVerified: true,
-      isActive: true,
-      trustScore: 88,
-      createdAtUtc: new Date(Date.now() - 30 * 86400000).toISOString(),
-    },
-    {
-      id: "usr-004",
-      name: "K.G. Nimal Jayasinghe",
-      email: "nimal.jay@gmail.com",
-      phoneNumber: "0771234567",
-      role: "Renter",
-      isVerified: false,
-      isActive: true,
-      trustScore: 50,
-      createdAtUtc: new Date(Date.now() - 14 * 86400000).toISOString(),
-    },
-    {
-      id: "usr-005",
-      name: "Tharindu Wijesinghe",
-      email: "tharindu.w@agriheavy.lk",
-      phoneNumber: "0779988776",
-      role: "Owner",
-      isVerified: false,
-      isActive: false,
-      suspensionReason: "Multiple unresolved damage disputes and KYC forgery flags",
-      trustScore: 35,
-      createdAtUtc: new Date(Date.now() - 60 * 86400000).toISOString(),
-    },
-  ]
-
   const fetchUsers = async () => {
     try {
       setLoading(true)
       setError(null)
       const res = await identityApi.getUsers()
-      if (res.data && res.data.length > 0) {
-        setUsers(res.data)
-      } else {
-        setUsers(defaultUsers)
-      }
+      setUsers(res.data ?? [])
     } catch (err) {
-      // Graceful fallback to default seed dataset if backend API unauthorized or disconnected
-      setError(`${apiErrorMessage(err)} — Displaying offline fallback demo directory.`)
-      setUsers(defaultUsers)
+      setError(apiErrorMessage(err))
+      setUsers([])
     } finally {
       setLoading(false)
     }
@@ -179,24 +114,8 @@ export const UserManagementDirectoryView: React.FC = () => {
       setSelectedUser(null)
       setActionReason("")
     } catch (err) {
-      // Update local state even if offline demo mode
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === selectedUser.id
-            ? {
-                ...u,
-                isActive: willBeActive,
-                suspensionReason: willBeActive ? null : actionReason || "Administrative suspension",
-              }
-            : u
-        )
-      )
-      setSuccessMessage(
-        `Account status updated for ${selectedUser.name} (${willBeActive ? "Active" : "Suspended"}).`
-      )
+      setError(apiErrorMessage(err))
       setStatusModalOpen(false)
-      setSelectedUser(null)
-      setActionReason("")
     } finally {
       setSubmitting(false)
     }
@@ -214,14 +133,9 @@ export const UserManagementDirectoryView: React.FC = () => {
       setSuccessMessage(`User ${selectedUser.name} role changed to ${newRole}.`)
       setRoleModalOpen(false)
       setSelectedUser(null)
-    } catch {
-      // Local state fallback
-      setUsers((prev) =>
-        prev.map((u) => (u.id === selectedUser.id ? { ...u, role: newRole } : u))
-      )
-      setSuccessMessage(`User ${selectedUser.name} role changed to ${newRole}.`)
+    } catch (err) {
+      setError(apiErrorMessage(err))
       setRoleModalOpen(false)
-      setSelectedUser(null)
     } finally {
       setSubmitting(false)
     }
@@ -240,7 +154,7 @@ export const UserManagementDirectoryView: React.FC = () => {
             onClick={() => setSuccessMessage(null)}
             className="text-[#4edea3] hover:text-white text-xs font-mono"
           >
-            ✕
+            âœ•
           </button>
         </div>
       )}
@@ -255,7 +169,7 @@ export const UserManagementDirectoryView: React.FC = () => {
             onClick={() => setError(null)}
             className="text-[#ffb4ab] hover:text-white text-xs font-mono"
           >
-            ✕
+            âœ•
           </button>
         </div>
       )}
@@ -411,7 +325,7 @@ export const UserManagementDirectoryView: React.FC = () => {
             </span>
           </div>
           <span className="text-[11px] font-mono text-[#86948a]">
-            Identity Module • Component 1
+            Identity Module â€¢ Component 1
           </span>
         </div>
 
@@ -492,7 +406,7 @@ export const UserManagementDirectoryView: React.FC = () => {
                               {u.email}
                             </span>
                             <span className="text-[10px] font-mono text-[#6b7280]">
-                              📞 {u.phoneNumber}
+                              ðŸ“ž {u.phoneNumber}
                             </span>
                           </div>
                         </div>
@@ -815,7 +729,7 @@ export const UserManagementDirectoryView: React.FC = () => {
                 }}
                 className="text-[#86948a] hover:text-[#dfe2ee] text-base"
               >
-                ✕
+                âœ•
               </button>
             </div>
 

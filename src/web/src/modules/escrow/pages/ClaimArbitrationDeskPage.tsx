@@ -38,45 +38,7 @@ export const ClaimArbitrationDeskPage: React.FC = () => {
     fetchClaims()
   }, [fetchClaims])
 
-  // Fallback demo claims if database is freshly seeded without active disputes
-  const isUsingFallback = claims.length === 0
-  const sourceClaims = isUsingFallback
-    ? [
-        {
-          claimId: "c18a94e2-89f1-4b72-9861-125039e1a8b1",
-          bookingId: "b7720d2a-43cf-42bb-a94f-561b3420cc21",
-          filedByUserId: "u1111111-2222-3333-4444-555555555555",
-          damageDescription: "Safety guard assembly fractured and motor cover dented during operation.",
-          evidencePhotos: [
-            "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=800&q=80"
-          ],
-          proposedDeduction: 8500,
-          finalDeduction: null,
-          status: "PendingStaffApproval" as const,
-          adjudicationNotes: null,
-          adjudicatedByUserId: null,
-          adjudicatedAtUtc: null,
-          createdAtUtc: new Date(Date.now() - 3600000 * 4).toISOString(),
-          baselinePhotoUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80"
-        },
-        {
-          claimId: "c29b12f4-71e3-4d89-b782-990142a7c4e2",
-          bookingId: "b8831e3b-54de-43cc-b05e-672c4531dd32",
-          filedByUserId: "u2222222-3333-4444-5555-666666666666",
-          damageDescription: "Concrete residue hardened inside drum; required acid wash and pressure jetting.",
-          evidencePhotos: [
-            "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80"
-          ],
-          proposedDeduction: 4500,
-          finalDeduction: 4500,
-          status: "Approved" as const,
-          adjudicationNotes: "Cleaning fee verified against equipment return guidelines.",
-          adjudicatedByUserId: "staff-ops-01",
-          adjudicatedAtUtc: new Date(Date.now() - 3600000 * 24).toISOString(),
-          createdAtUtc: new Date(Date.now() - 3600000 * 48).toISOString()
-        }
-      ]
-    : claims
+  const sourceClaims = claims
 
   const displayClaims = sourceClaims.filter((claim) => {
     if (statusFilter === "all") return true
@@ -124,7 +86,7 @@ export const ClaimArbitrationDeskPage: React.FC = () => {
               <h1 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
                 Escrow Arbitration Desk
                 <Badge variant="outline" className="text-xs border-amber-500/40 text-amber-400">
-                  Desk 04 · Escrow & Disputes
+                  Desk 04 Â· Escrow & Disputes
                 </Badge>
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">

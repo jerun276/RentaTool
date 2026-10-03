@@ -5,10 +5,10 @@ import { UserManagementDirectoryView } from "./UserManagementDirectoryView"
 
 export const KycTrustComplianceView: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<"users" | "kyc">("users")
-  const [selectedCandidateId, setSelectedCandidateId] = useState<string>("duminda")
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string>("")
   const [filterTab, setFilterTab] = useState<"pending" | "all" | "verified" | "flagged">("pending")
   const [searchQuery, setSearchQuery] = useState("")
-  const [approvalStatus, setApprovalStatus] = useState<Record<string, "approved" | "rejected" | "pending">>({})
+  const [approvalStatus] = useState<Record<string, "approved" | "rejected" | "pending">>({})
   const [dbLive, setDbLive] = useState<boolean>(false)
   const [dbCandidates, setDbCandidates] = useState<any[]>([])
   const [loading, setLoading] = useState<boolean>(true)
@@ -16,111 +16,51 @@ export const KycTrustComplianceView: React.FC = () => {
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [rejectModalOpen, setRejectModalOpen] = useState<boolean>(false)
   const [rejectionReasonText, setRejectionReasonText] = useState<string>("Document illegible or failed biometric threshold")
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  const defaultCandidates = [
-    {
-      id: "duminda",
-      userId: "duminda",
-      name: "Duminda Bandara",
-      company: "Apex Heavy Civils Ltd.",
-      province: "LK-WP",
-      role: "RENTER",
-      nic: "198842109923",
-      trustScore: 88,
-      trustTier: "Trust A",
-      status: "IN DRAWER",
-      statusColor: "text-[#ffb95f] bg-[#e29100]/20",
-      faceMatch: "97.8%",
-      ocrConfidence: "99.4%",
-      docFront: "https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-    },
-    {
-      id: "chaminda",
-      userId: "chaminda",
-      name: "Chaminda Perera",
-      company: "Perera Plant Hire & Logistics",
-      province: "LK-CP",
-      role: "OWNER",
-      nic: "197412809122",
-      trustScore: 94,
-      trustTier: "Trust A+",
-      status: "VERIFIED",
-      statusColor: "text-[#4edea3] bg-[#10b981]/20",
-      faceMatch: "99.1%",
-      ocrConfidence: "99.8%",
-      docFront: "https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80",
-      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
-    },
-    {
-      id: "nimal",
-      userId: "nimal",
-      name: "K.G. Nimal Jayasinghe",
-      company: "Nimal Earthmovers & Demolition",
-      province: "LK-SP",
-      role: "RENTER",
-      nic: "199104508119",
-      trustScore: 62,
-      trustTier: "Trust B",
-      status: "DOC BLURRY",
-      statusColor: "text-[#ffb95f] bg-[#e29100]/20",
-      faceMatch: "81.2%",
-      ocrConfidence: "78.0%",
-      docFront: "https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80",
-    },
-    {
-      id: "tharindu",
-      userId: "tharindu",
-      name: "Tharindu Wijesinghe",
-      company: "Southern Agri Heavy Rentals",
-      province: "LK-NW",
-      role: "OWNER",
-      nic: "198522301984",
-      trustScore: 35,
-      trustTier: "Trust C",
-      status: "HIGH FRAUD RISK",
-      statusColor: "text-[#ffb4ab] bg-[#93000a]/30",
-      faceMatch: "42.0%",
-      ocrConfidence: "51.3%",
-      docFront: "https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80",
-      avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
-    },
-  ]
+  const tierFor = (score?: number) =>
+    score == null ? "No score" : score >= 90 ? "Trust A+" : score >= 75 ? "Trust A" : score >= 50 ? "Trust B" : "Trust C"
 
   // Fetch real submissions from ASP.NET Core Backend
   const fetchKycQueue = async () => {
     try {
       setLoading(true)
+      setLoadError(null)
       const res = await axiosClient.get("/users/kyc-submissions")
-      if (res.data && Array.isArray(res.data)) {
-        setDbLive(true)
-        if (res.data.length > 0) {
-          const mapped = res.data.map((sub: any) => ({
-            id: sub.kycRecordId || sub.userId,
-            userId: sub.userId,
-            name: sub.name,
-            company: sub.role === "Owner" ? "Equipment Partner" : "Civil Contractor",
-            province: "LK-WP",
-            role: (sub.role || "RENTER").toUpperCase(),
-            nic: sub.documentNumber || "198842109923",
-            trustScore: sub.status === "Approved" ? 95 : 85,
-            trustTier: sub.status === "Approved" ? "Trust A+" : "Trust A",
-            status: sub.status === "Approved" ? "VERIFIED" : sub.status === "Pending" ? "IN DRAWER" : "FLAGGED",
-            statusColor: sub.status === "Approved" ? "text-[#4edea3] bg-[#10b981]/20" : "text-[#ffb95f] bg-[#e29100]/20",
-            faceMatch: "98.2%",
-            ocrConfidence: "99.1%",
-            docFront: sub.frontImageUrl || "https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80",
-            avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-          }))
-          setDbCandidates(mapped)
-          if (mapped.length > 0) {
-            setSelectedCandidateId(mapped[0].id)
-          }
+      const subs: any[] = Array.isArray(res.data) ? res.data : []
+      setDbLive(true)
+      const scores = await Promise.allSettled(subs.map((s) => identityApi.getTrustScore(s.userId)))
+      const mapped = subs.map((sub: any, i) => {
+        const sr = scores[i]
+        const score = sr.status === "fulfilled" ? (sr.value.data.trustScore ?? sr.value.data.score) : undefined
+        return {
+          id: sub.kycRecordId || sub.userId,
+          userId: sub.userId,
+          name: sub.name,
+          company: sub.email,
+          phone: sub.phoneNumber,
+          province: sub.documentType,
+          role: (sub.role || "RENTER").toUpperCase(),
+          nic: sub.documentNumber,
+          trustScore: score ?? "â€”",
+          trustTier: tierFor(score),
+          status: sub.status === "Approved" ? "VERIFIED" : sub.status === "Pending" ? "IN DRAWER" : "FLAGGED",
+          statusColor:
+            sub.status === "Approved" ? "text-[#4edea3] bg-[#10b981]/20" : sub.status === "Pending" ? "text-[#ffb95f] bg-[#e29100]/20" : "text-[#ffb4ab] bg-[#93000a]/30",
+          submittedAt: sub.submittedAtUtc ? new Date(sub.submittedAtUtc).toLocaleString() : "â€”",
+          rejectionReason: sub.rejectionReason,
+          docFront: sub.frontImageUrl,
+          docBack: sub.backImageUrl,
+          avatar: `https://ui-avatars.com/api/?background=10b981&color=fff&name=${encodeURIComponent(sub.name || "U")}`,
         }
+      })
+      setDbCandidates(mapped)
+      if (mapped.length > 0 && !mapped.some((m) => m.id === selectedCandidateId)) {
+        setSelectedCandidateId(mapped[0].id)
       }
-    } catch {
-      // Fallback gracefully to default candidates
+    } catch (err) {
+      setDbLive(false)
+      setLoadError(apiErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -137,7 +77,7 @@ export const KycTrustComplianceView: React.FC = () => {
     return () => clearTimeout(timer)
   }, [feedback])
 
-  const candidates = dbCandidates.length > 0 ? dbCandidates : defaultCandidates
+  const candidates = dbCandidates
 
   // Filtering by search & tab
   const filteredCandidates = useMemo(() => {
@@ -180,20 +120,12 @@ export const KycTrustComplianceView: React.FC = () => {
     if (!activeCandidate) return
     setIsProcessing(true)
     try {
-      if (activeCandidate.userId && activeCandidate.userId.length > 20) {
-        await identityApi.reviewKyc(activeCandidate.userId, "Approved")
-        setFeedback({
-          type: "success",
-          message: `KYC credential for ${activeCandidate.name} successfully approved & verified in PostgreSQL!`,
-        })
-        await fetchKycQueue()
-      } else {
-        setApprovalStatus((prev) => ({ ...prev, [activeCandidate.id]: "approved" }))
-        setFeedback({
-          type: "success",
-          message: `Local simulated KYC approval applied for ${activeCandidate.name}.`,
-        })
-      }
+      await identityApi.reviewKyc(activeCandidate.userId, "Approved")
+      setFeedback({
+        type: "success",
+        message: `KYC credential for ${activeCandidate.name} approved.`,
+      })
+      await fetchKycQueue()
     } catch (err: any) {
       setFeedback({
         type: "error",
@@ -208,22 +140,13 @@ export const KycTrustComplianceView: React.FC = () => {
     if (!activeCandidate) return
     setIsProcessing(true)
     try {
-      if (activeCandidate.userId && activeCandidate.userId.length > 20) {
-        await identityApi.reviewKyc(activeCandidate.userId, "Rejected", rejectionReasonText)
-        setFeedback({
-          type: "success",
-          message: `KYC submission for ${activeCandidate.name} was rejected. Reason logged in PostgreSQL.`,
-        })
-        setRejectModalOpen(false)
-        await fetchKycQueue()
-      } else {
-        setApprovalStatus((prev) => ({ ...prev, [activeCandidate.id]: "rejected" }))
-        setRejectModalOpen(false)
-        setFeedback({
-          type: "success",
-          message: `Local simulated KYC rejection applied for ${activeCandidate.name}.`,
-        })
-      }
+      await identityApi.reviewKyc(activeCandidate.userId, "Rejected", rejectionReasonText)
+      setFeedback({
+        type: "success",
+        message: `KYC submission for ${activeCandidate.name} was rejected.`,
+      })
+      setRejectModalOpen(false)
+      await fetchKycQueue()
     } catch (err: any) {
       setFeedback({
         type: "error",
@@ -254,7 +177,7 @@ export const KycTrustComplianceView: React.FC = () => {
               </h1>
               {dbLive && (
                 <span className="px-2 py-0.5 rounded bg-[#10b981]/20 text-[#4edea3] font-mono text-[10px] font-bold border border-[#10b981]/30">
-                  ● PostgreSQL Active
+                  â— PostgreSQL Active
                 </span>
               )}
               {loading && (
@@ -267,7 +190,7 @@ export const KycTrustComplianceView: React.FC = () => {
               </span>
               <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#e29100]/20 text-[#ffb95f] font-mono text-[10px] font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#ffb95f] animate-pulse" />
-                4 In Queue
+                {tabCounts.pending} In Queue
               </span>
             </div>
             <p className="text-[13px] text-[#bbcabf] max-w-2xl">
@@ -280,20 +203,20 @@ export const KycTrustComplianceView: React.FC = () => {
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex flex-col px-4 py-2 bg-[#1c2028] rounded border border-[#1f2937] min-w-[120px]">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono text-[#86948a] uppercase">AI OCR Conf.</span>
-              <span className="material-symbols-outlined text-[14px] text-[#4edea3]">auto_awesome</span>
+              <span className="text-[10px] font-mono text-[#86948a] uppercase">Pending</span>
+              <span className="material-symbols-outlined text-[14px] text-[#ffb95f]">hourglass_top</span>
             </div>
-            <span className="text-xl font-bold font-mono text-[#4edea3]">99.2%</span>
-            <span className="text-[10px] text-[#bbcabf] font-mono">LankaGov OCR v3.4</span>
+            <span className="text-xl font-bold font-mono text-[#ffb95f]">{tabCounts.pending}</span>
+            <span className="text-[10px] text-[#bbcabf] font-mono">Awaiting review</span>
           </div>
 
           <div className="flex flex-col px-4 py-2 bg-[#1c2028] rounded border border-[#1f2937] min-w-[120px]">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono text-[#86948a] uppercase">Fraud Blocked</span>
+              <span className="text-[10px] font-mono text-[#86948a] uppercase">Rejected</span>
               <span className="material-symbols-outlined text-[14px] text-[#ffb4ab]">shield</span>
             </div>
-            <span className="text-xl font-bold font-mono text-[#ffb4ab]">14</span>
-            <span className="text-[10px] text-[#bbcabf] font-mono">LKR 4.2M saved</span>
+            <span className="text-xl font-bold font-mono text-[#ffb4ab]">{tabCounts.flagged}</span>
+            <span className="text-[10px] text-[#bbcabf] font-mono">Submissions declined</span>
           </div>
 
           <div className="flex flex-col px-4 py-2 bg-[#1c2028] rounded border border-[#1f2937] min-w-[120px]">
@@ -301,11 +224,22 @@ export const KycTrustComplianceView: React.FC = () => {
               <span className="text-[10px] font-mono text-[#86948a] uppercase">Pass Ratio</span>
               <span className="material-symbols-outlined text-[14px] text-[#d0bcff]">analytics</span>
             </div>
-            <span className="text-xl font-bold font-mono text-white">92.9%</span>
-            <span className="text-[10px] text-[#bbcabf] font-mono">11m avg velocity</span>
+            <span className="text-xl font-bold font-mono text-white">
+              {tabCounts.verified + tabCounts.flagged > 0
+                ? `${((tabCounts.verified / (tabCounts.verified + tabCounts.flagged)) * 100).toFixed(1)}%`
+                : "â€”"}
+            </span>
+            <span className="text-[10px] text-[#bbcabf] font-mono">{tabCounts.verified} verified</span>
           </div>
         </div>
       </div>
+
+      {loadError && (
+        <div className="p-4 rounded-xl border bg-[#93000a]/20 border-[#ffb4ab]/30 text-[#ffb4ab] flex items-center justify-between text-xs font-mono">
+          <span>Could not load KYC submissions: {loadError}</span>
+          <button onClick={fetchKycQueue} className="px-3 py-1 rounded border border-[#ffb4ab]/40 hover:bg-[#93000a]/30">Retry</button>
+        </div>
+      )}
 
       {feedback && (
         <div
@@ -325,7 +259,7 @@ export const KycTrustComplianceView: React.FC = () => {
             onClick={() => setFeedback(null)}
             className="text-[#86948a] hover:text-white"
           >
-            ✕
+            âœ•
           </button>
         </div>
       )}
@@ -418,6 +352,9 @@ export const KycTrustComplianceView: React.FC = () => {
           </div>
 
           <div className="divide-y divide-[#1f2937]">
+            {!loading && filteredCandidates.length === 0 && (
+              <p className="p-8 text-center text-[12px] text-[#86948a]">No KYC submissions in this view.</p>
+            )}
             {filteredCandidates.map((candidate) => {
               const isSelected = candidate.id === selectedCandidateId
               const status = approvalStatus[candidate.id]
@@ -488,6 +425,11 @@ export const KycTrustComplianceView: React.FC = () => {
         </div>
 
         {/* RIGHT PANEL: Document Inspection & Verification Drawer */}
+        {!activeCandidate ? (
+          <div className="xl:col-span-7 bg-[#181c24] rounded-xl border border-[#1f2937] p-10 text-center text-[13px] text-[#86948a]">
+            {loading ? "Loading submissionsâ€¦" : "Select a KYC submission to inspect."}
+          </div>
+        ) : (
         <div className="xl:col-span-7 bg-[#181c24] rounded-xl border border-[#1f2937] shadow-lg p-6 space-y-6">
           <div className="flex items-center justify-between border-b border-[#1f2937] pb-4">
             <div className="flex items-center gap-3">
@@ -497,7 +439,7 @@ export const KycTrustComplianceView: React.FC = () => {
               <div>
                 <h3 className="text-[16px] font-bold text-white">{activeCandidate.name}</h3>
                 <span className="text-[12px] text-[#bbcabf] font-mono">
-                  {activeCandidate.company} • NIC: {activeCandidate.nic}
+                  {activeCandidate.company} â€¢ NIC: {activeCandidate.nic}
                 </span>
               </div>
             </div>
@@ -521,33 +463,33 @@ export const KycTrustComplianceView: React.FC = () => {
           {/* Biometrics & OCR Confidence Row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3 bg-[#1c2028] rounded-lg border border-[#1f2937]">
-              <span className="text-[10px] font-mono text-[#86948a] uppercase">Face Match</span>
+              <span className="text-[10px] font-mono text-[#86948a] uppercase">Document</span>
               <div className="text-[18px] font-bold font-mono text-[#4edea3] mt-0.5">
-                {activeCandidate.faceMatch}
+                {activeCandidate.province}
               </div>
-              <span className="text-[10px] text-[#bbcabf]">Biometric Selfie Match</span>
+              <span className="text-[10px] text-[#bbcabf]">Submitted type</span>
             </div>
 
             <div className="p-3 bg-[#1c2028] rounded-lg border border-[#1f2937]">
-              <span className="text-[10px] font-mono text-[#86948a] uppercase">OCR Field Conf.</span>
+              <span className="text-[10px] font-mono text-[#86948a] uppercase">Role</span>
               <div className="text-[18px] font-bold font-mono text-[#4edea3] mt-0.5">
-                {activeCandidate.ocrConfidence}
+                {activeCandidate.role}
               </div>
-              <span className="text-[10px] text-[#bbcabf]">NIC Checksum Valid</span>
+              <span className="text-[10px] text-[#bbcabf]">Account type</span>
             </div>
 
             <div className="p-3 bg-[#1c2028] rounded-lg border border-[#1f2937]">
-              <span className="text-[10px] font-mono text-[#86948a] uppercase">Algorithm Score</span>
+              <span className="text-[10px] font-mono text-[#86948a] uppercase">Trust Score</span>
               <div className="text-[18px] font-bold font-mono text-[#d0bcff] mt-0.5">
                 {activeCandidate.trustScore} / 100
               </div>
-              <span className="text-[10px] text-[#bbcabf]">Tier A (High Trust)</span>
+              <span className="text-[10px] text-[#bbcabf]">{activeCandidate.trustTier}</span>
             </div>
 
             <div className="p-3 bg-[#1c2028] rounded-lg border border-[#1f2937]">
-              <span className="text-[10px] font-mono text-[#86948a] uppercase">Ledger Delta</span>
-              <div className="text-[18px] font-bold font-mono text-[#4edea3] mt-0.5">+25 pts</div>
-              <span className="text-[10px] text-[#bbcabf]">Upon Admin Sign-off</span>
+              <span className="text-[10px] font-mono text-[#86948a] uppercase">Submitted</span>
+              <div className="text-[12px] font-bold font-mono text-[#4edea3] mt-1">{activeCandidate.submittedAt}</div>
+              <span className="text-[10px] text-[#bbcabf]">Upload time</span>
             </div>
           </div>
 
@@ -558,18 +500,24 @@ export const KycTrustComplianceView: React.FC = () => {
                 <span className="material-symbols-outlined text-[16px] text-[#4edea3]">document_scanner</span>
                 Sri Lanka National Identity Card (Smart NIC)
               </span>
-              <span className="text-[#4edea3]">Tamper Check: PASS</span>
+              {activeCandidate.docFront && (
+                <a href={activeCandidate.docFront} target="_blank" rel="noreferrer" className="text-[#4edea3] hover:underline">Open original</a>
+              )}
             </div>
 
             <div className="p-4 bg-[#0a0e16] rounded-xl border border-[#1f2937] flex flex-col sm:flex-row items-center gap-4">
               <div className="w-48 h-32 bg-[#1c2028] rounded-lg overflow-hidden border border-[#10b981]/40 shrink-0 relative flex items-center justify-center p-2">
+                {activeCandidate.docFront ? (
+                  <img src={activeCandidate.docFront} alt={`NIC document of ${activeCandidate.name}`} className="w-full h-full object-contain" />
+                ) : (
                 <div className="text-center">
                   <span className="material-symbols-outlined text-[36px] text-[#4edea3]">badge</span>
                   <div className="text-[10px] font-mono text-white font-bold mt-1">
                     NIC: {activeCandidate.nic}
                   </div>
-                  <div className="text-[9px] text-[#86948a]">Republic of Sri Lanka</div>
+                  <div className="text-[9px] text-[#86948a]">No image uploaded</div>
                 </div>
+                )}
               </div>
 
               <div className="flex-1 text-[12px] font-mono space-y-1.5 text-[#bbcabf]">
@@ -582,12 +530,12 @@ export const KycTrustComplianceView: React.FC = () => {
                   <strong className="text-[#4edea3]">{activeCandidate.nic}</strong>
                 </div>
                 <div className="flex justify-between border-b border-[#1f2937] pb-1">
-                  <span>Registered Address:</span>
-                  <strong className="text-white">Colombo 03, Western Province</strong>
+                  <span>Phone:</span>
+                  <strong className="text-white">{activeCandidate.phone || "â€”"}</strong>
                 </div>
                 <div className="flex justify-between">
-                  <span>Verification Hash:</span>
-                  <span className="text-[#86948a] truncate">0x7c9a...11b238f</span>
+                  <span>Email:</span>
+                  <span className="text-[#86948a] truncate">{activeCandidate.company}</span>
                 </div>
               </div>
             </div>
@@ -622,11 +570,12 @@ export const KycTrustComplianceView: React.FC = () => {
                 className="h-9 px-5 rounded bg-[#10b981] hover:bg-[#4edea3] text-[#003824] font-mono text-[12px] font-bold flex items-center gap-1.5 transition-all shadow-md disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[16px]">verified</span>
-                <span>{isProcessing ? "Persisting in PostgreSQL..." : "Approve & Issue Trust Credential"}</span>
+                <span>{isProcessing ? "Saving..." : "Approve & Issue Trust Credential"}</span>
               </button>
             </div>
           </div>
         </div>
+        )}
       </div>
         </>
       )}
@@ -644,7 +593,7 @@ export const KycTrustComplianceView: React.FC = () => {
                 onClick={() => setRejectModalOpen(false)}
                 className="text-[#86948a] hover:text-white transition-colors"
               >
-                ✕
+                âœ•
               </button>
             </div>
 

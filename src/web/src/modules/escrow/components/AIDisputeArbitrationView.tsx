@@ -5,85 +5,16 @@ import { useAuthStore } from "@/shared/store/useAuthStore"
 
 export const AIDisputeArbitrationView: React.FC = () => {
   const { user } = useAuthStore()
-  const [selectedClaimId, setSelectedClaimId] = useState<string>("claim-89f1")
+  const [selectedClaimId, setSelectedClaimId] = useState<string>("")
   const [filterQueue, setFilterQueue] = useState<"all" | "human" | "settled">("all")
   const [adjudicationStatus, setAdjudicationStatus] = useState<Record<string, "approved" | "revised" | "rejected">>({})
-  const [revisedAmount, setRevisedAmount] = useState<number>(8500)
+  const [revisedAmount, setRevisedAmount] = useState<number>(0)
   const [isRevising, setIsRevising] = useState(false)
   const [dbLive, setDbLive] = useState<boolean>(false)
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [feedbackNotice, setFeedbackNotice] = useState<{ type: "success" | "error"; text: string } | null>(null)
-
-  const defaultClaims = [
-    {
-      id: "claim-89f1",
-      code: "CLAIM-89F1",
-      machine: "Makita HM1812 Demolition Breaker",
-      assetId: "#BR-409",
-      bookingId: "BKG-9921-WP",
-      owner: "Sunil Silva",
-      renter: "Bandara Const.",
-      ownerClaim: 18500,
-      aiProposed: 8500,
-      escrowHeld: 25000,
-      status: "Adjudicate",
-      statusColor: "bg-[#e29100]/20 text-[#ffb95f]",
-      returnDate: "Oct 24, 2024",
-      damageType: "Structural Failure (Lateral Pry)",
-      isWearAndTear: false,
-      aiConfidence: "96.4%",
-      evidencePickup: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&auto=format&fit=crop&q=80",
-      evidenceReturn: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop&q=80",
-      reasoning:
-        "Computer vision edge-detection and strain telemetry confirm lateral chisel collar fracture exceeding fatigue threshold. Equipment Wear & Telemetry Analysis confirms damage is operator misuse rather than normal 60-day wear.",
-    },
-    {
-      id: "claim-88a4",
-      code: "CLAIM-88A4",
-      machine: "CAT 301.7D Mini Excavator",
-      assetId: "#EX-102",
-      bookingId: "BKG-7718-WP",
-      owner: "Jayalath Earthworks",
-      renter: "D. Perera Builders",
-      ownerClaim: 45000,
-      aiProposed: 0,
-      escrowHeld: 150000,
-      status: "Wear Cap Rule",
-      statusColor: "bg-[#571bc1]/30 text-[#d0bcff]",
-      returnDate: "Oct 23, 2024",
-      damageType: "Normal Wear & Tear (62 Days)",
-      isWearAndTear: true,
-      aiConfidence: "98.2%",
-      evidencePickup: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&auto=format&fit=crop&q=80",
-      evidenceReturn: "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=400&auto=format&fit=crop&q=80",
-      reasoning:
-        "Excavator tracks and hydraulic pin wear accumulated over 62 cumulative operational days. Statutory safety act rules stipulate owner wear liability; zero deduction assessed against renter deposit.",
-    },
-    {
-      id: "claim-87e2",
-      code: "CLAIM-87E2",
-      machine: "Generac 10kVA Silent Generator",
-      assetId: "#GN-550",
-      bookingId: "BKG-3301-CP",
-      owner: "Ceylinco Plant Hire",
-      renter: "Kandy Civil Projects",
-      ownerClaim: 12000,
-      aiProposed: 5000,
-      escrowHeld: 40000,
-      status: "Settled",
-      statusColor: "bg-[#10b981]/20 text-[#4edea3]",
-      returnDate: "Oct 21, 2024",
-      damageType: "Contaminated Diesel Fuel System",
-      isWearAndTear: false,
-      aiConfidence: "94.8%",
-      evidencePickup: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop&q=80",
-      evidenceReturn: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&auto=format&fit=crop&q=80",
-      reasoning:
-        "Fuel filter clogging from high-sulfur contaminated fuel input. Filter replacement and tank flushing cost LKR 5,000 deducted from deposit.",
-    },
-  ]
-
-  const [claimsList, setClaimsList] = useState(defaultClaims)
+  const [claimsList, setClaimsList] = useState<any[]>([])
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   // Fetch claims from backend
   const fetchClaims = useCallback(async () => {
@@ -128,8 +59,8 @@ export const AIDisputeArbitrationView: React.FC = () => {
           if (mapped.length > 0) setSelectedClaimId((prev) => mapped.some((m: any) => m.id === prev) ? prev : mapped[0].id)
         }
       }
-    } catch (err) {
-      console.warn("Could not fetch claims in Desk 04:", err)
+      } catch (err: any) {
+      setLoadError(err?.message || "Failed to load claims")
     }
   }, [])
 
@@ -138,8 +69,8 @@ export const AIDisputeArbitrationView: React.FC = () => {
   }, [fetchClaims])
 
   const claims = claimsList
-  const activeClaim = claims.find((c) => c.id === selectedClaimId) || claims[0]
-  const currentDecision = adjudicationStatus[activeClaim.id]
+  const activeClaim = claims.find((c) => c.id === selectedClaimId) || claims[0] || null
+  const currentDecision = activeClaim ? adjudicationStatus[activeClaim.id] : undefined
 
   const handleApprove = async () => {
     setSubmitting(true)
@@ -269,21 +200,30 @@ export const AIDisputeArbitrationView: React.FC = () => {
           <div className="px-3.5 py-1.5 rounded bg-[#1c2028] flex items-center gap-2 border border-[#1f2937]">
             <span className="material-symbols-outlined text-[16px] text-[#4edea3]">verified</span>
             <span className="font-mono text-[11px] text-[#bbcabf]">Escrow Hold Pool:</span>
-            <span className="font-mono text-[13px] text-[#4edea3] font-bold">LKR 4,920,000</span>
+            <span className="font-mono text-[13px] text-[#4edea3] font-bold">
+              LKR {claims.reduce((sum, c) => sum + (c.escrowHeld || 0), 0).toLocaleString()}
+            </span>
           </div>
 
           <div className="px-3.5 py-1.5 rounded bg-[#1c2028] flex items-center gap-2 border border-[#1f2937]">
             <span className="material-symbols-outlined text-[16px] text-[#d0bcff]">psychology</span>
             <span className="font-mono text-[11px] text-[#bbcabf]">Gemini Inference:</span>
-            <span className="font-mono text-[11px] text-[#d0bcff] font-bold">CONFIDENCE &gt; 94%</span>
+            <span className="font-mono text-[11px] text-[#d0bcff] font-bold">READY</span>
           </div>
 
           <div className="px-3 py-1.5 rounded bg-[#0a0e16] text-[#bbcabf] font-mono text-[11px] flex items-center gap-1.5 border border-[#1f2937]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-ping" />
-            <span>SL-CB-VAULT LIVE</span>
+            <span>ESCROW ARBITRATION</span>
           </div>
         </div>
       </div>
+
+      {loadError && (
+        <div className="p-4 rounded-xl border bg-[#93000a]/20 border-[#ffb4ab]/30 text-[#ffb4ab] flex items-center justify-between text-xs font-mono">
+          <span>Failed to load claims: {loadError}</span>
+          <button onClick={() => fetchClaims()} className="px-3 py-1 rounded border border-[#ffb4ab]/40 hover:bg-[#93000a]/30">Retry</button>
+        </div>
+      )}
 
       {/* 2. MAIN SPLIT LAYOUT: Dispute Queue (4 cols) + Executive Dossier Pane (8 cols) */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
@@ -320,7 +260,7 @@ export const AIDisputeArbitrationView: React.FC = () => {
                     : "bg-[#1c2028] text-[#bbcabf] hover:text-white"
                 }`}
               >
-                Requires Staff (1)
+                Requires Staff ({claims.filter(c => c.status !== "Settled").length})
               </button>
               <button
                 onClick={() => setFilterQueue("settled")}
@@ -330,7 +270,7 @@ export const AIDisputeArbitrationView: React.FC = () => {
                     : "bg-[#1c2028] text-[#bbcabf] hover:text-white"
                 }`}
               >
-                Settled (24)
+                Settled ({claims.filter(c => c.status === "Settled").length})
               </button>
             </div>
           </div>
@@ -406,6 +346,12 @@ export const AIDisputeArbitrationView: React.FC = () => {
         </div>
 
         {/* RIGHT PANEL: Executive AI Arbitration Dossier */}
+        {!activeClaim ? (
+          <div className="xl:col-span-8 bg-[#181c24] rounded-xl border border-[#1f2937] p-12 text-center text-[#bbcabf] font-mono">
+            <span className="material-symbols-outlined text-[36px] text-[#86948a] mb-2">inbox</span>
+            <p className="text-sm">No active damage claims in dispute.</p>
+          </div>
+        ) : (
         <div className="xl:col-span-8 bg-[#181c24] rounded-xl border border-[#1f2937] shadow-lg p-6 space-y-6">
           {/* Dossier Header */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1f2937] pb-4">
@@ -653,6 +599,7 @@ export const AIDisputeArbitrationView: React.FC = () => {
               </div>
             </div>
         </div>
+        )}
       </div>
     </div>
   )
