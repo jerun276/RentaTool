@@ -17,6 +17,7 @@ export const KycTrustComplianceView: React.FC = () => {
   const [rejectModalOpen, setRejectModalOpen] = useState<boolean>(false)
   const [rejectionReasonText, setRejectionReasonText] = useState<string>("Document illegible or failed biometric threshold")
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null)
 
   const tierFor = (score?: number) =>
     score == null ? "No score" : score >= 90 ? "Trust A+" : score >= 75 ? "Trust A" : score >= 50 ? "Trust B" : "Trust C"
@@ -493,49 +494,145 @@ export const KycTrustComplianceView: React.FC = () => {
             </div>
           </div>
 
-          {/* Sri Lanka National Identity Card Preview */}
-          <div className="space-y-2">
+          {/* Sri Lanka National Identity Card Preview - Front & Back */}
+          <div className="space-y-3">
             <div className="flex items-center justify-between text-[12px] font-mono text-[#bbcabf]">
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-1.5 font-semibold text-white">
                 <span className="material-symbols-outlined text-[16px] text-[#4edea3]">document_scanner</span>
-                Sri Lanka National Identity Card (Smart NIC)
+                National Identity Card Document Verification (Front & Back)
               </span>
-              {activeCandidate.docFront && (
-                <a href={activeCandidate.docFront} target="_blank" rel="noreferrer" className="text-[#4edea3] hover:underline">Open original</a>
-              )}
+              <span className="text-[11px] text-[#86948a]">
+                Click any image to enlarge inspection
+              </span>
             </div>
 
-            <div className="p-4 bg-[#0a0e16] rounded-xl border border-[#1f2937] flex flex-col sm:flex-row items-center gap-4">
-              <div className="w-48 h-32 bg-[#1c2028] rounded-lg overflow-hidden border border-[#10b981]/40 shrink-0 relative flex items-center justify-center p-2">
-                {activeCandidate.docFront ? (
-                  <img src={activeCandidate.docFront} alt={`NIC document of ${activeCandidate.name}`} className="w-full h-full object-contain" />
-                ) : (
-                <div className="text-center">
-                  <span className="material-symbols-outlined text-[36px] text-[#4edea3]">badge</span>
-                  <div className="text-[10px] font-mono text-white font-bold mt-1">
-                    NIC: {activeCandidate.nic}
-                  </div>
-                  <div className="text-[9px] text-[#86948a]">No image uploaded</div>
+            {/* Applicant Summary */}
+            <div className="p-3.5 bg-[#0a0e16] rounded-xl border border-[#1f2937] grid grid-cols-2 sm:grid-cols-4 gap-3 text-[12px] font-mono text-[#bbcabf]">
+              <div>
+                <span className="text-[10px] text-[#86948a] uppercase block">Full Name</span>
+                <strong className="text-white truncate block">{activeCandidate.name}</strong>
+              </div>
+              <div>
+                <span className="text-[10px] text-[#86948a] uppercase block">NIC Number</span>
+                <strong className="text-[#4edea3] block">{activeCandidate.nic}</strong>
+              </div>
+              <div>
+                <span className="text-[10px] text-[#86948a] uppercase block">Phone</span>
+                <strong className="text-white block">{activeCandidate.phone || "—"}</strong>
+              </div>
+              <div>
+                <span className="text-[10px] text-[#86948a] uppercase block">Email</span>
+                <span className="text-[#86948a] truncate block">{activeCandidate.company}</span>
+              </div>
+            </div>
+
+            {/* Dual Images (Front & Back) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Front Side Card */}
+              <div className="p-3.5 bg-[#0a0e16] rounded-xl border border-[#1f2937] flex flex-col space-y-2">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="flex items-center gap-1.5 font-bold text-[#dfe2ee]">
+                    <span className="w-2 h-2 rounded-full bg-[#10b981]" />
+                    Front Side (Photo & Info)
+                  </span>
+                  {activeCandidate.docFront ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewImage({ url: activeCandidate.docFront, title: `NIC Front Side — ${activeCandidate.name} (${activeCandidate.nic})` })}
+                        className="text-[11px] text-[#4edea3] hover:underline flex items-center gap-0.5"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">zoom_in</span>
+                        Enlarge
+                      </button>
+                      <a
+                        href={activeCandidate.docFront}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] text-[#86948a] hover:text-white flex items-center gap-0.5"
+                      >
+                        <span className="material-symbols-outlined text-[13px]">open_in_new</span>
+                      </a>
+                    </div>
+                  ) : null}
                 </div>
-                )}
+
+                <div className="w-full h-48 bg-[#1c2028] rounded-lg overflow-hidden border border-[#10b981]/30 relative flex items-center justify-center p-2 group cursor-pointer"
+                  onClick={() => activeCandidate.docFront && setPreviewImage({ url: activeCandidate.docFront, title: `NIC Front Side — ${activeCandidate.name} (${activeCandidate.nic})` })}
+                >
+                  {activeCandidate.docFront ? (
+                    <>
+                      <img
+                        src={activeCandidate.docFront}
+                        alt={`NIC Front of ${activeCandidate.name}`}
+                        className="w-full h-full object-contain transition-transform duration-200 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-mono gap-1">
+                        <span className="material-symbols-outlined text-[18px]">zoom_in</span>
+                        Click to inspect
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center">
+                      <span className="material-symbols-outlined text-[36px] text-[#86948a]">badge</span>
+                      <div className="text-[11px] font-mono text-[#bbcabf] mt-1 font-semibold">Front Side Missing</div>
+                      <div className="text-[10px] text-[#86948a]">No front image uploaded</div>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="flex-1 text-[12px] font-mono space-y-1.5 text-[#bbcabf]">
-                <div className="flex justify-between border-b border-[#1f2937] pb-1">
-                  <span>Full Name:</span>
-                  <strong className="text-white">{activeCandidate.name}</strong>
+              {/* Back Side Card */}
+              <div className="p-3.5 bg-[#0a0e16] rounded-xl border border-[#1f2937] flex flex-col space-y-2">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="flex items-center gap-1.5 font-bold text-[#dfe2ee]">
+                    <span className="w-2 h-2 rounded-full bg-[#4edea3]" />
+                    Back Side (Barcode & Address)
+                  </span>
+                  {activeCandidate.docBack ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewImage({ url: activeCandidate.docBack, title: `NIC Back Side — ${activeCandidate.name} (${activeCandidate.nic})` })}
+                        className="text-[11px] text-[#4edea3] hover:underline flex items-center gap-0.5"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">zoom_in</span>
+                        Enlarge
+                      </button>
+                      <a
+                        href={activeCandidate.docBack}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] text-[#86948a] hover:text-white flex items-center gap-0.5"
+                      >
+                        <span className="material-symbols-outlined text-[13px]">open_in_new</span>
+                      </a>
+                    </div>
+                  ) : null}
                 </div>
-                <div className="flex justify-between border-b border-[#1f2937] pb-1">
-                  <span>NIC Number:</span>
-                  <strong className="text-[#4edea3]">{activeCandidate.nic}</strong>
-                </div>
-                <div className="flex justify-between border-b border-[#1f2937] pb-1">
-                  <span>Phone:</span>
-                  <strong className="text-white">{activeCandidate.phone || "â€”"}</strong>
-                </div>
-                <div className="flex justify-between">
-                  <span>Email:</span>
-                  <span className="text-[#86948a] truncate">{activeCandidate.company}</span>
+
+                <div className="w-full h-48 bg-[#1c2028] rounded-lg overflow-hidden border border-[#10b981]/30 relative flex items-center justify-center p-2 group cursor-pointer"
+                  onClick={() => activeCandidate.docBack && setPreviewImage({ url: activeCandidate.docBack, title: `NIC Back Side — ${activeCandidate.name} (${activeCandidate.nic})` })}
+                >
+                  {activeCandidate.docBack ? (
+                    <>
+                      <img
+                        src={activeCandidate.docBack}
+                        alt={`NIC Back of ${activeCandidate.name}`}
+                        className="w-full h-full object-contain transition-transform duration-200 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-mono gap-1">
+                        <span className="material-symbols-outlined text-[18px]">zoom_in</span>
+                        Click to inspect
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center">
+                      <span className="material-symbols-outlined text-[36px] text-[#86948a]">contact_page</span>
+                      <div className="text-[11px] font-mono text-[#bbcabf] mt-1 font-semibold">Back Side Missing</div>
+                      <div className="text-[10px] text-[#86948a]">No back image uploaded</div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -658,6 +755,50 @@ export const KycTrustComplianceView: React.FC = () => {
                 <span className="material-symbols-outlined text-[16px]">gavel</span>
                 <span>{isProcessing ? "Persisting..." : "Confirm & Log Rejection"}</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* 5. IMAGE PREVIEW LIGHTBOX MODAL */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="bg-[#181c24] border border-[#1f2937] rounded-xl max-w-4xl w-full p-4 space-y-3 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#1f2937] pb-2">
+              <span className="font-mono text-xs font-bold text-white flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px] text-[#4edea3]">zoom_in</span>
+                {previewImage.title}
+              </span>
+              <div className="flex items-center gap-3">
+                <a
+                  href={previewImage.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs font-mono text-[#4edea3] hover:underline flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                  Open original tab
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewImage(null)}
+                  className="text-[#86948a] hover:text-white text-base leading-none"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center justify-center max-h-[75vh] overflow-hidden bg-[#0a0e16] rounded-lg p-2">
+              <img
+                src={previewImage.url}
+                alt={previewImage.title}
+                className="max-h-[70vh] max-w-full object-contain rounded"
+              />
             </div>
           </div>
         </div>
