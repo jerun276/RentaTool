@@ -44,9 +44,10 @@ export const InspectionTimelineModal: React.FC<InspectionTimelineModalProps> = (
     setLoading(true)
     try {
       const logs = await catalogApi.getEquipmentHistory(id)
-      setHistory(logs)
+      setHistory(Array.isArray(logs) ? logs : [])
     } catch (err) {
       console.error("Failed to load history", err)
+      setHistory([])
     } finally {
       setLoading(false)
     }
@@ -59,7 +60,7 @@ export const InspectionTimelineModal: React.FC<InspectionTimelineModalProps> = (
     setSubmitting(true)
     try {
       await catalogApi.createInspectionLog(equipment.id, {
-        bookingId: "bkg-manual-001",
+        bookingId: null,
         type: newType,
         severity: newSeverity,
         conditionNotes: newNotes,
