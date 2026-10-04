@@ -35,6 +35,7 @@ export interface ManagedUser {
   trustScore: number
   createdAtUtc: string
   updatedAtUtc?: string | null
+  profilePhotoUrl?: string | null
 }
 
 export interface UpdateUserStatusPayload {

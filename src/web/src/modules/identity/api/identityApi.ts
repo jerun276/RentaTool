@@ -71,6 +71,8 @@ export const identityApi = {
   getTrustScore: (userId: string) => axiosClient.get<TrustScoreResponse>(`/users/${userId}/trust-score`),
   getKycSubmissions: (params?: { status?: string; search?: string }) =>
     axiosClient.get<AdminKycReviewDto[]>("/users/kyc-submissions", { params }),
+  getKycSubmission: (userId: string) =>
+    axiosClient.get<AdminKycReviewDto>(`/users/${userId}/kyc-submission`),
   
   // User Management
   getUsers: (params?: { search?: string; role?: string; isActive?: boolean }) =>
