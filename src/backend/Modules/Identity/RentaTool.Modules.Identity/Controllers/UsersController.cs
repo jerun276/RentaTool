@@ -50,6 +50,7 @@ public class UsersController(
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
         try { return Ok(await userService.UpdateProfileAsync(id, request)); }
         catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+        catch (InvalidOperationException ex) { return Conflict(new { message = ex.Message }); }
     }
 
     [Authorize(Roles = "Admin")]

@@ -18,6 +18,10 @@ public sealed class AuthService(AppDbContext db, ITokenService tokens) : IAuthSe
         if (await db.Set<User>().AnyAsync(x => x.Email == email))
             throw new InvalidOperationException("An account with this email already exists.");
 
+        var phone = (request.PhoneNumber ?? string.Empty).Replace(" ", "").Replace("-", "").Trim();
+        if (phone.Length > 0 && await db.Set<User>().AnyAsync(x => x.PhoneNumber.Replace(" ", "").Replace("-", "") == phone))
+            throw new InvalidOperationException("An account with this phone number already exists.");
+
         var user = new User(request.Name, email, PasswordHasher.Hash(request.Password), role, request.PhoneNumber);
         db.Set<User>().Add(user);
         db.Set<UserRoleAssignment>().Add(new UserRoleAssignment(user.Id, role));

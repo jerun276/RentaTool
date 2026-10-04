@@ -104,6 +104,10 @@ public sealed class UserService(AppDbContext db) : IUserService
         if (user is null)
             throw new KeyNotFoundException($"User with ID '{id}' was not found.");
 
+        var phone = (request.PhoneNumber ?? string.Empty).Replace(" ", "").Replace("-", "").Trim();
+        if (phone.Length > 0 && await db.Set<User>().AnyAsync(u => u.Id != id && u.PhoneNumber.Replace(" ", "").Replace("-", "") == phone, ct))
+            throw new InvalidOperationException("This phone number is already used by another account.");
+
         user.UpdateProfile(request.Name, request.PhoneNumber, request.ProfilePhotoUrl);
         await db.SaveChangesAsync(ct);
         return (await GetUserByIdAsync(id, ct))!;
