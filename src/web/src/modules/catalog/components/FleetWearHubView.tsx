@@ -86,6 +86,27 @@ export const FleetWearHubView: React.FC = () => {
     },
   ])
 
+  const resolveEquipmentImageUrl = (eq: any): string => {
+    if (Array.isArray(eq.images) && eq.images.length > 0) {
+      const primary = eq.images.find((img: any) => typeof img === "object" && img?.isPrimary)
+      if (primary && primary.imageUrl) return primary.imageUrl
+      const first = eq.images[0]
+      if (typeof first === "string" && first.trim()) return first
+      if (first && typeof first === "object" && first.imageUrl) return first.imageUrl
+    }
+    const title = (eq.title || eq.name || "").toLowerCase()
+    if (title.includes("generator")) {
+      return "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=150&auto=format&fit=crop&q=80"
+    }
+    if (title.includes("excavator")) {
+      return "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=150&auto=format&fit=crop&q=80"
+    }
+    if (title.includes("roller") || title.includes("compactor")) {
+      return "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&auto=format&fit=crop&q=80"
+    }
+    return "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=150&auto=format&fit=crop&q=80"
+  }
+
   const fetchEquipment = async () => {
     try {
       const res = await axiosClient.get("/equipment")
@@ -107,10 +128,7 @@ export const FleetWearHubView: React.FC = () => {
               valuation: eq.replacementValue || 200000,
               daysRented: eq.totalRentalDaysAccumulated || 0,
               isLocked,
-              image: eq.images && eq.images.length > 0 ? eq.images[0] :
-                eq.title.toLowerCase().includes("excavator") ? "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=150&auto=format&fit=crop&q=80" :
-                eq.title.toLowerCase().includes("roller") || eq.title.toLowerCase().includes("compactor") ? "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&auto=format&fit=crop&q=80" :
-                "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=150&auto=format&fit=crop&q=80",
+              image: resolveEquipmentImageUrl(eq),
             }
           })
           setFleetList(mapped)
@@ -476,6 +494,11 @@ export const FleetWearHubView: React.FC = () => {
                           src={tool.image}
                           alt={tool.name}
                           className="w-8 h-8 rounded object-cover border border-[#1f2937] shrink-0"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null
+                            e.currentTarget.src = "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=150&auto=format&fit=crop&q=80"
+                          }}
                         />
                         <div className="flex flex-col min-w-0">
                           <span className="font-sans text-[13px] font-bold text-white truncate">
