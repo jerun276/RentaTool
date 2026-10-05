@@ -1,6 +1,6 @@
 export type EquipmentStatus = "Available" | "Rented" | "UnderMaintenance" | "Disputed"
 
-export type InspectionType = "PreRental" | "PostRental"
+export type InspectionType = "PreRental" | "PostRental" | "MaintenanceCheck"
 export type InspectionSeverity = "None" | "MinorWear" | "ModerateDamage" | "StructuralDamage"
 
 export interface ToolImageDto {

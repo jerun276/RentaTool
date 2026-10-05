@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { axiosClient } from "@/shared/api/axiosClient"
+import { catalogApi } from "../api/catalogApi"
 
 export const FleetWearHubView: React.FC = () => {
   const [filterState, setFilterState] = useState<"all" | "healthy" | "due" | "lockout">("all")
@@ -12,6 +13,7 @@ export const FleetWearHubView: React.FC = () => {
   const [historyModalOpen, setHistoryModalOpen] = useState(false)
   const [selectedToolHistory, setSelectedToolHistory] = useState<any | null>(null)
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const [enlargedPhoto, setEnlargedPhoto] = useState<{ url: string; angle: string } | null>(null)
 
   const [fleetList, setFleetList] = useState([
     {
@@ -194,10 +196,12 @@ export const FleetWearHubView: React.FC = () => {
     if (tool.dbId && tool.dbId.length > 20) {
       setLoadingHistory(true)
       try {
-        const res = await axiosClient.get(`/equipment/${tool.dbId}/history`)
-        if (res.data) {
-          setSelectedToolHistory(res.data)
-        }
+        const logs = await catalogApi.getEquipmentHistory(tool.dbId)
+        setSelectedToolHistory({
+          title: tool.name,
+          id: tool.id,
+          inspectionTimeline: logs,
+        })
       } catch (err) {
         console.warn("Could not fetch equipment history from DB:", err)
       } finally {
@@ -638,27 +642,76 @@ export const FleetWearHubView: React.FC = () => {
                 <span className="text-xs font-mono">Querying PostgreSQL inspection logs...</span>
               </div>
             ) : selectedToolHistory?.inspectionTimeline && selectedToolHistory.inspectionTimeline.length > 0 ? (
-              <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+              <div className="space-y-3.5 max-h-96 overflow-y-auto pr-1">
                 {selectedToolHistory.inspectionTimeline.map((log: any, idx: number) => (
                   <div
                     key={log.id || idx}
-                    className="p-3 bg-[#0a0e16] border border-[#1f2937] rounded-lg space-y-1.5 font-mono text-xs"
+                    className="p-3.5 bg-[#0a0e16] border border-[#1f2937] rounded-lg space-y-2 font-mono text-xs"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="px-2 py-0.5 rounded bg-[#10b981]/15 text-[#4edea3] font-bold text-[10px]">
-                        {log.type || "Inspection"}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded bg-[#10b981]/15 text-[#4edea3] font-bold text-[10px]">
+                          {log.type === "PreRental"
+                            ? "Pre-Rental Dispatch"
+                            : log.type === "MaintenanceCheck"
+                            ? "Maintenance Servicing"
+                            : log.type === "PostRental"
+                            ? "Post-Rental Inspection"
+                            : log.type || "Inspection"}
+                        </span>
+                        {log.severity && (
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                              log.severity === "StructuralDamage"
+                                ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                                : log.severity === "ModerateDamage"
+                                ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                                : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                            }`}
+                          >
+                            {log.severity}
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[#86948a] text-[11px]">
-                        {new Date(log.createdAtUtc).toLocaleDateString()}
+                        {new Date(log.createdAt || log.createdAtUtc || Date.now()).toLocaleDateString()}
                       </span>
                     </div>
+
                     <p className="text-[#dfe2ee] font-sans text-xs">
                       {log.conditionNotes || "Standard pre-rental check passed without defects."}
                     </p>
-                    {log.severity && (
-                      <span className="inline-block text-[10px] text-[#ffb95f]">
-                        Severity: {log.severity}
-                      </span>
+
+                    {/* Multi-angle Photographic Evidence */}
+                    {log.photos && log.photos.length > 0 && (
+                      <div className="pt-2 border-t border-[#1f2937]/60 space-y-1.5">
+                        <span className="text-[10px] text-[#86948a] uppercase tracking-wider block font-semibold">
+                          Photographic Evidence ({log.photos.length})
+                        </span>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {log.photos.map((p: any, pIdx: number) => (
+                            <div
+                              key={pIdx}
+                              onClick={() => setEnlargedPhoto({ url: p.photoUrl, angle: p.angle || "General" })}
+                              className="relative group rounded-lg border border-[#1f2937] overflow-hidden bg-[#181c24] aspect-[4/3] cursor-pointer hover:border-emerald-500/50 transition-colors"
+                            >
+                              <img
+                                src={p.photoUrl}
+                                alt={`${p.angle || "Inspection"} photo`}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src =
+                                    "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=400&q=80"
+                                }}
+                              />
+                              <div className="absolute bottom-0 inset-x-0 bg-black/80 backdrop-blur-xs px-1.5 py-1 text-[10px] text-white flex items-center justify-between font-mono">
+                                <span className="font-semibold text-[#4edea3] truncate">{p.angle || "General"}</span>
+                                <span className="text-[9px] text-[#86948a]">Zoom ↗</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -680,6 +733,42 @@ export const FleetWearHubView: React.FC = () => {
               >
                 Close Timeline
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enlarged Photo Modal */}
+      {enlargedPhoto && (
+        <div
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md"
+          onClick={() => setEnlargedPhoto(null)}
+        >
+          <div
+            className="max-w-2xl w-full bg-[#181c24] border border-[#1f2937] rounded-xl overflow-hidden p-3 space-y-2 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-2 pt-1">
+              <span className="text-xs font-mono text-emerald-400 uppercase font-semibold">
+                Angle: {enlargedPhoto.angle}
+              </span>
+              <button
+                onClick={() => setEnlargedPhoto(null)}
+                className="text-[#86948a] hover:text-white text-sm"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="aspect-[16/10] w-full overflow-hidden rounded-lg bg-black/40">
+              <img
+                src={enlargedPhoto.url}
+                alt={enlargedPhoto.angle}
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=1200&q=80"
+                }}
+              />
             </div>
           </div>
         </div>

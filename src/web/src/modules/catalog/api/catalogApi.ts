@@ -3,6 +3,7 @@ import {
   EquipmentDto,
   CategoryDto,
   InspectionLogDto,
+  InspectionPhotoDto,
   EquipmentFilterParams,
   PagedResult,
   BatchAvailabilityReport,
@@ -115,16 +116,39 @@ export const catalogApi = {
       : data?.inspectionTimeline || []
 
     return timeline.map((l: any) => {
-      let photos: any[] = []
+      let rawPhotos: any[] = []
       if (Array.isArray(l.photos)) {
-        photos = l.photos
+        rawPhotos = l.photos
+      } else if (Array.isArray(l.Photos)) {
+        rawPhotos = l.Photos
       } else if (typeof l.photosJson === "string" && l.photosJson.trim().length > 0) {
         try {
-          photos = JSON.parse(l.photosJson)
+          rawPhotos = JSON.parse(l.photosJson)
         } catch {
-          photos = []
+          rawPhotos = []
         }
+      } else if (typeof l.PhotosJson === "string" && l.PhotosJson.trim().length > 0) {
+        try {
+          rawPhotos = JSON.parse(l.PhotosJson)
+        } catch {
+          rawPhotos = []
+        }
+      } else if (Array.isArray(l.photoUrls)) {
+        rawPhotos = l.photoUrls
+      } else if (Array.isArray(l.PhotoUrls)) {
+        rawPhotos = l.PhotoUrls
       }
+
+      const photos: InspectionPhotoDto[] = rawPhotos.map((p: any) => {
+        if (typeof p === "string") {
+          return { angle: "General", photoUrl: p }
+        }
+        return {
+          angle: p.angle || p.Angle || "General",
+          photoUrl: p.photoUrl || p.PhotoUrl || p.url || p.Url || "",
+          caption: p.observationNote || p.ObservationNote || p.caption || undefined,
+        }
+      })
 
       return {
         id: l.id,
@@ -145,17 +169,31 @@ export const catalogApi = {
     equipmentId: string,
     data: {
       bookingId?: string | null
-      type: "PreRental" | "PostRental"
-      severity: "None" | "MinorWear" | "ModerateDamage" | "StructuralDamage"
+      type: InspectionType
+      severity: InspectionSeverity
       conditionNotes: string
       photos: { angle: string; photoUrl: string; caption?: string }[]
     }
   ): Promise<InspectionLogDto> {
     const isGuid = data.bookingId && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(data.bookingId)
+
+    const typeMap: Record<string, number> = {
+      PreRental: 1,
+      PostRental: 2,
+      MaintenanceCheck: 3,
+    }
+
+    const severityMap: Record<string, number> = {
+      None: 0,
+      MinorWear: 1,
+      ModerateDamage: 2,
+      StructuralDamage: 3,
+    }
+
     const payload = {
       bookingId: isGuid ? data.bookingId : null,
-      type: data.type,
-      severity: data.severity,
+      type: typeMap[data.type] ?? 1,
+      severity: severityMap[data.severity] ?? 0,
       conditionNotes: data.conditionNotes,
       photos: data.photos.map((p) => ({
         angle: p.angle,
@@ -167,16 +205,35 @@ export const catalogApi = {
     const response = await axiosClient.post<any>(`/equipment/${equipmentId}/inspection-logs`, payload)
     const l = response.data
 
-    let photos: any[] = []
+    let rawPhotos: any[] = []
     if (Array.isArray(l.photos)) {
-      photos = l.photos
+      rawPhotos = l.photos
+    } else if (Array.isArray(l.Photos)) {
+      rawPhotos = l.Photos
     } else if (typeof l.photosJson === "string" && l.photosJson.trim().length > 0) {
       try {
-        photos = JSON.parse(l.photosJson)
+        rawPhotos = JSON.parse(l.photosJson)
       } catch {
-        photos = []
+        rawPhotos = []
+      }
+    } else if (typeof l.PhotosJson === "string" && l.PhotosJson.trim().length > 0) {
+      try {
+        rawPhotos = JSON.parse(l.PhotosJson)
+      } catch {
+        rawPhotos = []
       }
     }
+
+    const photos: InspectionPhotoDto[] = rawPhotos.map((p: any) => {
+      if (typeof p === "string") {
+        return { angle: "General", photoUrl: p }
+      }
+      return {
+        angle: p.angle || p.Angle || "General",
+        photoUrl: p.photoUrl || p.PhotoUrl || p.url || p.Url || "",
+        caption: p.observationNote || p.ObservationNote || p.caption || undefined,
+      }
+    })
 
     return {
       id: l.id,
