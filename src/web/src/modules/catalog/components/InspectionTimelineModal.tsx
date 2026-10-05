@@ -14,6 +14,8 @@ interface InspectionTimelineModalProps {
   isOpen: boolean
   onClose: () => void
   onInspectionAdded?: () => void
+  /** "log" = read-only history; "inspect" = opens the record-new-inspection form */
+  mode?: "log" | "inspect"
 }
 
 export const InspectionTimelineModal: React.FC<InspectionTimelineModalProps> = ({
@@ -21,6 +23,7 @@ export const InspectionTimelineModal: React.FC<InspectionTimelineModalProps> = (
   isOpen,
   onClose,
   onInspectionAdded,
+  mode = "log",
 }) => {
   const [history, setHistory] = useState<InspectionLogDto[]>([])
   const [loading, setLoading] = useState(false)
@@ -37,8 +40,9 @@ export const InspectionTimelineModal: React.FC<InspectionTimelineModalProps> = (
   useEffect(() => {
     if (equipment && isOpen) {
       loadHistory(equipment.id)
+      setIsAddingLog(mode === "inspect")
     }
-  }, [equipment, isOpen])
+  }, [equipment, isOpen, mode])
 
   const loadHistory = async (id: string) => {
     setLoading(true)
@@ -121,7 +125,7 @@ export const InspectionTimelineModal: React.FC<InspectionTimelineModalProps> = (
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-emerald-400" />
               <DialogTitle className="text-lg font-bold text-foreground">
-                Condition Inspection Timeline
+                {mode === "inspect" ? "Inspect Condition" : "Inspection Log"}
               </DialogTitle>
             </div>
             <Badge variant="outline" className="font-mono text-xs">
@@ -138,15 +142,17 @@ export const InspectionTimelineModal: React.FC<InspectionTimelineModalProps> = (
           <span className="text-xs text-muted-foreground font-mono">
             {history.length} Inspection Event{history.length !== 1 ? "s" : ""} Recorded
           </span>
-          <Button
-            size="sm"
-            variant={isAddingLog ? "secondary" : "outline"}
-            onClick={() => setIsAddingLog(!isAddingLog)}
-            className="text-xs h-8 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10"
-          >
-            <Camera className="h-3.5 w-3.5 mr-1" />
-            {isAddingLog ? "Cancel Entry" : "Record New Inspection"}
-          </Button>
+          {mode === "inspect" && (
+            <Button
+              size="sm"
+              variant={isAddingLog ? "secondary" : "outline"}
+              onClick={() => setIsAddingLog(!isAddingLog)}
+              className="text-xs h-8 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10"
+            >
+              <Camera className="h-3.5 w-3.5 mr-1" />
+              {isAddingLog ? "Cancel Entry" : "Record New Inspection"}
+            </Button>
+          )}
         </div>
 
         {/* Add Inspection Log Form */}

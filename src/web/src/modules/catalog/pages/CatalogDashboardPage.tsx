@@ -25,6 +25,7 @@ export const CatalogDashboardPage: React.FC = () => {
   // Modals state
   const [selectedForHistory, setSelectedForHistory] = useState<EquipmentDto | null>(null)
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
+  const [modalMode, setModalMode] = useState<"log" | "inspect">("log")
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false)
   const [isCategoriesModalOpen, setIsCategoriesModalOpen] = useState(false)
@@ -73,11 +74,13 @@ export const CatalogDashboardPage: React.FC = () => {
   const rentedCount = equipmentList.filter((e) => e.status === "Rented").length
 
   const handleOpenHistory = (eq: EquipmentDto) => {
+    setModalMode("log")
     setSelectedForHistory(eq)
     setIsHistoryModalOpen(true)
   }
 
   const handleOpenInspect = (eq: EquipmentDto) => {
+    setModalMode("inspect")
     setSelectedForHistory(eq)
     setIsHistoryModalOpen(true)
   }
@@ -259,6 +262,7 @@ export const CatalogDashboardPage: React.FC = () => {
         isOpen={isHistoryModalOpen}
         onClose={() => setIsHistoryModalOpen(false)}
         onInspectionAdded={loadData}
+        mode={modalMode}
       />
 
       <CreateEquipmentModal
