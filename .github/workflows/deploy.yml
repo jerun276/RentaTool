@@ -1,0 +1,157 @@
+name: RentaTool Production CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - jerun-feature
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ==============================================================================
+  # 1. Backend Continuous Integration (.NET 9.0)
+  # ==============================================================================
+  backend-ci:
+    name: Backend Build & Automated Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9.0 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore Backend Dependencies
+        run: dotnet restore src/backend/RentaTool.sln
+
+      - name: Build Backend in Release Mode
+        run: dotnet build src/backend/RentaTool.sln -c Release --no-restore
+
+      - name: Execute Backend Unit & Contract Tests
+        run: dotnet test src/backend/RentaTool.sln -c Release --no-build --verbosity normal
+
+  # ==============================================================================
+  # 2. AI Subsystem Continuous Integration (Python / LangGraph / PyTest)
+  # ==============================================================================
+  ai-service-ci:
+    name: AI Subsystem Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'src/ai_service/requirements.txt'
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r src/ai_service/requirements.txt
+
+      - name: Execute 4-Agent PyTest Test Suite
+        run: pytest src/ai_service/tests -v
+
+  # ==============================================================================
+  # 3. Web Admin Operations Portal Continuous Integration (React / Vite)
+  # ==============================================================================
+  web-ci:
+    name: Web Admin Portal Build & Type Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/web
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'src/web/package-lock.json'
+
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Run TypeScript Verification & Vite Build
+        run: npm run build
+
+  # ==============================================================================
+  # 4. Continuous Deployment to AWS EC2
+  # ==============================================================================
+  deploy-to-ec2:
+    name: Deploy Stack to AWS EC2
+    needs: [backend-ci, ai-service-ci, web-ci]
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify Deployment Secrets Configured
+        id: check_secrets
+        run: |
+          if [ -z "${{ secrets.EC2_HOST }}" ] || [ -z "${{ secrets.EC2_SSH_KEY }}" ]; then
+            echo "⚠️ EC2_HOST or EC2_SSH_KEY secrets are not configured in GitHub repository."
+            echo "Skipping automated remote deployment. See deploy/DEPLOYMENT_GUIDE.md to configure secrets."
+            exit 1
+          fi
+
+      - name: Execute Remote Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME || 'ubuntu' }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            echo "🚀 [CI/CD] Starting automated deployment on AWS EC2..."
+            
+            # Navigate to project directory
+            if [ ! -d ~/RentaTool ]; then
+              echo "Repository not found at ~/RentaTool. Cloning fresh copy..."
+              cd ~
+              git clone https://github.com/${{ github.repository }}.git
+            fi
+            
+            cd ~/RentaTool
+            
+            # Fetch and sync the target branch
+            echo "📥 Syncing latest code for branch: ${{ github.ref_name }}..."
+            git fetch origin
+            git checkout ${{ github.ref_name }}
+            git pull origin ${{ github.ref_name }}
+            
+            # Verify production secrets exist
+            if [ ! -f .env.production ]; then
+              echo "Creating initial .env.production from template..."
+              cp .env.production.example .env.production
+            fi
+            
+            # Build and deploy all containers with zero-downtime recreation
+            echo "🐳 Rebuilding and launching production containers..."
+            docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build --remove-orphans
+            
+            # Prune dangling/unused images to keep disk clean
+            docker image prune -f
+            
+            # Wait for backend healthcheck
+            echo "🩺 Verifying system health..."
+            sleep 8
+            curl -f http://localhost:5000/health || (echo "Healthcheck failed! Showing backend logs:" && docker logs rentatool_prod_backend --tail 50 && exit 1)
+            
+            echo "🎉 [CI/CD] Deployment successfully completed and verified healthy!"
