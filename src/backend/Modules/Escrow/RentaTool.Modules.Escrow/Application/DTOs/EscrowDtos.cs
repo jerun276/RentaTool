@@ -36,7 +36,9 @@ public record DamageClaimResponse(
     string? AdjudicationNotes,
     Guid? AdjudicatedByUserId,
     DateTime? AdjudicatedAtUtc,
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    List<string>? PickupPhotos = null,
+    string? EquipmentTitle = null
 );
 
 public record AdjudicateClaimRequest(

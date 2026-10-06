@@ -42,17 +42,21 @@ export const AIDisputeArbitrationView: React.FC = () => {
             const isHammer = machineDesc.includes("hammer") || machineDesc.includes("rotary");
             const isWasher = machineDesc.includes("washer") || machineDesc.includes("pump");
 
-            const machineName = isExcavator ? "Caterpillar 320D Excavator" :
+            const machineName = c.equipmentTitle || 
+                                (isExcavator ? "Caterpillar 320D Excavator" :
                                 isRoller ? "Bomag Tandem Vibratory Roller" :
                                 isHammer ? "Bosch Professional Rotary Hammer" :
                                 isWasher ? "Karcher High Pressure Washer" :
-                                "Industrial Fleet Asset";
+                                "Industrial Fleet Asset");
 
-            const pickupImg = isExcavator ? "https://images.unsplash.com/photo-1582298642781-a3f29b922a0e?w=400&auto=format&fit=crop&q=80" : // excavator
-                              isRoller ? "https://images.unsplash.com/photo-1621213032598-a15474fcacb4?w=400&auto=format&fit=crop&q=80" : // roller
-                              isHammer ? "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&auto=format&fit=crop&q=80" : // drill
-                              isWasher ? "https://images.unsplash.com/photo-1563812163914-972d3df399c7?w=400&auto=format&fit=crop&q=80" : // washer
-                              "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=400&auto=format&fit=crop&q=80"; // generic industrial
+            const fallbackPickupImg = isExcavator ? "https://images.unsplash.com/photo-1582298642781-a3f29b922a0e?w=400&auto=format&fit=crop&q=80" : // excavator
+                                      isRoller ? "https://images.unsplash.com/photo-1621213032598-a15474fcacb4?w=400&auto=format&fit=crop&q=80" : // roller
+                                      isHammer ? "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&auto=format&fit=crop&q=80" : // drill
+                                      isWasher ? "https://images.unsplash.com/photo-1563812163914-972d3df399c7?w=400&auto=format&fit=crop&q=80" : // washer
+                                      "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=400&auto=format&fit=crop&q=80"; // generic industrial
+
+            const realPickupImg = (c.pickupPhotos && c.pickupPhotos.length > 0) ? c.pickupPhotos[0] : null;
+            const realReturnImg = (c.evidencePhotos && c.evidencePhotos.length > 0) ? c.evidencePhotos[0] : null;
 
             return {
               id: claimId,
@@ -71,8 +75,8 @@ export const AIDisputeArbitrationView: React.FC = () => {
               damageType: c.damageDescription || "Reported Component Wear",
               isWearAndTear: machineDesc.includes("wear"),
               aiConfidence: "97.4%",
-              evidencePickup: pickupImg,
-              evidenceReturn: (c.evidencePhotos && c.evidencePhotos.length > 0) ? c.evidencePhotos[0] : pickupImg,
+              evidencePickup: realPickupImg || fallbackPickupImg,
+              evidenceReturn: realReturnImg || realPickupImg || fallbackPickupImg,
               reasoning: c.adjudicationNotes || c.damageDescription || "Computer vision edge-detection and strain telemetry verify operational abuse inconsistent with normal wear.",
             }
           })

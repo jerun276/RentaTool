@@ -6,6 +6,8 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using RentaTool.Shared.Infrastructure.Persistence;
 using RentaTool.Shared.Kernel.Domain;
+using RentaTool.Modules.Booking.Domain;
+using RentaTool.Modules.Catalog.Domain;
 
 namespace RentaTool.Modules.Escrow.Application.Services;
 
@@ -103,7 +105,7 @@ public class ClaimService : IClaimService
             // For now, we'll just log it.
         }
 
-        return MapToResponse(claim);
+        return await MapToResponseAsync(claim, cancellationToken);
     }
 
     public async Task<DamageClaimResponse?> GetClaimByIdAsync(Guid claimId, CancellationToken cancellationToken = default)
@@ -111,7 +113,7 @@ public class ClaimService : IClaimService
         var claim = await _context.Set<DamageClaim>()
             .FirstOrDefaultAsync(c => c.Id == claimId, cancellationToken);
 
-        return claim == null ? null : MapToResponse(claim);
+        return claim == null ? null : await MapToResponseAsync(claim, cancellationToken);
     }
 
     public async Task<List<DamageClaimResponse>> GetClaimsAsync(CancellationToken cancellationToken = default)
@@ -120,7 +122,12 @@ public class ClaimService : IClaimService
             .OrderByDescending(c => c.CreatedAtUtc)
             .ToListAsync(cancellationToken);
 
-        return claims.Select(MapToResponse).ToList();
+        var list = new List<DamageClaimResponse>();
+        foreach (var c in claims)
+        {
+            list.Add(await MapToResponseAsync(c, cancellationToken));
+        }
+        return list;
     }
 
     public async Task<DamageClaimResponse> AdjudicateClaimAsync(
@@ -147,7 +154,7 @@ public class ClaimService : IClaimService
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        return MapToResponse(claim);
+        return await MapToResponseAsync(claim, cancellationToken);
     }
 
     public async Task<PayoutClaimResponse> ProcessPayoutAsync(Guid claimId, CancellationToken cancellationToken = default)
@@ -222,6 +229,110 @@ public class ClaimService : IClaimService
             claim.Status.ToString(),
             payoutTxRef,
             DateTime.UtcNow
+        );
+    }
+
+    private async Task<DamageClaimResponse> MapToResponseAsync(DamageClaim claim, CancellationToken cancellationToken = default)
+    {
+        List<string> photos;
+        try
+        {
+            photos = JsonSerializer.Deserialize<List<string>>(claim.EvidencePhotosJson) ?? new List<string>();
+        }
+        catch
+        {
+            photos = new List<string>();
+        }
+
+        List<string> pickupPhotos = new();
+        string? equipmentTitle = null;
+
+        try
+        {
+            var booking = await _context.Set<RentaTool.Modules.Booking.Domain.Booking>()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.Id == claim.BookingId, cancellationToken);
+
+            if (booking != null)
+            {
+                var equipment = await _context.Set<Equipment>()
+                    .AsNoTracking()
+                    .Include(e => e.Images)
+                    .Include(e => e.InspectionLogs)
+                    .FirstOrDefaultAsync(e => e.Id == booking.EquipmentId, cancellationToken);
+
+                if (equipment != null)
+                {
+                    equipmentTitle = equipment.Title;
+
+                    // 1. Look for pre-rental inspection photos for this booking (or latest pre-rental inspection)
+                    var preRentalLog = equipment.InspectionLogs
+                        .Where(l => l.Type == InspectionType.PreRental)
+                        .OrderByDescending(l => l.BookingId == claim.BookingId)
+                        .ThenByDescending(l => l.CreatedAtUtc)
+                        .FirstOrDefault();
+
+                    if (preRentalLog != null && !string.IsNullOrWhiteSpace(preRentalLog.PhotosJson))
+                    {
+                        try
+                        {
+                            using var doc = JsonDocument.Parse(preRentalLog.PhotosJson);
+                            if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                            {
+                                foreach (var elem in doc.RootElement.EnumerateArray())
+                                {
+                                    if (elem.ValueKind == JsonValueKind.String)
+                                    {
+                                        pickupPhotos.Add(elem.GetString()!);
+                                    }
+                                    else if (elem.ValueKind == JsonValueKind.Object && elem.TryGetProperty("PhotoUrl", out var photoUrlProp))
+                                    {
+                                        var url = photoUrlProp.GetString();
+                                        if (!string.IsNullOrWhiteSpace(url))
+                                        {
+                                            pickupPhotos.Add(url);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // fallback
+                        }
+                    }
+
+                    // 2. Fallback to equipment catalog images if no inspection photos exist
+                    if (pickupPhotos.Count == 0 && equipment.Images.Any())
+                    {
+                        pickupPhotos.AddRange(equipment.Images
+                            .OrderByDescending(i => i.IsPrimary)
+                            .Select(i => i.ImageUrl)
+                            .Where(u => !string.IsNullOrWhiteSpace(u)));
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Fallback gracefully if database or relationship isn't populated
+        }
+
+        return new DamageClaimResponse(
+            claim.Id,
+            claim.BookingId,
+            claim.FiledByUserId,
+            claim.DamageDescription,
+            photos,
+            claim.ProposedDeduction,
+            claim.FinalDeduction,
+            claim.Status.ToString(),
+            claim.AdjudicationNotes,
+            claim.AdjudicatedByUserId,
+            claim.AdjudicatedAtUtc,
+            claim.CreatedAtUtc,
+            pickupPhotos.Count > 0 ? pickupPhotos : null,
+            equipmentTitle
         );
     }
 

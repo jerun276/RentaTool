@@ -7,6 +7,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\BuildingBlocks\RentaTool.Shared.Kernel\RentaTool.Shared.Kernel.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\RentaTool.Shared.Infrastructure\RentaTool.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Booking\RentaTool.Modules.Booking\RentaTool.Modules.Booking.csproj" />
+    <ProjectReference Include="..\..\Catalog\RentaTool.Modules.Catalog\RentaTool.Modules.Catalog.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
