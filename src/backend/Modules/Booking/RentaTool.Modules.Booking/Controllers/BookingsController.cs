@@ -74,6 +74,23 @@ public class BookingsController : ControllerBase
     }
 
     /// <summary>
+    /// Confirms a booking after escrow authorization is successful.
+    /// </summary>
+    [HttpPost("{id:guid}/confirm")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ConfirmBooking(Guid id)
+    {
+        var success = await _bookingService.ConfirmBookingAsync(id);
+        if (!success)
+        {
+            return NotFound(new { message = $"Booking with ID {id} was not found." });
+        }
+
+        return Ok(new { message = "Booking confirmed successfully." });
+    }
+
+    /// <summary>
     /// 2. Returns all active, confirmed, completed, and disputed bookings for the authenticated user.
     /// </summary>
     [HttpGet]

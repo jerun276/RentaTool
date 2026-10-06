@@ -82,6 +82,18 @@ public class BookingService : IBookingService
         return booking == null ? null : MapToDto(booking);
     }
 
+    public async Task<bool> ConfirmBookingAsync(Guid bookingId, CancellationToken cancellationToken = default)
+    {
+        var booking = await _context.Set<Domain.Booking>()
+            .FirstOrDefaultAsync(b => b.Id == bookingId, cancellationToken);
+
+        if (booking == null) return false;
+
+        booking.Confirm();
+        await _context.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     public async Task<IEnumerable<ActiveBookingSummaryDto>> GetActiveBookingsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var activeStatuses = new[]
