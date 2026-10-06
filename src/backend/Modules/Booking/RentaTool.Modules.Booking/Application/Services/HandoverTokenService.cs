@@ -124,6 +124,24 @@ public class HandoverTokenService : IHandoverTokenService
         else if (dto.EventType == HandoverEventType.Return)
         {
             booking.Complete();
+
+            // Truncate the schedule to free up the equipment for others if returned early
+            var schedule = await _context.Set<BookingSchedule>()
+                .FirstOrDefaultAsync(s => s.BookingId == bookingId, cancellationToken);
+            
+            if (schedule != null && schedule.BlockedEndDate > DateTime.UtcNow)
+            {
+                schedule.TruncateBlockedEndDate(DateTime.UtcNow, "Returned early");
+            }
+
+            // Refund escrow immediately upon successful return handover
+            var escrowHold = await _context.Set<RentaTool.Modules.Escrow.Domain.EscrowHold>()
+                .FirstOrDefaultAsync(e => e.BookingId == bookingId && e.Status == RentaTool.Modules.Escrow.Domain.EscrowStatus.Held, cancellationToken);
+            
+            if (escrowHold != null)
+            {
+                escrowHold.RefundFull();
+            }
         }
 
         await _context.SaveChangesAsync(cancellationToken);
