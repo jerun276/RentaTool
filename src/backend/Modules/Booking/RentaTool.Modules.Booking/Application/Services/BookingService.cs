@@ -88,7 +88,9 @@ public class BookingService : IBookingService
         {
             BookingStatus.Requested,
             BookingStatus.Confirmed,
-            BookingStatus.Active
+            BookingStatus.Active,
+            BookingStatus.Completed,
+            BookingStatus.Disputed
         };
 
         var query = _context.Set<Domain.Booking>()

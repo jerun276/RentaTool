@@ -74,8 +74,9 @@ public class BookingsController : ControllerBase
     }
 
     /// <summary>
-    /// 2. Returns all active and confirmed bookings for the authenticated user.
+    /// 2. Returns all active, confirmed, completed, and disputed bookings for the authenticated user.
     /// </summary>
+    [HttpGet]
     [HttpGet("active")]
     [ProducesResponseType(typeof(IEnumerable<ActiveBookingSummaryDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetActiveBookings()
