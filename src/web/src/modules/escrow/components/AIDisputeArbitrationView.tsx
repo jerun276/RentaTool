@@ -36,14 +36,28 @@ export const AIDisputeArbitrationView: React.FC = () => {
             const shortId = claimId.slice(0, 4).toUpperCase()
             const bkgShort = c.bookingId ? `BKG-${c.bookingId.slice(0, 4).toUpperCase()}` : "BKG-LIVE"
             const isSettled = c.status === "Settled" || c.status === "Approved"
+            const machineDesc = c.damageDescription?.toLowerCase() || "";
+            const isExcavator = machineDesc.includes("excavator");
+            const isRoller = machineDesc.includes("roller");
+            const isHammer = machineDesc.includes("hammer") || machineDesc.includes("rotary");
+            const isWasher = machineDesc.includes("washer") || machineDesc.includes("pump");
+
+            const machineName = isExcavator ? "Caterpillar 320D Excavator" :
+                                isRoller ? "Bomag Tandem Vibratory Roller" :
+                                isHammer ? "Bosch Professional Rotary Hammer" :
+                                isWasher ? "Karcher High Pressure Washer" :
+                                "Industrial Fleet Asset";
+
+            const pickupImg = isExcavator ? "https://images.unsplash.com/photo-1582298642781-a3f29b922a0e?w=400&auto=format&fit=crop&q=80" : // excavator
+                              isRoller ? "https://images.unsplash.com/photo-1621213032598-a15474fcacb4?w=400&auto=format&fit=crop&q=80" : // roller
+                              isHammer ? "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&auto=format&fit=crop&q=80" : // drill
+                              isWasher ? "https://images.unsplash.com/photo-1563812163914-972d3df399c7?w=400&auto=format&fit=crop&q=80" : // washer
+                              "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=400&auto=format&fit=crop&q=80"; // generic industrial
+
             return {
               id: claimId,
               code: `CLAIM-${shortId}`,
-              machine: c.damageDescription?.includes("Excavator") ? "Caterpillar 320D Excavator" :
-                       c.damageDescription?.includes("Roller") ? "Bomag Tandem Vibratory Roller" :
-                       c.damageDescription?.includes("hammer") || c.damageDescription?.includes("Rotary") ? "Bosch Professional Rotary Hammer" :
-                       c.damageDescription?.includes("washer") || c.damageDescription?.includes("pump") ? "Karcher High Pressure Washer" :
-                       "Industrial Fleet Asset",
+              machine: machineName,
               assetId: `#${claimId.slice(0, 6).toUpperCase()}`,
               bookingId: bkgShort,
               owner: "Verified Fleet Owner",
@@ -55,10 +69,10 @@ export const AIDisputeArbitrationView: React.FC = () => {
               statusColor: isSettled ? "bg-[#10b981]/20 text-[#4edea3]" : "bg-[#e29100]/20 text-[#ffb95f]",
               returnDate: new Date(c.createdAtUtc || Date.now()).toLocaleDateString(),
               damageType: c.damageDescription || "Reported Component Wear",
-              isWearAndTear: c.damageDescription?.toLowerCase().includes("wear") ?? false,
+              isWearAndTear: machineDesc.includes("wear"),
               aiConfidence: "97.4%",
-              evidencePickup: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&auto=format&fit=crop&q=80",
-              evidenceReturn: (c.evidencePhotos && c.evidencePhotos.length > 0) ? c.evidencePhotos[0] : "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop&q=80",
+              evidencePickup: pickupImg,
+              evidenceReturn: (c.evidencePhotos && c.evidencePhotos.length > 0) ? c.evidencePhotos[0] : pickupImg,
               reasoning: c.adjudicationNotes || c.damageDescription || "Computer vision edge-detection and strain telemetry verify operational abuse inconsistent with normal wear.",
             }
           })
