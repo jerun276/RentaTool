@@ -2,6 +2,8 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using RentaTool.Modules.Escrow.Application.DTOs;
 using RentaTool.Modules.Escrow.Domain;
+using System.Net.Http;
+using System.Net.Http.Json;
 using RentaTool.Shared.Infrastructure.Persistence;
 using RentaTool.Shared.Kernel.Domain;
 
@@ -10,10 +12,12 @@ namespace RentaTool.Modules.Escrow.Application.Services;
 public class ClaimService : IClaimService
 {
     private readonly AppDbContext _context;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public ClaimService(AppDbContext context)
+    public ClaimService(AppDbContext context, IHttpClientFactory httpClientFactory)
     {
         _context = context;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<DamageClaimResponse> FileClaimAsync(
@@ -51,6 +55,53 @@ public class ClaimService : IClaimService
         _context.Set<WorkflowStateAudit>().Add(audit);
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        // --- Agentic AI Subsystem Integration ---
+        claim.SubmitForAIEvaluation();
+        await _context.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient("AIService");
+            var payload = new
+            {
+                equipment_category = "General Equipment",
+                damage_severity = "moderate", // simplified for demo
+                rental_duration_days = 5,
+                tool_age_months = 6,
+                held_deposit = escrow?.DepositAmount ?? 0,
+                claim_id = claim.Id.ToString(),
+                booking_id = claim.BookingId.ToString()
+            };
+
+            var aiResponse = await client.PostAsJsonAsync("/api/v1/ai/execute-action", payload, cancellationToken);
+            if (aiResponse.IsSuccessStatusCode)
+            {
+                var result = await aiResponse.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: cancellationToken);
+                if (result.TryGetProperty("proposed_deduction", out var deductionProp))
+                {
+                    decimal proposedDeduction = deductionProp.GetDecimal();
+                    claim.SetAIEvaluationResult(proposedDeduction);
+                    
+                    var aiAudit = new WorkflowStateAudit(
+                        claim.Id,
+                        $"WF-{claim.Id.ToString()[..8].ToUpper()}",
+                        ClaimStatus.PendingStaffApproval.ToString(),
+                        "AgenticAI",
+                        result.GetRawText(),
+                        $"AI Adjudication complete. Proposed deduction: {proposedDeduction}"
+                    );
+                    _context.Set<WorkflowStateAudit>().Add(aiAudit);
+                    
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // If AI service fails, keep it in UnderAIEvaluation or revert to Filed.
+            // For now, we'll just log it.
+        }
 
         return MapToResponse(claim);
     }

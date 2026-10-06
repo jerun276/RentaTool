@@ -5,11 +5,21 @@ using RentaTool.Modules.Escrow.Application.Services;
 using RentaTool.Modules.Escrow.Domain;
 using RentaTool.Shared.Infrastructure.Persistence;
 using RentaTool.Shared.Kernel.Domain;
+using System.Net.Http;
 
 namespace RentaTool.Modules.Escrow.Tests;
 
 public class ClaimServiceTests
 {
+    private class DummyHttpClientFactory : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name)
+        {
+            return new HttpClient(new SocketsHttpHandler()) { BaseAddress = new Uri("http://localhost") };
+        }
+    }
+
+    private readonly IHttpClientFactory _httpClientFactory = new DummyHttpClientFactory();
     private readonly Guid _bookingId = Guid.NewGuid();
     private readonly Guid _renterId = Guid.NewGuid();
     private readonly Guid _ownerId = Guid.NewGuid();
@@ -29,7 +39,7 @@ public class ClaimServiceTests
         // Arrange
         using var context = TestDbContextFactory.Create(nameof(FileClaim_ValidClaim_CreatesClaimAndFlagsHoldDisputed));
         var hold = await SetupEscrowHoldAsync(context, 20000m);
-        var claimService = new ClaimService(context);
+        var claimService = new ClaimService(context, _httpClientFactory);
 
         var request = new FileClaimRequest(
             _bookingId,
@@ -62,7 +72,7 @@ public class ClaimServiceTests
         // Arrange
         using var context = TestDbContextFactory.Create(nameof(AdjudicateClaim_Approve_SetsStatusApprovedAndDeduction));
         await SetupEscrowHoldAsync(context, 20000m);
-        var claimService = new ClaimService(context);
+        var claimService = new ClaimService(context, _httpClientFactory);
 
         var fileRequest = new FileClaimRequest(
             _bookingId,
@@ -100,7 +110,7 @@ public class ClaimServiceTests
         // Arrange
         using var context = TestDbContextFactory.Create(nameof(AdjudicateClaim_Revise_SetsRevisedAmountAndApprovedStatus));
         await SetupEscrowHoldAsync(context, 20000m);
-        var claimService = new ClaimService(context);
+        var claimService = new ClaimService(context, _httpClientFactory);
 
         var fileRequest = new FileClaimRequest(
             _bookingId,
@@ -132,7 +142,7 @@ public class ClaimServiceTests
         // Arrange
         using var context = TestDbContextFactory.Create(nameof(AdjudicateClaim_Reject_SetsStatusRejectedAndZeroDeduction));
         await SetupEscrowHoldAsync(context, 20000m);
-        var claimService = new ClaimService(context);
+        var claimService = new ClaimService(context, _httpClientFactory);
 
         var fileRequest = new FileClaimRequest(
             _bookingId,
@@ -163,7 +173,7 @@ public class ClaimServiceTests
         // Arrange
         using var context = TestDbContextFactory.Create(nameof(ProcessPayout_ApprovedClaim_SplitsPayoutBetweenOwnerAndRenter));
         var hold = await SetupEscrowHoldAsync(context, 20000m);
-        var claimService = new ClaimService(context);
+        var claimService = new ClaimService(context, _httpClientFactory);
 
         var fileRequest = new FileClaimRequest(
             _bookingId,

@@ -9,6 +9,10 @@ public static class EscrowModuleExtensions
     {
         services.AddScoped<IEscrowService, EscrowService>();
         services.AddScoped<IClaimService, ClaimService>();
+        services.AddHttpClient("AIService", client =>
+        {
+            client.BaseAddress = new Uri("http://localhost:8000");
+        });
         return services;
     }
 }
