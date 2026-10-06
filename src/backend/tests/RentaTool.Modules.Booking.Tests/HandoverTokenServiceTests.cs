@@ -30,6 +30,10 @@ public class HandoverTokenServiceTests
             DailyRate = 2000m
         }, _renterId);
 
+        var bookingEntity = await context.Set<Domain.Booking>().FindAsync(booking.Id);
+        bookingEntity!.Confirm();
+        await context.SaveChangesAsync();
+
         // Act
         var tokenResult = await tokenService.GenerateTokenAsync(booking.Id, HandoverEventType.Pickup, _renterId);
 
@@ -90,6 +94,10 @@ public class HandoverTokenServiceTests
             DailyRate = 2000m
         }, _renterId);
 
+        var bEntity2 = await context.Set<Domain.Booking>().FindAsync(booking.Id);
+        bEntity2!.Confirm();
+        await context.SaveChangesAsync();
+
         var tokenResult = await tokenService.GenerateTokenAsync(booking.Id, HandoverEventType.Pickup, _ownerId);
 
         var verifyDto = new VerifyHandoverRequestDto
@@ -136,6 +144,10 @@ public class HandoverTokenServiceTests
             EndDate = DateTime.UtcNow.Date.AddDays(2),
             DailyRate = 2000m
         }, _renterId);
+
+        var bEntity3 = await context.Set<Domain.Booking>().FindAsync(booking.Id);
+        bEntity3!.Confirm();
+        await context.SaveChangesAsync();
 
         // 1. Pickup
         var pickupToken = await tokenService.GenerateTokenAsync(booking.Id, HandoverEventType.Pickup, _ownerId);
@@ -185,6 +197,10 @@ public class HandoverTokenServiceTests
             DailyRate = 2000m
         }, _renterId);
 
+        var bEntity4 = await context.Set<Domain.Booking>().FindAsync(booking.Id);
+        bEntity4!.Confirm();
+        await context.SaveChangesAsync();
+
         await tokenService.GenerateTokenAsync(booking.Id, HandoverEventType.Pickup, _ownerId);
 
         var wrongTokenDto = new VerifyHandoverRequestDto
@@ -217,6 +233,10 @@ public class HandoverTokenServiceTests
             EndDate = DateTime.UtcNow.Date.AddDays(2),
             DailyRate = 2000m
         }, _renterId);
+
+        var bEntity5 = await context.Set<Domain.Booking>().FindAsync(booking.Id);
+        bEntity5!.Confirm();
+        await context.SaveChangesAsync();
 
         var pickupToken = await tokenService.GenerateTokenAsync(booking.Id, HandoverEventType.Pickup, _ownerId);
         var verifyDto = new VerifyHandoverRequestDto
@@ -254,6 +274,10 @@ public class HandoverTokenServiceTests
             EndDate = DateTime.UtcNow.Date.AddDays(2),
             DailyRate = 2000m
         }, _renterId);
+
+        var bEntity6 = await context.Set<Domain.Booking>().FindAsync(booking.Id);
+        bEntity6!.Confirm();
+        await context.SaveChangesAsync();
 
         var tokenResult = await tokenService.GenerateTokenAsync(booking.Id, HandoverEventType.Pickup, _ownerId);
 

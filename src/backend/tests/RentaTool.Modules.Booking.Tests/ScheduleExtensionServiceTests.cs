@@ -32,6 +32,10 @@ public class ScheduleExtensionServiceTests
             DailyRate = 2000m
         }, _renterId);
 
+        var bEntity = await context.Set<Domain.Booking>().FindAsync(booking.Id);
+        bEntity!.Confirm();
+        await context.SaveChangesAsync();
+
         var extensionDto = new ExtendScheduleRequestDto
         {
             NewEndDate = initialEnd.AddDays(2) // 2 days extension
@@ -71,6 +75,10 @@ public class ScheduleExtensionServiceTests
             EndDate = DateTime.UtcNow.Date.AddDays(3),
             DailyRate = 1500m
         }, _renterId);
+
+        var bEntity1 = await context.Set<Domain.Booking>().FindAsync(booking1.Id);
+        bEntity1!.Confirm();
+        await context.SaveChangesAsync();
 
         // Booking 2 by another user: Days 5 to 7
         await bookingService.CreateBookingAsync(new CreateBookingRequestDto
@@ -113,6 +121,10 @@ public class ScheduleExtensionServiceTests
             DailyRate = 1000m
         }, _renterId);
 
+        var bEntity = await context.Set<Domain.Booking>().FindAsync(booking.Id);
+        bEntity!.Confirm();
+        await context.SaveChangesAsync();
+
         var invalidDto = new ExtendScheduleRequestDto
         {
             NewEndDate = DateTime.UtcNow.Date.AddDays(3) // Before current end date
@@ -142,6 +154,10 @@ public class ScheduleExtensionServiceTests
             EndDate = DateTime.UtcNow.Date.AddDays(3),
             DailyRate = 1000m
         }, _renterId);
+
+        var bEntity = await context.Set<Domain.Booking>().FindAsync(booking.Id);
+        bEntity!.Confirm();
+        await context.SaveChangesAsync();
 
         var extensionDto = new ExtendScheduleRequestDto
         {

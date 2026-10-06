@@ -56,14 +56,14 @@ public class ClaimServiceTests
         result.BookingId.Should().Be(_bookingId);
         result.FiledByUserId.Should().Be(_ownerId);
         result.DamageDescription.Should().Be("Broken safety guard and dented motor casing");
-        result.Status.Should().Be(ClaimStatus.Filed.ToString());
+        result.Status.Should().Be(ClaimStatus.UnderAIEvaluation.ToString());
 
         var updatedHold = await context.Set<EscrowHold>().FindAsync(hold.Id);
         updatedHold!.Status.Should().Be(EscrowStatus.Disputed);
 
         var claimInDb = await context.Set<DamageClaim>().FindAsync(result.ClaimId);
         claimInDb.Should().NotBeNull();
-        claimInDb!.Status.Should().Be(ClaimStatus.Filed);
+        claimInDb!.Status.Should().Be(ClaimStatus.UnderAIEvaluation);
     }
 
     [Fact]

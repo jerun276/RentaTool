@@ -39,7 +39,7 @@ public class BookingServiceTests
         result.OwnerId.Should().Be(_ownerId);
         result.DailyRate.Should().Be(2500m);
         result.TotalRentalFee.Should().Be(7500m); // 3 days * 2500
-        result.Status.Should().Be(BookingStatus.Confirmed.ToString());
+        result.Status.Should().Be(BookingStatus.Requested.ToString());
 
         var savedSchedule = await context.Set<BookingSchedule>().FirstOrDefaultAsync(s => s.BookingId == result.Id);
         savedSchedule.Should().NotBeNull();
@@ -181,6 +181,7 @@ public class BookingServiceTests
 
         // Transition booking to Active then Completed (simulating pickup and return)
         var bookingEntity = await context.Set<Domain.Booking>().FirstAsync(b => b.Id == created.Id);
+        bookingEntity.Confirm();
         bookingEntity.Activate();
         bookingEntity.Complete();
         await context.SaveChangesAsync();
