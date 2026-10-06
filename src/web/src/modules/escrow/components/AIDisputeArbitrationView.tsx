@@ -522,7 +522,9 @@ export const AIDisputeArbitrationView: React.FC = () => {
               <div className="space-y-1.5">
                 <div className="flex justify-between text-[11px] font-mono text-[#bbcabf]">
                   <span>Return Inspection Evidence</span>
-                  <span className="text-[#ffb4ab]">Flagged: Lateral Fracture</span>
+                  <span className={activeClaim.isWearAndTear ? "text-[#4edea3]" : "text-[#ffb4ab]"}>
+                    {activeClaim.isWearAndTear ? "Condition: Standard Wear" : `Flagged: ${activeClaim.damageType}`}
+                  </span>
                 </div>
                 <div className="h-44 bg-[#0a0e16] rounded-lg overflow-hidden border border-[#ffb4ab]/40 relative">
                   <img
