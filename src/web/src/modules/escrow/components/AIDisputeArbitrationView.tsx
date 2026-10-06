@@ -496,7 +496,7 @@ export const AIDisputeArbitrationView: React.FC = () => {
                     className="w-full h-full object-cover"
                   />
                   <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-[#0a0e16]/80 text-[10px] font-mono text-white">
-                    Verified Oct 18, 2024
+                    Baseline Handover Condition
                   </span>
                 </div>
               </div>
@@ -513,7 +513,7 @@ export const AIDisputeArbitrationView: React.FC = () => {
                     className="w-full h-full object-cover"
                   />
                   <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-[#93000a]/80 text-[10px] font-mono text-white">
-                    Return Scan Oct 24, 2024
+                    Return Scan: {activeClaim.returnDate}
                   </span>
                 </div>
               </div>
