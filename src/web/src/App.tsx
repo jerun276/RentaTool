@@ -1,6 +1,5 @@
 import React from "react"
 import { BrowserRouter, useLocation } from "react-router-dom"
-import { Navbar } from "@/shared/components/Navbar"
 import { AppRoutes } from "@/routes/AppRoutes"
 
 const AppContent: React.FC = () => {

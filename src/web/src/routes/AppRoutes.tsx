@@ -1,12 +1,9 @@
 import React from "react"
 import { Routes, Route, Navigate } from "react-router-dom"
 import { ProtectedRoute } from "@/shared/components/ProtectedRoute"
-import { CatalogDashboardPage } from "@/modules/catalog/pages/CatalogDashboardPage"
 import { BookingDashboardPage } from "@/modules/booking/pages/BookingDashboardPage"
 import { OperationsPortalPage } from "@/modules/booking/pages/OperationsPortalPage"
-import { IdentityVerificationPage } from "@/modules/identity/pages/IdentityVerificationPage"
 import { LoginPage } from "@/modules/identity/pages/LoginPage"
-import { ClaimArbitrationDeskPage } from "@/modules/escrow/pages/ClaimArbitrationDeskPage"
 
 export const AppRoutes: React.FC = () => {
   return (
