@@ -16,27 +16,8 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-emerald-500/20 selection:text-emerald-400">
-      <Navbar />
-      <main className="flex-1">
-        <AppRoutes />
-      </main>
-      <footer className="border-t border-border/60 py-6 text-xs text-muted-foreground bg-card/20 backdrop-blur-sm">
-        <div className="container px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-foreground">RentaTool LK</span>
-            <span>—</span>
-            <span>Peer-to-Peer Machinery & Equipment Rental System</span>
-          </div>
-          <div className="flex items-center gap-4 text-[11px] font-mono">
-            <span className="text-emerald-400">Admin Operations Portal</span>
-            <span>•</span>
-            <span>SE3090 Software Engineering Frameworks</span>
-            <span>•</span>
-            <span>SLIIT 2026</span>
-          </div>
-        </div>
-      </footer>
+    <div className="min-h-screen bg-[#0f131c] text-[#dfe2ee] selection:bg-emerald-500/20 selection:text-emerald-400">
+      <AppRoutes />
     </div>
   )
 }

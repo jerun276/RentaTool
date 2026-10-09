@@ -66,100 +66,23 @@ export const AppRoutes: React.FC = () => {
       />
 
       {/* Component 2: Equipment Catalog & Condition Inspection */}
-      <Route
-        path="/catalog"
-        element={
-          <ProtectedRoute allowedRoles={["Admin"]}>
-            <CatalogDashboardPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/catalog/inspections"
-        element={
-          <ProtectedRoute allowedRoles={["Admin"]}>
-            <CatalogDashboardPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/catalog/availability"
-        element={
-          <ProtectedRoute allowedRoles={["Admin"]}>
-            <CatalogDashboardPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/catalog" element={<Navigate to="/operations?desk=catalog" replace />} />
+      <Route path="/catalog/inspections" element={<Navigate to="/operations?desk=catalog" replace />} />
+      <Route path="/catalog/availability" element={<Navigate to="/operations?desk=catalog" replace />} />
 
       {/* Component 1: Identity, KYC & Verification */}
-      <Route
-        path="/identity"
-        element={
-          <ProtectedRoute allowedRoles={["Admin"]}>
-            <IdentityVerificationPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/identity" element={<Navigate to="/operations?desk=desk02" replace />} />
       <Route path="/identity/register" element={<Navigate to="/login" replace />} />
       <Route path="/identity/login" element={<Navigate to="/login" replace />} />
-      <Route
-        path="/identity/kyc"
-        element={
-          <ProtectedRoute allowedRoles={["Admin"]}>
-            <IdentityVerificationPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/identity/trust-score"
-        element={
-          <ProtectedRoute allowedRoles={["Admin"]}>
-            <IdentityVerificationPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/identity/admin/kyc"
-        element={
-          <ProtectedRoute allowedRoles={["Admin"]}>
-            <IdentityVerificationPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/identity/kyc" element={<Navigate to="/operations?desk=desk02" replace />} />
+      <Route path="/identity/trust-score" element={<Navigate to="/operations?desk=desk02" replace />} />
+      <Route path="/identity/admin/kyc" element={<Navigate to="/operations?desk=desk02" replace />} />
 
       {/* Component 4: Escrow Ledger & Security Deposit Claims */}
-      <Route
-        path="/claims"
-        element={
-          <ProtectedRoute allowedRoles={["Admin"]}>
-            <ClaimArbitrationDeskPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/claims/:id"
-        element={
-          <ProtectedRoute allowedRoles={["Admin"]}>
-            <ClaimArbitrationDeskPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/escrow"
-        element={
-          <ProtectedRoute allowedRoles={["Admin"]}>
-            <ClaimArbitrationDeskPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/arbitration"
-        element={
-          <ProtectedRoute allowedRoles={["Admin"]}>
-            <ClaimArbitrationDeskPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/claims" element={<Navigate to="/operations?desk=desk04" replace />} />
+      <Route path="/claims/:id" element={<Navigate to="/operations?desk=desk04" replace />} />
+      <Route path="/escrow" element={<Navigate to="/operations?desk=desk04" replace />} />
+      <Route path="/arbitration" element={<Navigate to="/operations?desk=desk04" replace />} />
 
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/operations" replace />} />
