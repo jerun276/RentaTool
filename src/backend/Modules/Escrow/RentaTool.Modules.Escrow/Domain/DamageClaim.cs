@@ -44,9 +44,13 @@ public class DamageClaim : BaseEntity
         MarkUpdated();
     }
 
-    public void SetAIEvaluationResult(decimal proposedDeduction)
+    public void SetAIEvaluationResult(decimal proposedDeduction, string? explanation = null)
     {
         ProposedDeduction = Math.Max(0m, proposedDeduction);
+        if (!string.IsNullOrWhiteSpace(explanation))
+        {
+            AdjudicationNotes = explanation;
+        }
         Status = ClaimStatus.PendingStaffApproval;
         MarkUpdated();
     }

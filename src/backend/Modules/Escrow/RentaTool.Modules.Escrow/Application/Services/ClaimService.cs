@@ -83,7 +83,13 @@ public class ClaimService : IClaimService
                 if (result.TryGetProperty("proposed_deduction", out var deductionProp))
                 {
                     decimal proposedDeduction = deductionProp.GetDecimal();
-                    claim.SetAIEvaluationResult(proposedDeduction);
+                    string? explanation = null;
+                    if (result.TryGetProperty("explanation", out var explanationProp))
+                    {
+                        explanation = explanationProp.GetString();
+                    }
+                    
+                    claim.SetAIEvaluationResult(proposedDeduction, explanation);
                     
                     var aiAudit = new WorkflowStateAudit(
                         claim.Id,
