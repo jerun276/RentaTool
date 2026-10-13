@@ -74,20 +74,61 @@ public class BookingsController : ControllerBase
     }
 
     /// <summary>
-    /// Confirms a booking after escrow authorization is successful.
+    /// Owner accepts a Requested booking (Requested -> Confirmed).
     /// </summary>
     [HttpPost("{id:guid}/confirm")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ConfirmBooking(Guid id)
     {
-        var success = await _bookingService.ConfirmBookingAsync(id);
-        if (!success)
+        try
         {
-            return NotFound(new { message = $"Booking with ID {id} was not found." });
-        }
+            var success = await _bookingService.ConfirmBookingAsync(id, GetCurrentUserId());
+            if (!success)
+            {
+                return NotFound(new { message = $"Booking with ID {id} was not found." });
+            }
 
-        return Ok(new { message = "Booking confirmed successfully." });
+            return Ok(new { message = "Booking confirmed successfully." });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Owner rejects a Requested booking; booking is cancelled and dates are freed.
+    /// </summary>
+    [HttpPost("{id:guid}/reject")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RejectBooking(Guid id, [FromBody] RejectBookingRequestDto? dto)
+    {
+        try
+        {
+            var success = await _bookingService.RejectBookingAsync(id, GetCurrentUserId(), dto?.Reason);
+            if (!success)
+            {
+                return NotFound(new { message = $"Booking with ID {id} was not found." });
+            }
+
+            return Ok(new { message = "Booking rejected." });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     /// <summary>

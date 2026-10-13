@@ -6,6 +6,7 @@ public interface IBookingService
 {
     Task<BookingResponseDto> CreateBookingAsync(CreateBookingRequestDto dto, Guid renterId, CancellationToken cancellationToken = default);
     Task<BookingResponseDto?> GetByIdAsync(Guid bookingId, CancellationToken cancellationToken = default);
-    Task<bool> ConfirmBookingAsync(Guid bookingId, CancellationToken cancellationToken = default);
+    Task<bool> ConfirmBookingAsync(Guid bookingId, Guid actingUserId, CancellationToken cancellationToken = default);
+    Task<bool> RejectBookingAsync(Guid bookingId, Guid actingUserId, string? reason = null, CancellationToken cancellationToken = default);
     Task<IEnumerable<ActiveBookingSummaryDto>> GetActiveBookingsAsync(Guid userId, CancellationToken cancellationToken = default);
 }

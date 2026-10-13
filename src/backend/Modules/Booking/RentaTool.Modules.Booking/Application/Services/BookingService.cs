@@ -82,14 +82,42 @@ public class BookingService : IBookingService
         return booking == null ? null : MapToDto(booking);
     }
 
-    public async Task<bool> ConfirmBookingAsync(Guid bookingId, CancellationToken cancellationToken = default)
+    public async Task<bool> ConfirmBookingAsync(Guid bookingId, Guid actingUserId, CancellationToken cancellationToken = default)
     {
         var booking = await _context.Set<Domain.Booking>()
             .FirstOrDefaultAsync(b => b.Id == bookingId, cancellationToken);
 
         if (booking == null) return false;
 
+        if (booking.OwnerId != actingUserId)
+            throw new UnauthorizedAccessException("Only the equipment owner can accept this booking request.");
+
         booking.Confirm();
+        await _context.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> RejectBookingAsync(Guid bookingId, Guid actingUserId, string? reason = null, CancellationToken cancellationToken = default)
+    {
+        var booking = await _context.Set<Domain.Booking>()
+            .FirstOrDefaultAsync(b => b.Id == bookingId, cancellationToken);
+
+        if (booking == null) return false;
+
+        if (booking.OwnerId != actingUserId)
+            throw new UnauthorizedAccessException("Only the equipment owner can reject this booking request.");
+
+        if (booking.Status != BookingStatus.Requested)
+            throw new InvalidOperationException($"Only Requested bookings can be rejected. Current status: '{booking.Status}'.");
+
+        booking.Cancel(string.IsNullOrWhiteSpace(reason) ? "Rejected by owner" : reason.Trim());
+
+        // Free the blocked dates
+        var schedules = await _context.Set<BookingSchedule>()
+            .Where(s => s.BookingId == bookingId)
+            .ToListAsync(cancellationToken);
+        _context.Set<BookingSchedule>().RemoveRange(schedules);
+
         await _context.SaveChangesAsync(cancellationToken);
         return true;
     }

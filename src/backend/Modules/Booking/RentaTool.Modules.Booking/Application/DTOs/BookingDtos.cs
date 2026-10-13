@@ -3,6 +3,12 @@ using RentaTool.Modules.Booking.Domain;
 
 namespace RentaTool.Modules.Booking.Application.DTOs;
 
+public class RejectBookingRequestDto
+{
+    [MaxLength(500)]
+    public string? Reason { get; set; }
+}
+
 public class CreateBookingRequestDto
 {
     [Required]
