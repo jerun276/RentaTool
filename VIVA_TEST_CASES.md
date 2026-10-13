@@ -45,32 +45,32 @@ Platforms: **Mobile** (Flutter app), **Web** (Admin/Owner panel), **API** (.NET 
 | 2.4  | Search by keyword                                                | Only matching tools listed                        | [x]  |
 | 2.5  | Filter by category / price                                       | Correct filtered list                             | [x]  |
 | 2.6  | Tool detail view                                                 | Shows images, price, deposit, owner, availability | [x]  |
-| 2.7  | Owner edits own tool                                             | Changes saved & visible                           | [ ]  |
-| 2.8  | Owner edits another owner's tool (API)                           | `403/404`                                         | [ ]  |
+| 2.7  | Owner edits own tool                                             | Changes saved & visible                           | [x]  |
+| 2.8  | Owner edits another owner's tool (API)                           | `403/404`                                         | [x]  |
 | 2.9  | Owner deletes/deactivates tool                                   | No longer bookable                                | [ ]  |
-| 2.10 | Renter views own listing                                         | Cannot book own tool                              | [ ]  |
+| 2.10 | Renter views own listing                                         | Cannot book own tool                              | [x]  |
 
 ## 3. Booking Module
 
 | #    | Test Case                                                  | Expected Result                             | Pass |
 | ---- | ---------------------------------------------------------- | ------------------------------------------- | ---- |
-| 3.1  | Select valid date range                                    | Total = days × daily rate (verify manually) | [ ]  |
-| 3.2  | End date before start date                                 | Rejected                                    | [ ]  |
-| 3.3  | Past start date                                            | Rejected                                    | [ ]  |
-| 3.4  | Overlapping dates with existing confirmed booking          | Rejected "not available"                    | [ ]  |
-| 3.5  | Create booking request                                     | Status = **Pending**; owner notified        | [ ]  |
-| 3.6  | Owner accepts                                              | Status = **Confirmed**; renter sees QR      | [ ]  |
-| 3.7  | Owner rejects                                              | Status = Rejected/Cancelled; dates freed    | [ ]  |
+| 3.1  | Select valid date range                                    | Total = days × daily rate (verify manually) | [x]  |
+| 3.2  | End date before start date                                 | Rejected                                    | [x]  |
+| 3.3  | Past start date                                            | Rejected                                    | [x]  |
+| 3.4  | Overlapping dates with existing confirmed booking          | Rejected "not available"                    | [x]  |
+| 3.5  | Create booking request                                     | Status = **Pending**; owner notified        | [x]  |
+| 3.6  | Owner accepts                                              | Status = **Confirmed**; renter sees QR      | [x]  |
+| 3.7  | Owner rejects                                              | Status = Rejected/Cancelled; dates freed    | [x]  |
 | 3.8  | Renter cancels pending booking                             | Cancelled; dates freed                      | [ ]  |
-| 3.9  | Booking list per role                                      | Renter sees own, Owner sees incoming        | [ ]  |
+| 3.9  | Booking list per role                                      | Renter sees own, Owner sees incoming        | [x]  |
 | 3.10 | Invalid state transition (e.g. complete a Pending booking) | Rejected by API                             | [ ]  |
 
 ## 4. QR Handover Flow (Confirmed → Active → Completed)
 
 | #   | Test Case                                    | Expected Result                             | Pass |
 | --- | -------------------------------------------- | ------------------------------------------- | ---- |
-| 4.1 | QR visible in **Confirmed** state            | QR displayed on booking details             | [ ]  |
-| 4.2 | QR visible in **Active** state               | QR displayed (for return)                   | [ ]  |
+| 4.1 | QR visible in **Confirmed** state            | QR displayed on booking details             | [x]  |
+| 4.2 | QR visible in **Active** state               | QR displayed (for return)                   | [x]  |
 | 4.3 | QR NOT shown for Pending/Cancelled/Completed | Hidden                                      | [ ]  |
 | 4.4 | Owner scans pickup QR                        | Booking → **Active**                        | [ ]  |
 | 4.5 | Owner scans return QR                        | Booking → **Completed** / return inspection | [ ]  |
