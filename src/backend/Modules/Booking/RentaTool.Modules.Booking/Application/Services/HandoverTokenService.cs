@@ -138,7 +138,7 @@ public class HandoverTokenService : IHandoverTokenService
             if (_context.Database.IsRelational())
             {
                 await _context.Database.ExecuteSqlRawAsync(
-                    "UPDATE escrow_holds SET status = 3, settled_at_utc = {0} WHERE booking_id = {1} AND status = 0",
+                    "UPDATE escrow_holds SET status = 'Refunded', settled_at_utc = {0} WHERE booking_id = {1} AND (status = 'Held' OR status = '1' OR status = '0')",
                     DateTime.UtcNow, bookingId);
             }
         }
