@@ -4,6 +4,7 @@ import { ActiveBookingSummaryDto } from "../types/bookingTypes"
 import { Card, CardContent, CardFooter, CardHeader } from "@/shared/components/ui/card"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
+import { useAuthStore } from "@/shared/store/useAuthStore"
 
 interface BookingCardProps {
   booking: ActiveBookingSummaryDto
@@ -12,6 +13,9 @@ interface BookingCardProps {
 }
 
 export const BookingCard: React.FC<BookingCardProps> = ({ booking, onExtend, onHandover }) => {
+  const { user } = useAuthStore()
+  const isOwner = user?.id === booking.ownerId || (user?.role === "Owner" && user?.id !== booking.renterId)
+
   const startDate = new Date(booking.startDate).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -129,7 +133,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({ booking, onExtend, onH
           Handover QR
         </Button>
 
-        {booking.status !== "Completed" && booking.status !== "Cancelled" && (
+        {!isOwner && booking.status !== "Completed" && booking.status !== "Cancelled" && (
           <Button
             variant="default"
             size="sm"
