@@ -36,7 +36,12 @@ export const useEscrowStore = create<EscrowState>((set, get) => ({
     set({ isLoading: true, error: null })
     try {
       const data = await escrowApi.getClaims()
-      set({ claims: data, isLoading: false })
+      const sorted = (data || []).sort((a, b) => {
+        const dateA = new Date(a.createdAtUtc || 0).getTime()
+        const dateB = new Date(b.createdAtUtc || 0).getTime()
+        return dateB - dateA
+      })
+      set({ claims: sorted, isLoading: false })
     } catch (err: any) {
       set({
         error: err?.response?.data?.error || err?.message || "Failed to load claims",
