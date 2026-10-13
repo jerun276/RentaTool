@@ -68,6 +68,42 @@ public class EquipmentController : ControllerBase
     }
 
     /// <summary>
+    /// Updates an existing equipment listing (Owner only).
+    /// </summary>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(EquipmentResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateEquipment(Guid id, [FromBody] UpdateEquipmentDto dto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+            var result = await _equipmentService.UpdateAsync(id, dto, currentUserId);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+
+    /// <summary>
     /// 2. Lists equipment with category filtering, search terms, and pagination.
     /// </summary>
     [HttpGet]

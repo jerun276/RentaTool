@@ -9,6 +9,7 @@ namespace RentaTool.Modules.Catalog.Application.Services;
 public interface IEquipmentService
 {
     Task<EquipmentResponseDto> CreateAsync(CreateEquipmentDto dto, Guid ownerId);
+    Task<EquipmentResponseDto> UpdateAsync(Guid id, UpdateEquipmentDto dto, Guid currentUserId);
     Task<EquipmentResponseDto?> GetByIdAsync(Guid id);
     Task<PagedResult<EquipmentResponseDto>> GetPagedListAsync(EquipmentFilterDto filter);
     Task<bool> CompleteMaintenanceAsync(Guid id);
@@ -55,6 +56,55 @@ public class EquipmentService : IEquipmentService
         _context.Set<Equipment>().Add(equipment);
         await _context.SaveChangesAsync();
 
+        return MapToDto(equipment, category.Name);
+    }
+
+    public async Task<EquipmentResponseDto> UpdateAsync(Guid id, UpdateEquipmentDto dto, Guid currentUserId)
+    {
+        if (dto == null) throw new ArgumentNullException(nameof(dto));
+
+        var equipment = await _context.Set<Equipment>()
+            .Include(e => e.Category)
+            .Include(e => e.Images)
+            .FirstOrDefaultAsync(e => e.Id == id && !e.IsDeleted);
+
+        if (equipment == null)
+        {
+            throw new KeyNotFoundException($"Equipment with ID {id} was not found.");
+        }
+
+        if (equipment.OwnerId != currentUserId)
+        {
+            throw new UnauthorizedAccessException("You are not authorized to update this equipment.");
+        }
+
+        var category = await _context.Set<Category>().FindAsync(dto.CategoryId);
+        if (category == null)
+        {
+            throw new ArgumentException($"Category with ID {dto.CategoryId} does not exist.", nameof(dto.CategoryId));
+        }
+
+        equipment.UpdateDetails(
+            dto.Title,
+            dto.Description,
+            dto.CategoryId,
+            dto.DailyRate,
+            dto.ReplacementValue,
+            dto.Location,
+            dto.SpecificationsJson
+        );
+
+        if (dto.Images != null && dto.Images.Count > 0)
+        {
+            _context.Set<ToolImage>().RemoveRange(equipment.Images);
+            equipment.Images.Clear();
+            foreach (var img in dto.Images)
+            {
+                equipment.Images.Add(new ToolImage(equipment.Id, img.ImageUrl, img.Angle, img.IsPrimary));
+            }
+        }
+
+        await _context.SaveChangesAsync();
         return MapToDto(equipment, category.Name);
     }
 
