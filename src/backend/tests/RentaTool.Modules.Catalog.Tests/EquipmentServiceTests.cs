@@ -170,4 +170,101 @@ public class EquipmentServiceTests
         result.Items[0].Title.Should().Contain("Drill");
         result.Items[0].CategoryName.Should().Be("Power Tools");
     }
+
+    [Fact]
+    public async Task UpdateAsync_OwnerUpdatesEquipmentAndImages_PersistsSuccessfully()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.Create(nameof(UpdateAsync_OwnerUpdatesEquipmentAndImages_PersistsSuccessfully));
+        var categories = await context.Set<Category>().ToListAsync();
+        var powerTools = categories.First(c => c.Name == "Power Tools");
+        var gardening = categories.First(c => c.Name == "Gardening");
+        var service = new EquipmentService(context);
+
+        var created = await service.CreateAsync(new CreateEquipmentDto
+        {
+            Title = "Original Bosch Drill",
+            Description = "Original description",
+            CategoryId = powerTools.Id,
+            DailyRate = 2000m,
+            ReplacementValue = 30000m,
+            Location = "Colombo",
+            Images = new List<ToolImageDto>
+            {
+                new() { ImageUrl = "https://example.com/img1.jpg", Angle = "Front", IsPrimary = true }
+            }
+        }, _testOwnerId);
+
+        var updateDto = new UpdateEquipmentDto
+        {
+            Title = "Updated Bosch Drill Pro",
+            Description = "Updated description with extra features",
+            CategoryId = gardening.Id,
+            DailyRate = 2500m,
+            ReplacementValue = 35000m,
+            Location = "Kandy",
+            Images = new List<ToolImageDto>
+            {
+                new() { ImageUrl = "https://example.com/new1.jpg", Angle = "Casing", IsPrimary = true },
+                new() { ImageUrl = "https://example.com/new2.jpg", Angle = "Motor", IsPrimary = false }
+            }
+        };
+
+        // Act
+        var updated = await service.UpdateAsync(created.Id, updateDto, _testOwnerId);
+
+        // Assert
+        updated.Should().NotBeNull();
+        updated.Title.Should().Be("Updated Bosch Drill Pro");
+        updated.Description.Should().Be("Updated description with extra features");
+        updated.DailyRate.Should().Be(2500m);
+        updated.ReplacementValue.Should().Be(35000m);
+        updated.Location.Should().Be("Kandy");
+        updated.CategoryName.Should().Be("Gardening");
+        updated.Images.Should().HaveCount(2);
+        updated.Images.Should().Contain(i => i.ImageUrl == "https://example.com/new1.jpg");
+
+        // Verify in database
+        var dbEntity = await context.Set<Equipment>()
+            .Include(e => e.Images)
+            .FirstOrDefaultAsync(e => e.Id == created.Id);
+        dbEntity.Should().NotBeNull();
+        dbEntity!.Title.Should().Be("Updated Bosch Drill Pro");
+        dbEntity.Images.Should().HaveCount(2);
+        dbEntity.Images.Should().NotContain(i => i.ImageUrl == "https://example.com/img1.jpg");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DifferentUser_ThrowsUnauthorizedAccessException()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.Create(nameof(UpdateAsync_DifferentUser_ThrowsUnauthorizedAccessException));
+        var category = await context.Set<Category>().FirstAsync();
+        var service = new EquipmentService(context);
+
+        var created = await service.CreateAsync(new CreateEquipmentDto
+        {
+            Title = "Makita Router",
+            CategoryId = category.Id,
+            DailyRate = 1800m,
+            ReplacementValue = 25000m,
+            Location = "Colombo"
+        }, _testOwnerId);
+
+        var updateDto = new UpdateEquipmentDto
+        {
+            Title = "Hacked Router",
+            CategoryId = category.Id,
+            DailyRate = 500m,
+            ReplacementValue = 10000m,
+            Location = "Galle"
+        };
+
+        // Act
+        var act = () => service.UpdateAsync(created.Id, updateDto, Guid.NewGuid());
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("*not authorized*");
+    }
 }

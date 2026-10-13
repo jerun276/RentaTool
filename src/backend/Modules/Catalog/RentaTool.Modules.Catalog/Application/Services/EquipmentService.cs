@@ -96,13 +96,14 @@ public class EquipmentService : IEquipmentService
 
         if (dto.Images != null && dto.Images.Count > 0)
         {
-            _context.Set<ToolImage>().RemoveRange(equipment.Images);
             equipment.Images.Clear();
             foreach (var img in dto.Images)
             {
-                equipment.Images.Add(new ToolImage(equipment.Id, img.ImageUrl, img.Angle, img.IsPrimary));
+                var newImg = new ToolImage(equipment.Id, img.ImageUrl, img.Angle, img.IsPrimary);
+                _context.Set<ToolImage>().Add(newImg);
             }
         }
+
 
         await _context.SaveChangesAsync();
         return MapToDto(equipment, category.Name);
