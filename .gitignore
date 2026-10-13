@@ -17,6 +17,11 @@ dist/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+/src/web/playwright-report/
+/src/web/test-results/
+/src/web/nfr-playwright-report/
+/src/web/nfr-test-results/
+/src/web/debug.log
 
 
 # Python
@@ -50,12 +55,14 @@ share/python-wheels/
 
 # Environment variables & secrets
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 appsettings.Development.json
 appsettings.Production.json
+secrets.json
+*.pem
+*.p12
+*.pfx
 
 # OS files
 .DS_Store
@@ -65,3 +72,8 @@ Thumbs.db
 .agents/
 .agent/
 AGENTS.md
+
+nfr-testing/
+e2e/
+evidence/
+nfr-tests/

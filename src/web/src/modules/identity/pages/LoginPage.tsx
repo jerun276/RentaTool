@@ -244,7 +244,7 @@ export const LoginPage: React.FC = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Email Field */}
                 <div>
-                  <label className="block text-xs font-mono uppercase text-[#bbcabf] mb-1.5 tracking-wider">
+                  <label htmlFor="operator-email" className="block text-xs font-mono uppercase text-[#bbcabf] mb-1.5 tracking-wider">
                     Operator Email <span className="text-[#10b981]">*</span>
                   </label>
                   <div className="relative">
@@ -252,6 +252,7 @@ export const LoginPage: React.FC = () => {
                       mail
                     </span>
                     <input
+                      id="operator-email"
                       type="email"
                       required
                       autoComplete="email"
@@ -266,7 +267,7 @@ export const LoginPage: React.FC = () => {
                 {/* Password Field */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-mono uppercase text-[#bbcabf] tracking-wider">
+                    <label htmlFor="operator-password" className="block text-xs font-mono uppercase text-[#bbcabf] tracking-wider">
                       Password <span className="text-[#10b981]">*</span>
                     </label>
                     <span className="text-[10px] font-mono text-[#86948a] hover:text-[#4edea3] cursor-pointer transition-colors">
@@ -278,6 +279,7 @@ export const LoginPage: React.FC = () => {
                       lock
                     </span>
                     <input
+                      id="operator-password"
                       type={showPassword ? "text" : "password"}
                       required
                       autoComplete="current-password"
@@ -289,7 +291,7 @@ export const LoginPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2.5 top-2.5 text-[#86948a] hover:text-[#dfe2ee] transition-colors p-0.5"
+                      className="absolute right-2.5 top-2.5 min-h-6 min-w-6 inline-flex items-center justify-center text-[#86948a] hover:text-[#dfe2ee] transition-colors p-0.5"
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       <span className="material-symbols-outlined text-[18px]">
@@ -341,7 +343,7 @@ export const LoginPage: React.FC = () => {
                   <span className="material-symbols-outlined text-[14px] text-[#e29100]">shield</span>
                   <span>Restricted Access: Authorized Admin Personnel Only</span>
                 </p>
-                <p className="text-[10px] text-[#6b7280]">
+                <p className="text-[10px] text-[#9ca3af]">
                   Public accounts are registered via mobile. Web portal is restricted to authorized operators.
                 </p>
               </div>
