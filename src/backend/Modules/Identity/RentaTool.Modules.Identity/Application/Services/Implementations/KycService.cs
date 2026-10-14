@@ -19,6 +19,14 @@ public sealed class KycService(AppDbContext db) : IKycService
                                                     && (x.Status == KycStatus.Pending || x.Status == KycStatus.Approved)))
             throw new InvalidOperationException("You already have a KYC submission that is pending or approved.");
 
+        var normalizedType = request.DocumentType.Trim();
+        var normalizedNumber = request.DocumentNumber.Trim().ToUpperInvariant();
+        if (await db.Set<KycRecord>().AnyAsync(x => x.UserId != userId
+                                                    && x.DocumentType == normalizedType
+                                                    && x.DocumentNumber == normalizedNumber
+                                                    && (x.Status == KycStatus.Pending || x.Status == KycStatus.Approved)))
+            throw new InvalidOperationException($"This {normalizedType} number is already registered to another account.");
+
         var record = new KycRecord(userId, request.DocumentType, request.DocumentNumber, request.FrontImageUrl, request.BackImageUrl);
         db.Set<KycRecord>().Add(record);
         await db.SaveChangesAsync();
