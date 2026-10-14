@@ -61,6 +61,7 @@ public class BookingsController : ControllerBase
     /// </summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(BookingResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetBookingById(Guid id)
     {
@@ -68,6 +69,14 @@ public class BookingsController : ControllerBase
         if (result == null)
         {
             return NotFound(new { message = $"Booking with ID {id} was not found." });
+        }
+
+        var role = User.FindFirst(ClaimTypes.Role)?.Value ?? User.FindFirst("role")?.Value;
+        var currentUserId = GetCurrentUserId();
+        if (!string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase) &&
+            result.RenterId != currentUserId && result.OwnerId != currentUserId)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "You are not authorized to view this booking." });
         }
 
         return Ok(result);
@@ -140,11 +149,8 @@ public class BookingsController : ControllerBase
     public async Task<IActionResult> GetActiveBookings()
     {
         var role = User.FindFirst(ClaimTypes.Role)?.Value ?? User.FindFirst("role")?.Value;
-        var hasUserHeader = Request.Headers.TryGetValue("X-User-Id", out var headerValue) &&
-                            Guid.TryParse(headerValue.FirstOrDefault(), out _);
-        var hasJwt = User.FindFirst(ClaimTypes.NameIdentifier) != null || User.FindFirst("sub") != null;
 
-        if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase) || (!hasUserHeader && !hasJwt))
+        if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
         {
             var fleetResults = await _bookingService.GetActiveBookingsAsync(Guid.Empty);
             return Ok(fleetResults);

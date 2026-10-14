@@ -122,6 +122,27 @@ public class ClaimService : IClaimService
         return claim == null ? null : await MapToResponseAsync(claim, cancellationToken);
     }
 
+    public async Task<DamageClaimResponse?> GetClaimByIdAsync(Guid claimId, Guid userId, bool isAdmin, CancellationToken cancellationToken = default)
+    {
+        var claim = await _context.Set<DamageClaim>()
+            .FirstOrDefaultAsync(c => c.Id == claimId, cancellationToken);
+
+        if (claim == null) return null;
+
+        if (!isAdmin && claim.FiledByUserId != userId)
+        {
+            var isParty = await _context.Set<EscrowHold>()
+                .AnyAsync(e => e.BookingId == claim.BookingId && (e.RenterId == userId || e.OwnerId == userId), cancellationToken);
+
+            if (!isParty)
+            {
+                throw new UnauthorizedAccessException("You are not authorized to view this damage claim.");
+            }
+        }
+
+        return await MapToResponseAsync(claim, cancellationToken);
+    }
+
     public async Task<List<DamageClaimResponse>> GetClaimsAsync(Guid userId, bool isAdmin, CancellationToken cancellationToken = default)
     {
         var query = _context.Set<DamageClaim>().AsQueryable();
