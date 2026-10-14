@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RentaTool.Modules.Escrow.Application.DTOs;
 using RentaTool.Modules.Escrow.Application.Services;
@@ -30,11 +32,16 @@ public class ClaimsController : ControllerBase
         }
     }
 
-    /// <summary>Retrieves all damage claims for the arbitration desk.</summary>
+    /// <summary>Retrieves damage claims: all for admins, otherwise only the caller's own.</summary>
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
-        var claims = await _claimService.GetClaimsAsync(cancellationToken);
+        var idValue = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        if (!Guid.TryParse(idValue, out var userId))
+            return Unauthorized();
+
+        var claims = await _claimService.GetClaimsAsync(userId, User.IsInRole("Admin"), cancellationToken);
         return Ok(claims);
     }
 

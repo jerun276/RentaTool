@@ -13,7 +13,7 @@ public interface IClaimService
 {
     Task<DamageClaimResponse> FileClaimAsync(FileClaimRequest request, CancellationToken cancellationToken = default);
     Task<DamageClaimResponse?> GetClaimByIdAsync(Guid claimId, CancellationToken cancellationToken = default);
-    Task<List<DamageClaimResponse>> GetClaimsAsync(CancellationToken cancellationToken = default);
+    Task<List<DamageClaimResponse>> GetClaimsAsync(Guid userId, bool isAdmin, CancellationToken cancellationToken = default);
     Task<DamageClaimResponse> AdjudicateClaimAsync(Guid claimId, AdjudicateClaimRequest request, CancellationToken cancellationToken = default);
     Task<PayoutClaimResponse> ProcessPayoutAsync(Guid claimId, CancellationToken cancellationToken = default);
 }

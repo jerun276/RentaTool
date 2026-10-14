@@ -122,9 +122,19 @@ public class ClaimService : IClaimService
         return claim == null ? null : await MapToResponseAsync(claim, cancellationToken);
     }
 
-    public async Task<List<DamageClaimResponse>> GetClaimsAsync(CancellationToken cancellationToken = default)
+    public async Task<List<DamageClaimResponse>> GetClaimsAsync(Guid userId, bool isAdmin, CancellationToken cancellationToken = default)
     {
-        var claims = await _context.Set<DamageClaim>()
+        var query = _context.Set<DamageClaim>().AsQueryable();
+        if (!isAdmin)
+        {
+            // Non-admins only see claims they filed or claims on bookings where they are renter/owner.
+            var ownBookingIds = _context.Set<EscrowHold>()
+                .Where(e => e.RenterId == userId || e.OwnerId == userId)
+                .Select(e => e.BookingId);
+            query = query.Where(c => c.FiledByUserId == userId || ownBookingIds.Contains(c.BookingId));
+        }
+
+        var claims = await query
             .OrderByDescending(c => c.CreatedAtUtc)
             .ToListAsync(cancellationToken);
 
