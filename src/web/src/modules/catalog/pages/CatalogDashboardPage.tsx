@@ -9,6 +9,7 @@ import { InspectionTimelineModal } from "../components/InspectionTimelineModal"
 import { CreateEquipmentModal } from "../components/CreateEquipmentModal"
 import { BatchAvailabilityModal } from "../components/BatchAvailabilityModal"
 import { ManageCategoriesModal } from "../components/ManageCategoriesModal"
+import { EquipmentDetailModal } from "../components/EquipmentDetailModal"
 import { Button } from "@/shared/components/ui/button"
 
 export const CatalogDashboardPage: React.FC = () => {
@@ -23,6 +24,7 @@ export const CatalogDashboardPage: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<EquipmentStatus | undefined>()
 
   // Modals state
+  const [selectedForDetail, setSelectedForDetail] = useState<EquipmentDto | null>(null)
   const [selectedForHistory, setSelectedForHistory] = useState<EquipmentDto | null>(null)
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<"log" | "inspect">("log")
@@ -251,12 +253,21 @@ export const CatalogDashboardPage: React.FC = () => {
               equipment={eq}
               onViewHistory={handleOpenHistory}
               onInspect={handleOpenInspect}
+              onSelectEquipment={(selected) => setSelectedForDetail(selected)}
             />
           ))}
         </div>
       )}
 
       {/* Modals */}
+      <EquipmentDetailModal
+        equipment={selectedForDetail}
+        isOpen={!!selectedForDetail}
+        onClose={() => setSelectedForDetail(null)}
+        onViewHistory={handleOpenHistory}
+        onInspect={handleOpenInspect}
+      />
+
       <InspectionTimelineModal
         equipment={selectedForHistory}
         isOpen={isHistoryModalOpen}

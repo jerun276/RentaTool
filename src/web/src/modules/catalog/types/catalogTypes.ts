@@ -22,8 +22,15 @@ export interface EquipmentDto {
   location: string
   specificationsJson?: string
   ownerId: string
+  ownerName?: string
+  ownerPhoneNumber?: string
+  ownerIsVerified?: boolean
+  ownerTrustScore?: number
+  ownerMemberSinceUtc?: string
+  ownerProfilePhotoUrl?: string
   accumulatedRentalDays: number
   requiresMandatoryServicing: boolean
+  lastMaintenanceDateUtc?: string
   images: ToolImageDto[]
   createdAt: string
 }
