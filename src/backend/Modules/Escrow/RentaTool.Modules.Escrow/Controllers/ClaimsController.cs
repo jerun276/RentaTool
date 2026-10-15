@@ -39,6 +39,10 @@ public class ClaimsController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     /// <summary>Retrieves damage claims: all for admins, otherwise only the caller's own.</summary>

@@ -67,6 +67,37 @@ public class ClaimServiceTests
     }
 
     [Fact]
+    public async Task FileClaim_DuplicateClaim_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.Create(nameof(FileClaim_DuplicateClaim_ThrowsInvalidOperationException));
+        await SetupEscrowHoldAsync(context, 20000m);
+        var claimService = new ClaimService(context, _httpClientFactory);
+
+        var firstRequest = new FileClaimRequest(
+            _bookingId,
+            _ownerId,
+            "Broken safety guard",
+            new List<string> { "https://cdn.rentatool.lk/damages/photo1.jpg" }
+        );
+        await claimService.FileClaimAsync(firstRequest);
+
+        var duplicateRequest = new FileClaimRequest(
+            _bookingId,
+            _ownerId,
+            "Another claim for the same booking",
+            new List<string> { "https://cdn.rentatool.lk/damages/photo2.jpg" }
+        );
+
+        // Act
+        var act = () => claimService.FileClaimAsync(duplicateRequest);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*already been filed*");
+    }
+
+    [Fact]
     public async Task AdjudicateClaim_Approve_SetsStatusApprovedAndDeduction()
     {
         // Arrange

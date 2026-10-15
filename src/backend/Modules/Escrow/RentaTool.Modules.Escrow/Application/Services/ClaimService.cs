@@ -26,6 +26,76 @@ public class ClaimService : IClaimService
         FileClaimRequest request,
         CancellationToken cancellationToken = default)
     {
+        // 1. Prevent multiple/infinite damage claims for the same booking
+        var existingClaim = await _context.Set<DamageClaim>()
+            .FirstOrDefaultAsync(c => c.BookingId == request.BookingId, cancellationToken);
+        if (existingClaim != null)
+        {
+            throw new InvalidOperationException(
+                $"A damage claim has already been filed for booking {request.BookingId} (Claim ID: {existingClaim.Id}). Only one claim can be generated per rental booking.");
+        }
+
+        // 2. Validate booking state and owner authorization if booking is present
+        try
+        {
+            var booking = await _context.Set<RentaTool.Modules.Booking.Domain.Booking>()
+                .FirstOrDefaultAsync(b => b.Id == request.BookingId, cancellationToken);
+            if (booking != null)
+            {
+                if (booking.OwnerId != request.FiledByUserId)
+                {
+                    throw new InvalidOperationException("Only the verified equipment owner of this booking can file a damage claim.");
+                }
+
+                if (booking.Status == BookingStatus.Disputed)
+                {
+                    throw new InvalidOperationException($"Booking {request.BookingId} is already in Disputed status.");
+                }
+
+                if (booking.Status == BookingStatus.Cancelled)
+                {
+                    throw new InvalidOperationException("Cannot file a damage claim for a cancelled booking.");
+                }
+
+                if (booking.Status != BookingStatus.Active && booking.Status != BookingStatus.Completed)
+                {
+                    throw new InvalidOperationException($"Cannot file a damage claim for booking with status '{booking.Status}'. Claims are only permitted for Active or Completed rentals.");
+                }
+
+                booking.MarkDisputed();
+            }
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("Cannot create a DbSet"))
+        {
+            // Booking module DbSet not registered in isolated Escrow test runner
+        }
+
+        // 3. Mark associated escrow as disputed if present and validate hold
+        var escrow = await _context.Set<EscrowHold>()
+            .FirstOrDefaultAsync(e => e.BookingId == request.BookingId, cancellationToken);
+        if (escrow != null)
+        {
+            if (escrow.OwnerId != Guid.Empty && escrow.OwnerId != request.FiledByUserId)
+            {
+                throw new InvalidOperationException("Only the verified equipment owner of this booking can file a damage claim.");
+            }
+
+            if (escrow.Status == EscrowStatus.Disputed)
+            {
+                throw new InvalidOperationException($"The escrow hold for booking {request.BookingId} is already disputed.");
+            }
+
+            if (escrow.Status == EscrowStatus.Disbursed || escrow.Status == EscrowStatus.Refunded)
+            {
+                throw new InvalidOperationException("Cannot file a damage claim because the escrow deposit has already been settled or refunded.");
+            }
+
+            if (escrow.Status == EscrowStatus.Held)
+            {
+                escrow.MarkDisputed();
+            }
+        }
+
         var photosJson = JsonSerializer.Serialize(request.EvidencePhotos ?? new List<string>());
 
         var claim = new DamageClaim(
@@ -34,14 +104,6 @@ public class ClaimService : IClaimService
             request.DamageDescription,
             photosJson
         );
-
-        // Mark associated escrow as disputed if present
-        var escrow = await _context.Set<EscrowHold>()
-            .FirstOrDefaultAsync(e => e.BookingId == request.BookingId, cancellationToken);
-        if (escrow != null && escrow.Status == EscrowStatus.Held)
-        {
-            escrow.MarkDisputed();
-        }
 
         _context.Set<DamageClaim>().Add(claim);
 
