@@ -1,5 +1,5 @@
 import React from "react"
-import { Calendar, Clock, QrCode, ArrowRightCircle, CheckCircle2, AlertCircle } from "lucide-react"
+import { Calendar, Clock, QrCode, ArrowRightCircle, CheckCircle2, AlertCircle, Wrench, User, MapPin } from "lucide-react"
 import { ActiveBookingSummaryDto } from "../types/bookingTypes"
 import { Card, CardContent, CardFooter, CardHeader } from "@/shared/components/ui/card"
 import { Badge } from "@/shared/components/ui/badge"
@@ -51,15 +51,59 @@ export const BookingCard: React.FC<BookingCardProps> = ({ booking, onExtend, onH
     <Card className="flex flex-col justify-between border-border/70 bg-card/60 backdrop-blur-sm hover:border-emerald-500/40 transition-all duration-200">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
-          <div>
-            <span className="text-xs font-mono text-muted-foreground uppercase">
-              ID: {booking.id.slice(0, 10)}
-            </span>
-            <h3 className="font-semibold text-base text-foreground mt-0.5">
-              Rental Reservation
-            </h3>
+          <div className="flex items-center gap-3">
+            {booking.equipmentImageUrl ? (
+              <img
+                src={booking.equipmentImageUrl}
+                alt={booking.equipmentTitle || "Equipment"}
+                className="w-12 h-12 rounded-lg object-cover border border-border/60 shrink-0"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = "none"
+                }}
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-lg bg-emerald-950/40 border border-emerald-500/20 flex items-center justify-center shrink-0 text-emerald-400">
+                <Wrench className="h-5 w-5" />
+              </div>
+            )}
+            <div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] font-mono text-muted-foreground uppercase">
+                  BKG-{booking.id.slice(0, 8).toUpperCase()}
+                </span>
+                {booking.equipmentCategory && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-border/60">
+                    {booking.equipmentCategory}
+                  </Badge>
+                )}
+              </div>
+              <h3 className="font-semibold text-base text-foreground mt-0.5 line-clamp-1">
+                {booking.equipmentTitle || "Equipment Rental"}
+              </h3>
+              {booking.equipmentLocation && (
+                <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+                  <MapPin className="h-3 w-3 text-emerald-400 shrink-0" />
+                  <span className="truncate">{booking.equipmentLocation}</span>
+                </div>
+              )}
+            </div>
           </div>
           {getStatusBadge()}
+        </div>
+
+        {/* Renter Details Section */}
+        <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <User className="h-3.5 w-3.5 text-sky-400" />
+            <span className="text-foreground font-medium">
+              {booking.renterName || `Renter (${booking.renterId.slice(0, 8)})`}
+            </span>
+          </div>
+          {booking.renterPhone && (
+            <span className="text-[11px] font-mono text-muted-foreground">
+              {booking.renterPhone}
+            </span>
+          )}
         </div>
       </CardHeader>
 

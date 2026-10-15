@@ -33,9 +33,13 @@ export const BookingDashboardPage: React.FC = () => {
 
   // Filter bookings
   const filteredBookings = bookings.filter((b) => {
+    const term = searchTerm.toLowerCase()
     const matchesSearch =
-      b.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.equipmentId.toLowerCase().includes(searchTerm.toLowerCase())
+      b.id.toLowerCase().includes(term) ||
+      b.equipmentId.toLowerCase().includes(term) ||
+      (b.equipmentTitle && b.equipmentTitle.toLowerCase().includes(term)) ||
+      (b.equipmentCategory && b.equipmentCategory.toLowerCase().includes(term)) ||
+      (b.renterName && b.renterName.toLowerCase().includes(term))
     const matchesStatus = statusFilter === "ALL" || b.status === statusFilter
     return matchesSearch && matchesStatus
   })
