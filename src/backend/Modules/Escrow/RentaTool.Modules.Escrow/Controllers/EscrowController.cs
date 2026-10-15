@@ -2,8 +2,12 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using RentaTool.Modules.Booking.Domain;
+using RentaTool.Modules.Catalog.Domain;
 using RentaTool.Modules.Escrow.Application.DTOs;
 using RentaTool.Modules.Escrow.Application.Services;
+using RentaTool.Shared.Infrastructure.Persistence;
 
 namespace RentaTool.Modules.Escrow.Controllers;
 
@@ -13,10 +17,12 @@ namespace RentaTool.Modules.Escrow.Controllers;
 public class EscrowController : ControllerBase
 {
     private readonly IEscrowService _escrowService;
+    private readonly AppDbContext _context;
 
-    public EscrowController(IEscrowService escrowService)
+    public EscrowController(IEscrowService escrowService, AppDbContext context)
     {
         _escrowService = escrowService;
+        _context = context;
     }
 
     /// <summary>Pre-authorizes and locks security deposit funds via simulated gateway.</summary>
@@ -62,6 +68,36 @@ public class EscrowController : ControllerBase
                 return StatusCode(StatusCodes.Status403Forbidden, new { error = "You are not authorized to view this escrow hold." });
         }
 
+        Guid? equipmentId = null;
+        string? equipmentTitle = null;
+        string? equipmentImageUrl = null;
+        try
+        {
+            var booking = await _context.Set<RentaTool.Modules.Booking.Domain.Booking>()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.Id == bookingId, cancellationToken);
+
+            if (booking != null)
+            {
+                equipmentId = booking.EquipmentId;
+                var equipment = await _context.Set<Equipment>()
+                    .AsNoTracking()
+                    .Include(e => e.Images)
+                    .FirstOrDefaultAsync(e => e.Id == booking.EquipmentId, cancellationToken);
+
+                if (equipment != null)
+                {
+                    equipmentTitle = equipment.Title;
+                    equipmentImageUrl = equipment.Images.FirstOrDefault(i => i.IsPrimary)?.ImageUrl
+                        ?? equipment.Images.FirstOrDefault()?.ImageUrl;
+                }
+            }
+        }
+        catch
+        {
+            // Gracefully degrade if relational joins are not populated
+        }
+
         return Ok(new
         {
             escrow.Id,
@@ -70,7 +106,10 @@ public class EscrowController : ControllerBase
             escrow.PreAuthTransactionId,
             Status = escrow.Status.ToString(),
             escrow.HeldAtUtc,
-            escrow.SettledAtUtc
+            escrow.SettledAtUtc,
+            EquipmentId = equipmentId,
+            EquipmentTitle = equipmentTitle,
+            EquipmentImageUrl = equipmentImageUrl
         });
     }
 }
