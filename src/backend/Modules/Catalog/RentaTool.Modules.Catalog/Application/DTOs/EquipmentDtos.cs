@@ -65,6 +65,12 @@ public class EquipmentResponseDto
 {
     public Guid Id { get; set; }
     public Guid OwnerId { get; set; }
+    public string OwnerName { get; set; } = string.Empty;
+    public string? OwnerPhoneNumber { get; set; }
+    public bool OwnerIsVerified { get; set; }
+    public int OwnerTrustScore { get; set; } = 50;
+    public DateTime? OwnerMemberSinceUtc { get; set; }
+    public string? OwnerProfilePhotoUrl { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public Guid CategoryId { get; set; }

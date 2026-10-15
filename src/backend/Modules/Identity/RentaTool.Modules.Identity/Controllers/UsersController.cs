@@ -39,6 +39,27 @@ public class UsersController(
     }
 
     [Authorize]
+    [HttpGet("{id:guid}/public-profile")]
+    [ProducesResponseType(typeof(PublicUserProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPublicProfile(Guid id)
+    {
+        var user = await userService.GetUserByIdAsync(id);
+        if (user is null) return NotFound(new { message = $"User with ID '{id}' was not found." });
+
+        return Ok(new PublicUserProfileDto(
+            user.Id,
+            user.Name,
+            user.Role,
+            user.IsVerified,
+            user.TrustScore,
+            user.CreatedAtUtc,
+            user.PhoneNumber,
+            user.ProfilePhotoUrl
+        ));
+    }
+
+    [Authorize]
     [HttpPatch("{id:guid}/profile")]
     [ProducesResponseType(typeof(UserSummaryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
