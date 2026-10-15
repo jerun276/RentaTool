@@ -112,6 +112,7 @@ export const AIDisputeArbitrationView: React.FC = () => {
   const currentDecision = activeClaim ? adjudicationStatus[activeClaim.id] : undefined
 
   const handleApprove = async () => {
+    if (!activeClaim) return
     setSubmitting(true)
     setFeedbackNotice(null)
     try {
@@ -134,8 +135,14 @@ export const AIDisputeArbitrationView: React.FC = () => {
         text: `Claim ${activeClaim.code} approved and settled in PostgreSQL for LKR ${activeClaim.aiProposed.toLocaleString()}.`,
       })
       await fetchClaims()
-    } catch {
-      setFeedbackNotice({ type: "error", text: "Failed to persist adjudication in backend PostgreSQL." })
+    } catch (err: any) {
+      console.error("Adjudication failure:", err)
+      const errorMsg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to persist adjudication in backend PostgreSQL."
+      setFeedbackNotice({ type: "error", text: errorMsg })
     } finally {
       setSubmitting(false)
       setIsRevising(false)
@@ -143,6 +150,7 @@ export const AIDisputeArbitrationView: React.FC = () => {
   }
 
   const handleRevise = async () => {
+    if (!activeClaim) return
     if (revisedAmount < 0) {
       alert("Revised deduction must be non-negative.")
       return
@@ -170,8 +178,14 @@ export const AIDisputeArbitrationView: React.FC = () => {
         text: `Claim ${activeClaim.code} revised to LKR ${revisedAmount.toLocaleString()} and settled.`,
       })
       await fetchClaims()
-    } catch {
-      setFeedbackNotice({ type: "error", text: "Failed to persist claim revision in backend PostgreSQL." })
+    } catch (err: any) {
+      console.error("Claim revision failure:", err)
+      const errorMsg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to persist claim revision in backend PostgreSQL."
+      setFeedbackNotice({ type: "error", text: errorMsg })
     } finally {
       setSubmitting(false)
       setIsRevising(false)
@@ -179,6 +193,7 @@ export const AIDisputeArbitrationView: React.FC = () => {
   }
 
   const handleReject = async () => {
+    if (!activeClaim) return
     setSubmitting(true)
     setFeedbackNotice(null)
     try {
@@ -189,11 +204,6 @@ export const AIDisputeArbitrationView: React.FC = () => {
           adjudicatorId,
           notes: "Claim dismissed by staff operator. Deposit returned in full to renter.",
         })
-        try {
-          await escrowApi.processPayout(activeClaim.id)
-        } catch (payoutErr) {
-          console.warn("Auto-payout notice:", payoutErr)
-        }
       }
       setAdjudicationStatus((prev) => ({ ...prev, [activeClaim.id]: "rejected" }))
       setFeedbackNotice({
@@ -201,8 +211,14 @@ export const AIDisputeArbitrationView: React.FC = () => {
         text: `Claim ${activeClaim.code} rejected. Full security deposit refunded to renter in PostgreSQL.`,
       })
       await fetchClaims()
-    } catch {
-      setFeedbackNotice({ type: "error", text: "Failed to persist rejection in backend PostgreSQL." })
+    } catch (err: any) {
+      console.error("Rejection failure:", err)
+      const errorMsg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to persist rejection in backend PostgreSQL."
+      setFeedbackNotice({ type: "error", text: errorMsg })
     } finally {
       setSubmitting(false)
       setIsRevising(false)
@@ -618,41 +634,52 @@ export const AIDisputeArbitrationView: React.FC = () => {
             )}
 
             {/* Adjudication Action Buttons */}
-            <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-[#1f2937]">
-              <button
-                disabled={submitting}
-                onClick={handleReject}
-                className="h-9 px-4 rounded bg-[#93000a]/25 hover:bg-[#93000a]/40 text-[#ffb4ab] font-mono text-[12px] font-bold border border-[#ffb4ab]/30 flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[16px]">cancel</span>
-                <span>Reject Owner Claim (Full Refund)</span>
-              </button>
-
-              <div className="flex items-center gap-3">
-                <button
-                  disabled={submitting}
-                  onClick={() => setIsRevising((prev) => !prev)}
-                  className="h-9 px-3 rounded bg-[#262a33] hover:bg-[#31353e] text-[#ffb95f] font-mono text-[12px] font-semibold transition-colors border border-[#1f2937] disabled:opacity-50 cursor-pointer"
-                >
-                  Revise Deduction
-                </button>
-
-                <button
-                  disabled={submitting}
-                  onClick={handleApprove}
-                  className="h-9 px-5 rounded bg-[#10b981] hover:bg-[#4edea3] text-[#003824] font-mono text-[12px] font-bold flex items-center gap-1.5 transition-all shadow-md disabled:opacity-50 cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[16px]">
-                    {submitting ? "hourglass_empty" : "gavel"}
-                  </span>
+            {activeClaim.status === "Settled" || currentDecision !== undefined ? (
+              <div className="pt-3 flex items-center justify-between border-t border-[#1f2937]">
+                <div className="flex items-center gap-2 text-[#4edea3] text-xs font-mono font-semibold">
+                  <span className="material-symbols-outlined text-[18px]">verified</span>
                   <span>
-                    {submitting
-                      ? "Persisting in PostgreSQL..."
-                      : `Approve AI Settlement (LKR ${activeClaim.aiProposed.toLocaleString()})`}
+                    Dispute Adjudication Recorded in PostgreSQL ({currentDecision ? currentDecision.toUpperCase() : activeClaim.status})
                   </span>
-                </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-[#1f2937]">
+                <button
+                  disabled={submitting}
+                  onClick={handleReject}
+                  className="h-9 px-4 rounded bg-[#93000a]/25 hover:bg-[#93000a]/40 text-[#ffb4ab] font-mono text-[12px] font-bold border border-[#ffb4ab]/30 flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">cancel</span>
+                  <span>Reject Owner Claim (Full Refund)</span>
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    disabled={submitting}
+                    onClick={() => setIsRevising((prev) => !prev)}
+                    className="h-9 px-3 rounded bg-[#262a33] hover:bg-[#31353e] text-[#ffb95f] font-mono text-[12px] font-semibold transition-colors border border-[#1f2937] disabled:opacity-50 cursor-pointer"
+                  >
+                    Revise Deduction
+                  </button>
+
+                  <button
+                    disabled={submitting}
+                    onClick={handleApprove}
+                    className="h-9 px-5 rounded bg-[#10b981] hover:bg-[#4edea3] text-[#003824] font-mono text-[12px] font-bold flex items-center gap-1.5 transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">
+                      {submitting ? "hourglass_empty" : "gavel"}
+                    </span>
+                    <span>
+                      {submitting
+                        ? "Persisting in PostgreSQL..."
+                        : `Approve AI Settlement (LKR ${activeClaim.aiProposed.toLocaleString()})`}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
         </div>
         )}
       </div>

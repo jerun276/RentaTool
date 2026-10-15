@@ -57,8 +57,8 @@ public class DamageClaim : BaseEntity
 
     public void Adjudicate(string decision, decimal? revisedDeduction, Guid adjudicatorId, string? notes)
     {
-        if (Status != ClaimStatus.PendingStaffApproval && Status != ClaimStatus.UnderAIEvaluation && Status != ClaimStatus.Filed)
-            throw new InvalidOperationException($"Cannot adjudicate claim in status {Status}.");
+        if (Status == ClaimStatus.Settled)
+            throw new InvalidOperationException("Cannot adjudicate claim that has already been settled and disbursed.");
 
         decision = decision.Trim();
         AdjudicatedByUserId = adjudicatorId;

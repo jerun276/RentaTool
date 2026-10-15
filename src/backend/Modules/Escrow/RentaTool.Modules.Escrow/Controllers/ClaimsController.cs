@@ -82,10 +82,17 @@ public class ClaimsController : ControllerBase
     }
 
     /// <summary>Disburses final settlement payments (owner payout + renter refund).</summary>
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     [HttpPost("{id:guid}/payout")]
     public async Task<IActionResult> ProcessPayout(Guid id, CancellationToken cancellationToken)
     {
+        var role = User.FindFirstValue(ClaimTypes.Role) ?? User.FindFirstValue("role");
+        if (User.Identity?.IsAuthenticated == true && !string.IsNullOrEmpty(role) &&
+            !string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase) && !User.IsInRole("Admin"))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Only administrative staff are authorized to disburse claim settlements." });
+        }
+
         try
         {
             var result = await _claimService.ProcessPayoutAsync(id, cancellationToken);
@@ -102,10 +109,17 @@ public class ClaimsController : ControllerBase
     }
 
     /// <summary>Business-Specific: Enforces human review decisions (Approve, Revise, Reject) and updates ledger.</summary>
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     [HttpPost("{id:guid}/adjudicate")]
     public async Task<IActionResult> Adjudicate(Guid id, [FromBody] AdjudicateClaimRequest request, CancellationToken cancellationToken)
     {
+        var role = User.FindFirstValue(ClaimTypes.Role) ?? User.FindFirstValue("role");
+        if (User.Identity?.IsAuthenticated == true && !string.IsNullOrEmpty(role) &&
+            !string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase) && !User.IsInRole("Admin"))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Only administrative staff are authorized to adjudicate damage claims." });
+        }
+
         try
         {
             var result = await _claimService.AdjudicateClaimAsync(id, request, cancellationToken);

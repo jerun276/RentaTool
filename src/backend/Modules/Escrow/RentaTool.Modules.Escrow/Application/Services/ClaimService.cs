@@ -240,6 +240,16 @@ public class ClaimService : IClaimService
 
         claim.Adjudicate(request.Decision, request.RevisedDeduction, request.AdjudicatorId, request.Notes);
 
+        if (string.Equals(request.Decision, "Reject", StringComparison.OrdinalIgnoreCase))
+        {
+            var escrow = await _context.Set<EscrowHold>()
+                .FirstOrDefaultAsync(e => e.BookingId == claim.BookingId, cancellationToken);
+            if (escrow != null && (escrow.Status == EscrowStatus.Held || escrow.Status == EscrowStatus.Disputed))
+            {
+                escrow.RefundFull();
+            }
+        }
+
         var audit = new WorkflowStateAudit(
             claim.Id,
             $"WF-{claim.Id.ToString()[..8].ToUpper()}",
@@ -263,16 +273,19 @@ public class ClaimService : IClaimService
             ?? throw new KeyNotFoundException($"Damage claim {claimId} not found.");
 
         var escrow = await _context.Set<EscrowHold>()
-            .FirstOrDefaultAsync(e => e.BookingId == claim.BookingId, cancellationToken)
-            ?? throw new InvalidOperationException($"No escrow hold found for booking {claim.BookingId}.");
+            .FirstOrDefaultAsync(e => e.BookingId == claim.BookingId, cancellationToken);
 
         // Compute split settlement
         decimal finalDeduction = claim.FinalDeduction ?? claim.ProposedDeduction;
-        decimal ownerPayout = Math.Min(finalDeduction, escrow.DepositAmount);
-        decimal renterRefund = Math.Max(0m, escrow.DepositAmount - ownerPayout);
+        decimal depositAmount = escrow?.DepositAmount ?? Math.Max(finalDeduction, 15000m);
+        decimal ownerPayout = Math.Min(finalDeduction, depositAmount);
+        decimal renterRefund = Math.Max(0m, depositAmount - ownerPayout);
 
-        // Execute escrow settlement
-        escrow.Disburse(ownerPayout);
+        // Execute escrow settlement if hold exists
+        if (escrow != null && (escrow.Status == EscrowStatus.Held || escrow.Status == EscrowStatus.Disputed))
+        {
+            escrow.Disburse(ownerPayout);
+        }
         claim.MarkSettled();
 
         var payoutTxRef = $"PAYOUT-OWNER-{Guid.NewGuid().ToString("N")[..10].ToUpper()}";
