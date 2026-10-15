@@ -196,6 +196,8 @@ public class BookingService : IBookingService
             var primaryImg = eq?.Images.FirstOrDefault(i => i.IsPrimary)?.ImageUrl
                 ?? eq?.Images.FirstOrDefault()?.ImageUrl;
 
+            var isDisputed = b.Status == BookingStatus.Disputed;
+
             return new ActiveBookingSummaryDto
             {
                 Id = b.Id,
@@ -205,7 +207,7 @@ public class BookingService : IBookingService
                 StartDate = b.StartDate,
                 EndDate = b.EndDate,
                 TotalRentalFee = b.TotalRentalFee,
-                Status = b.Status.ToString(),
+                Status = isDisputed ? BookingStatus.Disputed.ToString() : b.Status.ToString(),
                 PickupVerified = b.HandoverEvents.Any(h => h.EventType == HandoverEventType.Pickup && h.IsConfirmed),
                 ReturnVerified = b.HandoverEvents.Any(h => h.EventType == HandoverEventType.Return && h.IsConfirmed),
                 CreatedAtUtc = b.CreatedAtUtc,
