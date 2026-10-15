@@ -87,6 +87,39 @@ public class BookingService : IBookingService
 
         var dto = MapToDto(booking);
         await EnrichResponseDtoAsync(dto, cancellationToken);
+
+        if (dto.Status != BookingStatus.Disputed.ToString())
+        {
+            try
+            {
+                var conn = _context.Database.GetDbConnection();
+                await using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT 1 FROM damage_claims WHERE booking_id = @bid AND status NOT IN ('Rejected')
+                    UNION
+                    SELECT 1 FROM escrow_holds WHERE booking_id = @bid AND status = 4 LIMIT 1";
+                var p = cmd.CreateParameter();
+                p.ParameterName = "@bid";
+                p.Value = bookingId;
+                cmd.Parameters.Add(p);
+
+                if (conn.State != System.Data.ConnectionState.Open)
+                {
+                    await conn.OpenAsync(cancellationToken);
+                }
+
+                var res = await cmd.ExecuteScalarAsync(cancellationToken);
+                if (res != null)
+                {
+                    dto.Status = BookingStatus.Disputed.ToString();
+                }
+            }
+            catch
+            {
+                // Graceful fallback
+            }
+        }
+
         return dto;
     }
 
@@ -187,6 +220,53 @@ public class BookingService : IBookingService
             // Graceful fallback for test contexts without identity schema
         }
 
+        var disputedBookingIds = new HashSet<Guid>();
+        try
+        {
+            var conn = _context.Database.GetDbConnection();
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                SELECT DISTINCT booking_id FROM damage_claims WHERE status NOT IN ('Rejected')
+                UNION
+                SELECT DISTINCT booking_id FROM escrow_holds WHERE status = 4";
+            if (conn.State != System.Data.ConnectionState.Open)
+            {
+                await conn.OpenAsync(cancellationToken);
+            }
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                if (!reader.IsDBNull(0))
+                {
+                    disputedBookingIds.Add(reader.GetGuid(0));
+                }
+            }
+        }
+        catch
+        {
+            // Graceful fallback for test contexts without relational escrow schema
+        }
+
+        if (disputedBookingIds.Count > 0)
+        {
+            try
+            {
+                var conn = _context.Database.GetDbConnection();
+                await using var updateCmd = conn.CreateCommand();
+                var idList = string.Join(",", disputedBookingIds.Select(id => $"'{id}'"));
+                updateCmd.CommandText = $"UPDATE bookings SET status = 6 WHERE id IN ({idList}) AND status != 6";
+                if (conn.State != System.Data.ConnectionState.Open)
+                {
+                    await conn.OpenAsync(cancellationToken);
+                }
+                await updateCmd.ExecuteNonQueryAsync(cancellationToken);
+            }
+            catch
+            {
+                // Graceful fallback
+            }
+        }
+
         return bookings.Select(b =>
         {
             equipments.TryGetValue(b.EquipmentId, out var eq);
@@ -196,7 +276,7 @@ public class BookingService : IBookingService
             var primaryImg = eq?.Images.FirstOrDefault(i => i.IsPrimary)?.ImageUrl
                 ?? eq?.Images.FirstOrDefault()?.ImageUrl;
 
-            var isDisputed = b.Status == BookingStatus.Disputed;
+            var isDisputed = b.Status == BookingStatus.Disputed || disputedBookingIds.Contains(b.Id);
 
             return new ActiveBookingSummaryDto
             {
