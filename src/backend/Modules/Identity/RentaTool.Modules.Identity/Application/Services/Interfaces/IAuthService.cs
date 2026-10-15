@@ -6,4 +6,5 @@ public interface IAuthService
 {
     Task<TokenResponseDto> RegisterAsync(RegisterRequestDto request);
     Task<TokenResponseDto?> LoginAsync(LoginRequestDto request);
+    Task<TokenResponseDto?> RefreshTokenAsync(string refreshToken);
 }

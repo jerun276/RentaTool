@@ -38,4 +38,27 @@ public class AuthController(IAuthService authService) : ControllerBase
             return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
     }
+
+    [HttpPost("refresh")]
+    [ProducesResponseType(typeof(TokenResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto request)
+    {
+        if (!ModelState.IsValid) return ValidationProblem(ModelState);
+        if (string.IsNullOrWhiteSpace(request?.RefreshToken))
+            return BadRequest(new { message = "Refresh token is required." });
+
+        try
+        {
+            var token = await authService.RefreshTokenAsync(request.RefreshToken);
+            return token is null ? Unauthorized(new { message = "Invalid or expired refresh token." }) : Ok(token);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+    }
 }
+

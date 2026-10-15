@@ -29,6 +29,8 @@ public class PostgreSqlDatabaseIntegrationTests : IAsyncLifetime
                 try
                 {
                     await _context.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo_url VARCHAR(2048);");
+                    await _context.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS refresh_token VARCHAR(256);");
+                    await _context.Database.ExecuteSqlRawAsync("ALTER TABLE users ADD COLUMN IF NOT EXISTS refresh_token_expires_at_utc TIMESTAMP WITH TIME ZONE;");
                 }
                 catch { }
             }
