@@ -3,6 +3,12 @@ using RentaTool.Modules.Booking.Domain;
 
 namespace RentaTool.Modules.Booking.Application.DTOs;
 
+public class RejectBookingRequestDto
+{
+    [MaxLength(500)]
+    public string? Reason { get; set; }
+}
+
 public class CreateBookingRequestDto
 {
     [Required]
@@ -36,6 +42,18 @@ public class BookingResponseDto
     public string? CancellationReason { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? UpdatedAtUtc { get; set; }
+
+    // Enriched metadata
+    public string? EquipmentTitle { get; set; }
+    public string? EquipmentImageUrl { get; set; }
+    public string? EquipmentCategory { get; set; }
+    public string? EquipmentLocation { get; set; }
+    public string? RenterName { get; set; }
+    public string? RenterEmail { get; set; }
+    public string? RenterPhone { get; set; }
+    public string? OwnerName { get; set; }
+    public string? OwnerEmail { get; set; }
+    public string? OwnerPhone { get; set; }
 }
 
 public class ActiveBookingSummaryDto
@@ -51,6 +69,16 @@ public class ActiveBookingSummaryDto
     public bool PickupVerified { get; set; }
     public bool ReturnVerified { get; set; }
     public DateTime CreatedAtUtc { get; set; }
+
+    // Enriched metadata
+    public string? EquipmentTitle { get; set; }
+    public string? EquipmentImageUrl { get; set; }
+    public string? EquipmentCategory { get; set; }
+    public string? EquipmentLocation { get; set; }
+    public string? RenterName { get; set; }
+    public string? RenterEmail { get; set; }
+    public string? RenterPhone { get; set; }
+    public string? OwnerName { get; set; }
 }
 
 public class GenerateHandoverTokenRequestDto

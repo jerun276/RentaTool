@@ -24,6 +24,7 @@ public class KycController(IKycService kycService) : ControllerBase
         try { return StatusCode(StatusCodes.Status201Created, await kycService.SubmitAsync(CurrentUserId(), request)); }
         catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
         catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+        catch (InvalidOperationException ex) { return Conflict(new { message = ex.Message }); }
     }
 
     private Guid CurrentUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub") ?? throw new UnauthorizedAccessException());

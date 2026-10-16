@@ -73,9 +73,13 @@ export const AdjudicationModal: React.FC<AdjudicationModalProps> = ({
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             Staff Adjudication Action
           </DialogTitle>
-          <DialogDescription className="text-muted-foreground text-sm">
-            Adjudicate damage claim <span className="font-mono text-foreground font-semibold">{claim.claimId.slice(0, 8)}</span>.
-            Your decision determines the final financial deduction before deposit disbursement.
+          <DialogDescription className="text-muted-foreground text-sm space-y-1">
+            <div>
+              Adjudicating claim for <strong className="text-foreground">{claim.equipmentTitle || "Rental Fleet Asset"}</strong> (Claim <span className="font-mono text-foreground font-semibold">{claim.claimId.slice(0, 8)}</span>).
+            </div>
+            <div>
+              Your decision determines the final financial deduction before deposit disbursement.
+            </div>
           </DialogDescription>
         </DialogHeader>
 

@@ -61,6 +61,7 @@ public class BookingsController : ControllerBase
     /// </summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(BookingResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetBookingById(Guid id)
     {
@@ -70,22 +71,86 @@ public class BookingsController : ControllerBase
             return NotFound(new { message = $"Booking with ID {id} was not found." });
         }
 
+        var role = User.FindFirst(ClaimTypes.Role)?.Value ?? User.FindFirst("role")?.Value;
+        var currentUserId = GetCurrentUserId();
+        if (!string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase) &&
+            result.RenterId != currentUserId && result.OwnerId != currentUserId)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "You are not authorized to view this booking." });
+        }
+
         return Ok(result);
     }
 
     /// <summary>
-    /// 2. Returns all active and confirmed bookings for the authenticated user.
+    /// Owner accepts a Requested booking (Requested -> Confirmed).
     /// </summary>
+    [HttpPost("{id:guid}/confirm")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ConfirmBooking(Guid id)
+    {
+        try
+        {
+            var success = await _bookingService.ConfirmBookingAsync(id, GetCurrentUserId());
+            if (!success)
+            {
+                return NotFound(new { message = $"Booking with ID {id} was not found." });
+            }
+
+            return Ok(new { message = "Booking confirmed successfully." });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Owner rejects a Requested booking; booking is cancelled and dates are freed.
+    /// </summary>
+    [HttpPost("{id:guid}/reject")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RejectBooking(Guid id, [FromBody] RejectBookingRequestDto? dto)
+    {
+        try
+        {
+            var success = await _bookingService.RejectBookingAsync(id, GetCurrentUserId(), dto?.Reason);
+            if (!success)
+            {
+                return NotFound(new { message = $"Booking with ID {id} was not found." });
+            }
+
+            return Ok(new { message = "Booking rejected." });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// 2. Returns all active, confirmed, completed, and disputed bookings for the authenticated user.
+    /// </summary>
+    [HttpGet]
     [HttpGet("active")]
     [ProducesResponseType(typeof(IEnumerable<ActiveBookingSummaryDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetActiveBookings()
     {
         var role = User.FindFirst(ClaimTypes.Role)?.Value ?? User.FindFirst("role")?.Value;
-        var hasUserHeader = Request.Headers.TryGetValue("X-User-Id", out var headerValue) &&
-                            Guid.TryParse(headerValue.FirstOrDefault(), out _);
-        var hasJwt = User.FindFirst(ClaimTypes.NameIdentifier) != null || User.FindFirst("sub") != null;
 
-        if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase) || (!hasUserHeader && !hasJwt))
+        if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
         {
             var fleetResults = await _bookingService.GetActiveBookingsAsync(Guid.Empty);
             return Ok(fleetResults);

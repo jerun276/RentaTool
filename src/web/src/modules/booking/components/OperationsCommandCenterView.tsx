@@ -840,21 +840,39 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
                       <span className="px-2 py-0.5 rounded bg-[#10b981]/15 text-[#4edea3] font-mono text-[11px] font-bold">
                         BKG-{bkg.id.slice(0, 8).toUpperCase()}
                       </span>
-                      <span className="text-[13px] text-[#dfe2ee] font-semibold truncate max-w-[200px]">
-                        {bkg.equipmentId}
+                      {bkg.equipmentImageUrl && (
+                        <img
+                          src={bkg.equipmentImageUrl}
+                          alt={bkg.equipmentTitle || "Equipment"}
+                          className="w-5 h-5 rounded object-cover border border-[#1f2937] shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = "none"
+                          }}
+                        />
+                      )}
+                      <span className="text-[13px] text-[#dfe2ee] font-semibold truncate max-w-[240px]">
+                        {bkg.equipmentTitle || `Equipment: ${bkg.equipmentId.slice(0, 8)}`}
                       </span>
+                      {bkg.equipmentCategory && (
+                        <span className="px-1.5 py-0.5 rounded bg-[#262a33] text-[10px] text-[#86948a] font-mono shrink-0">
+                          {bkg.equipmentCategory}
+                        </span>
+                      )}
                     </div>
                     <span className="font-mono text-[10px] text-[#86948a]">
                       {new Date(bkg.startDate).toLocaleDateString()} – {new Date(bkg.endDate).toLocaleDateString()}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[12px] text-[#bbcabf]">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[12px] text-[#bbcabf]">
                     <div>
                       Rental Status:{" "}
                       <strong className={bkg.status === "Active" ? "text-[#4edea3]" : "text-white"}>
                         {bkg.status}
                       </strong>
+                    </div>
+                    <div>
+                      Renter: <strong className="text-white">{bkg.renterName || `User ${bkg.renterId?.slice(0, 8)}`}</strong>
                     </div>
                     <div className="font-mono text-[11px]">
                       Rental Fee: <span className="text-white font-bold">LKR {Number(bkg.totalRentalFee || 0).toLocaleString()}</span>

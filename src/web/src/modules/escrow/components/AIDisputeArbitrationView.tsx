@@ -36,14 +36,32 @@ export const AIDisputeArbitrationView: React.FC = () => {
             const shortId = claimId.slice(0, 4).toUpperCase()
             const bkgShort = c.bookingId ? `BKG-${c.bookingId.slice(0, 4).toUpperCase()}` : "BKG-LIVE"
             const isSettled = c.status === "Settled" || c.status === "Approved"
+            const machineDesc = c.damageDescription?.toLowerCase() || "";
+            const isExcavator = machineDesc.includes("excavator");
+            const isRoller = machineDesc.includes("roller");
+            const isHammer = machineDesc.includes("hammer") || machineDesc.includes("rotary");
+            const isWasher = machineDesc.includes("washer") || machineDesc.includes("pump");
+
+            const machineName = c.equipmentTitle || 
+                                (isExcavator ? "Caterpillar 320D Excavator" :
+                                isRoller ? "Bomag Tandem Vibratory Roller" :
+                                isHammer ? "Bosch Professional Rotary Hammer" :
+                                isWasher ? "Karcher High Pressure Washer" :
+                                "Industrial Fleet Asset");
+
+            const fallbackPickupImg = isExcavator ? "https://images.unsplash.com/photo-1582298642781-a3f29b922a0e?w=400&auto=format&fit=crop&q=80" : // excavator
+                                      isRoller ? "https://images.unsplash.com/photo-1621213032598-a15474fcacb4?w=400&auto=format&fit=crop&q=80" : // roller
+                                      isHammer ? "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&auto=format&fit=crop&q=80" : // drill
+                                      isWasher ? "https://images.unsplash.com/photo-1563812163914-972d3df399c7?w=400&auto=format&fit=crop&q=80" : // washer
+                                      "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=400&auto=format&fit=crop&q=80"; // generic industrial
+
+            const realPickupImg = (c.pickupPhotos && c.pickupPhotos.length > 0) ? c.pickupPhotos[0] : null;
+            const realReturnImg = (c.evidencePhotos && c.evidencePhotos.length > 0) ? c.evidencePhotos[0] : null;
+
             return {
               id: claimId,
               code: `CLAIM-${shortId}`,
-              machine: c.damageDescription?.includes("Excavator") ? "Caterpillar 320D Excavator" :
-                       c.damageDescription?.includes("Roller") ? "Bomag Tandem Vibratory Roller" :
-                       c.damageDescription?.includes("hammer") || c.damageDescription?.includes("Rotary") ? "Bosch Professional Rotary Hammer" :
-                       c.damageDescription?.includes("washer") || c.damageDescription?.includes("pump") ? "Karcher High Pressure Washer" :
-                       "Industrial Fleet Asset",
+              machine: machineName,
               assetId: `#${claimId.slice(0, 6).toUpperCase()}`,
               bookingId: bkgShort,
               owner: "Verified Fleet Owner",
@@ -55,10 +73,10 @@ export const AIDisputeArbitrationView: React.FC = () => {
               statusColor: isSettled ? "bg-[#10b981]/20 text-[#4edea3]" : "bg-[#e29100]/20 text-[#ffb95f]",
               returnDate: new Date(c.createdAtUtc || Date.now()).toLocaleDateString(),
               damageType: c.damageDescription || "Reported Component Wear",
-              isWearAndTear: c.damageDescription?.toLowerCase().includes("wear") ?? false,
+              isWearAndTear: machineDesc.includes("wear"),
               aiConfidence: "97.4%",
-              evidencePickup: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400&auto=format&fit=crop&q=80",
-              evidenceReturn: (c.evidencePhotos && c.evidencePhotos.length > 0) ? c.evidencePhotos[0] : "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&auto=format&fit=crop&q=80",
+              evidencePickup: realPickupImg || fallbackPickupImg,
+              evidenceReturn: realReturnImg || realPickupImg || fallbackPickupImg,
               reasoning: c.adjudicationNotes || c.damageDescription || "Computer vision edge-detection and strain telemetry verify operational abuse inconsistent with normal wear.",
             }
           })
@@ -94,6 +112,7 @@ export const AIDisputeArbitrationView: React.FC = () => {
   const currentDecision = activeClaim ? adjudicationStatus[activeClaim.id] : undefined
 
   const handleApprove = async () => {
+    if (!activeClaim) return
     setSubmitting(true)
     setFeedbackNotice(null)
     try {
@@ -116,8 +135,14 @@ export const AIDisputeArbitrationView: React.FC = () => {
         text: `Claim ${activeClaim.code} approved and settled in PostgreSQL for LKR ${activeClaim.aiProposed.toLocaleString()}.`,
       })
       await fetchClaims()
-    } catch {
-      setFeedbackNotice({ type: "error", text: "Failed to persist adjudication in backend PostgreSQL." })
+    } catch (err: any) {
+      console.error("Adjudication failure:", err)
+      const errorMsg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to persist adjudication in backend PostgreSQL."
+      setFeedbackNotice({ type: "error", text: errorMsg })
     } finally {
       setSubmitting(false)
       setIsRevising(false)
@@ -125,6 +150,7 @@ export const AIDisputeArbitrationView: React.FC = () => {
   }
 
   const handleRevise = async () => {
+    if (!activeClaim) return
     if (revisedAmount < 0) {
       alert("Revised deduction must be non-negative.")
       return
@@ -152,8 +178,14 @@ export const AIDisputeArbitrationView: React.FC = () => {
         text: `Claim ${activeClaim.code} revised to LKR ${revisedAmount.toLocaleString()} and settled.`,
       })
       await fetchClaims()
-    } catch {
-      setFeedbackNotice({ type: "error", text: "Failed to persist claim revision in backend PostgreSQL." })
+    } catch (err: any) {
+      console.error("Claim revision failure:", err)
+      const errorMsg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to persist claim revision in backend PostgreSQL."
+      setFeedbackNotice({ type: "error", text: errorMsg })
     } finally {
       setSubmitting(false)
       setIsRevising(false)
@@ -161,6 +193,7 @@ export const AIDisputeArbitrationView: React.FC = () => {
   }
 
   const handleReject = async () => {
+    if (!activeClaim) return
     setSubmitting(true)
     setFeedbackNotice(null)
     try {
@@ -171,11 +204,6 @@ export const AIDisputeArbitrationView: React.FC = () => {
           adjudicatorId,
           notes: "Claim dismissed by staff operator. Deposit returned in full to renter.",
         })
-        try {
-          await escrowApi.processPayout(activeClaim.id)
-        } catch (payoutErr) {
-          console.warn("Auto-payout notice:", payoutErr)
-        }
       }
       setAdjudicationStatus((prev) => ({ ...prev, [activeClaim.id]: "rejected" }))
       setFeedbackNotice({
@@ -183,8 +211,14 @@ export const AIDisputeArbitrationView: React.FC = () => {
         text: `Claim ${activeClaim.code} rejected. Full security deposit refunded to renter in PostgreSQL.`,
       })
       await fetchClaims()
-    } catch {
-      setFeedbackNotice({ type: "error", text: "Failed to persist rejection in backend PostgreSQL." })
+    } catch (err: any) {
+      console.error("Rejection failure:", err)
+      const errorMsg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to persist rejection in backend PostgreSQL."
+      setFeedbackNotice({ type: "error", text: errorMsg })
     } finally {
       setSubmitting(false)
       setIsRevising(false)
@@ -496,7 +530,7 @@ export const AIDisputeArbitrationView: React.FC = () => {
                     className="w-full h-full object-cover"
                   />
                   <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-[#0a0e16]/80 text-[10px] font-mono text-white">
-                    Verified Oct 18, 2024
+                    Baseline Handover Condition
                   </span>
                 </div>
               </div>
@@ -504,7 +538,9 @@ export const AIDisputeArbitrationView: React.FC = () => {
               <div className="space-y-1.5">
                 <div className="flex justify-between text-[11px] font-mono text-[#bbcabf]">
                   <span>Return Inspection Evidence</span>
-                  <span className="text-[#ffb4ab]">Flagged: Lateral Fracture</span>
+                  <span className={activeClaim.isWearAndTear ? "text-[#4edea3]" : "text-[#ffb4ab]"}>
+                    {activeClaim.isWearAndTear ? "Condition: Standard Wear" : `Flagged: ${activeClaim.damageType}`}
+                  </span>
                 </div>
                 <div className="h-44 bg-[#0a0e16] rounded-lg overflow-hidden border border-[#ffb4ab]/40 relative">
                   <img
@@ -513,7 +549,7 @@ export const AIDisputeArbitrationView: React.FC = () => {
                     className="w-full h-full object-cover"
                   />
                   <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-[#93000a]/80 text-[10px] font-mono text-white">
-                    Return Scan Oct 24, 2024
+                    Return Scan: {activeClaim.returnDate}
                   </span>
                 </div>
               </div>
@@ -598,41 +634,52 @@ export const AIDisputeArbitrationView: React.FC = () => {
             )}
 
             {/* Adjudication Action Buttons */}
-            <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-[#1f2937]">
-              <button
-                disabled={submitting}
-                onClick={handleReject}
-                className="h-9 px-4 rounded bg-[#93000a]/25 hover:bg-[#93000a]/40 text-[#ffb4ab] font-mono text-[12px] font-bold border border-[#ffb4ab]/30 flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[16px]">cancel</span>
-                <span>Reject Owner Claim (Full Refund)</span>
-              </button>
-
-              <div className="flex items-center gap-3">
-                <button
-                  disabled={submitting}
-                  onClick={() => setIsRevising((prev) => !prev)}
-                  className="h-9 px-3 rounded bg-[#262a33] hover:bg-[#31353e] text-[#ffb95f] font-mono text-[12px] font-semibold transition-colors border border-[#1f2937] disabled:opacity-50 cursor-pointer"
-                >
-                  Revise Deduction
-                </button>
-
-                <button
-                  disabled={submitting}
-                  onClick={handleApprove}
-                  className="h-9 px-5 rounded bg-[#10b981] hover:bg-[#4edea3] text-[#003824] font-mono text-[12px] font-bold flex items-center gap-1.5 transition-all shadow-md disabled:opacity-50 cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[16px]">
-                    {submitting ? "hourglass_empty" : "gavel"}
-                  </span>
+            {activeClaim.status === "Settled" || currentDecision !== undefined ? (
+              <div className="pt-3 flex items-center justify-between border-t border-[#1f2937]">
+                <div className="flex items-center gap-2 text-[#4edea3] text-xs font-mono font-semibold">
+                  <span className="material-symbols-outlined text-[18px]">verified</span>
                   <span>
-                    {submitting
-                      ? "Persisting in PostgreSQL..."
-                      : `Approve AI Settlement (LKR ${activeClaim.aiProposed.toLocaleString()})`}
+                    Dispute Adjudication Recorded in PostgreSQL ({currentDecision ? currentDecision.toUpperCase() : activeClaim.status})
                   </span>
-                </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-[#1f2937]">
+                <button
+                  disabled={submitting}
+                  onClick={handleReject}
+                  className="h-9 px-4 rounded bg-[#93000a]/25 hover:bg-[#93000a]/40 text-[#ffb4ab] font-mono text-[12px] font-bold border border-[#ffb4ab]/30 flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">cancel</span>
+                  <span>Reject Owner Claim (Full Refund)</span>
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    disabled={submitting}
+                    onClick={() => setIsRevising((prev) => !prev)}
+                    className="h-9 px-3 rounded bg-[#262a33] hover:bg-[#31353e] text-[#ffb95f] font-mono text-[12px] font-semibold transition-colors border border-[#1f2937] disabled:opacity-50 cursor-pointer"
+                  >
+                    Revise Deduction
+                  </button>
+
+                  <button
+                    disabled={submitting}
+                    onClick={handleApprove}
+                    className="h-9 px-5 rounded bg-[#10b981] hover:bg-[#4edea3] text-[#003824] font-mono text-[12px] font-bold flex items-center gap-1.5 transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">
+                      {submitting ? "hourglass_empty" : "gavel"}
+                    </span>
+                    <span>
+                      {submitting
+                        ? "Persisting in PostgreSQL..."
+                        : `Approve AI Settlement (LKR ${activeClaim.aiProposed.toLocaleString()})`}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
         </div>
         )}
       </div>

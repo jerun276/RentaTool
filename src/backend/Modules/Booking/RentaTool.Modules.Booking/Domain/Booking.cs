@@ -55,7 +55,7 @@ public class Booking : BaseEntity
         EndDate = DateTime.SpecifyKind(endDate, DateTimeKind.Utc);
         DailyRate = dailyRate;
         TotalRentalFee = totalRentalFee;
-        Status = BookingStatus.Confirmed; // Initial confirmation once escrow pre-authorized / requested
+        Status = BookingStatus.Requested; // Initial state before escrow is paid
     }
 
     public void Confirm()

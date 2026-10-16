@@ -44,17 +44,21 @@ public class DamageClaim : BaseEntity
         MarkUpdated();
     }
 
-    public void SetAIEvaluationResult(decimal proposedDeduction)
+    public void SetAIEvaluationResult(decimal proposedDeduction, string? explanation = null)
     {
         ProposedDeduction = Math.Max(0m, proposedDeduction);
+        if (!string.IsNullOrWhiteSpace(explanation))
+        {
+            AdjudicationNotes = explanation;
+        }
         Status = ClaimStatus.PendingStaffApproval;
         MarkUpdated();
     }
 
     public void Adjudicate(string decision, decimal? revisedDeduction, Guid adjudicatorId, string? notes)
     {
-        if (Status != ClaimStatus.PendingStaffApproval && Status != ClaimStatus.UnderAIEvaluation && Status != ClaimStatus.Filed)
-            throw new InvalidOperationException($"Cannot adjudicate claim in status {Status}.");
+        if (Status == ClaimStatus.Settled)
+            throw new InvalidOperationException("Cannot adjudicate claim that has already been settled and disbursed.");
 
         decision = decision.Trim();
         AdjudicatedByUserId = adjudicatorId;

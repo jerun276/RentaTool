@@ -21,6 +21,16 @@ export interface BookingResponseDto {
   cancellationReason?: string
   createdAtUtc: string
   updatedAtUtc?: string
+  equipmentTitle?: string
+  equipmentImageUrl?: string
+  equipmentCategory?: string
+  equipmentLocation?: string
+  renterName?: string
+  renterEmail?: string
+  renterPhone?: string
+  ownerName?: string
+  ownerEmail?: string
+  ownerPhone?: string
 }
 
 export interface ActiveBookingSummaryDto {
@@ -35,6 +45,14 @@ export interface ActiveBookingSummaryDto {
   pickupVerified: boolean
   returnVerified: boolean
   createdAtUtc: string
+  equipmentTitle?: string
+  equipmentImageUrl?: string
+  equipmentCategory?: string
+  equipmentLocation?: string
+  renterName?: string
+  renterEmail?: string
+  renterPhone?: string
+  ownerName?: string
 }
 
 export interface CreateBookingRequestDto {

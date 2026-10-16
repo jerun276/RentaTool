@@ -20,7 +20,8 @@ public sealed class JwtTokenService(IConfiguration config) : ITokenService
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Name),
-            new Claim(ClaimTypes.Role, user.Role.ToString())
+            new Claim(ClaimTypes.Role, user.Role.ToString()),
+            new Claim("role", user.Role.ToString())
         };
         var token = new JwtSecurityToken(config["Jwt:Issuer"] ?? "RentaTool", config["Jwt:Audience"] ?? "RentaToolClients", claims, expires: expires, signingCredentials: new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256));
         return new TokenResponseDto(user.Id, user.Name, user.Role.ToString(), new JwtSecurityTokenHandler().WriteToken(token), Convert.ToBase64String(RandomNumberGenerator.GetBytes(48)), expires);

@@ -14,9 +14,11 @@ export interface AuthUser {
 
 interface AuthState {
   token: string | null
+  refreshToken: string | null
   user: AuthUser | null
   isAuthenticated: boolean
-  setAuth: (token: string, user: AuthUser) => void
+  setAuth: (token: string, user: AuthUser, refreshToken?: string | null) => void
+  setTokens: (token: string, refreshToken?: string | null) => void
   setRole: (role: UserRole) => void
   logout: () => void
 }
@@ -25,14 +27,22 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       token: null,
+      refreshToken: null,
       user: null,
       isAuthenticated: false,
-      setAuth: (token, user) => set({ token, user, isAuthenticated: true }),
+      setAuth: (token, user, refreshToken = null) =>
+        set({ token, refreshToken, user, isAuthenticated: true }),
+      setTokens: (token, refreshToken = null) =>
+        set((state) => ({
+          token,
+          refreshToken: refreshToken ?? state.refreshToken,
+        })),
       setRole: (role) =>
         set((state) => ({
           user: state.user ? { ...state.user, role } : null,
         })),
-      logout: () => set({ token: null, user: null, isAuthenticated: false }),
+      logout: () =>
+        set({ token: null, refreshToken: null, user: null, isAuthenticated: false }),
     }),
     {
       name: "rentatool-auth-session",

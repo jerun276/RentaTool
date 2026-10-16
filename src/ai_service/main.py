@@ -155,7 +155,7 @@ class ActionExecutionRequest(BaseModel):
 @app.post("/api/v1/ai/execute-action")
 def execute_deduction_calculation(request: ActionExecutionRequest) -> Dict[str, Any]:
     try:
-        proposal = action_agent.evaluate_claim(
+        proposal = action_agent.evaluate_deduction(
             equipment_category=request.equipment_category,
             damage_severity=request.damage_severity,
             rental_duration_days=request.rental_duration_days,

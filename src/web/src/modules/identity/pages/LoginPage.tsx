@@ -87,13 +87,17 @@ export const LoginPage: React.FC = () => {
         // Fallback gracefully if trust score ledger not yet initialized for this account
       }
 
-      setAuth(data.accessToken, {
-        id: data.userId,
-        name: data.name,
-        email: email.trim(),
-        role: data.role as UserRole,
-        trustScore: userTrustScore,
-      })
+      setAuth(
+        data.accessToken,
+        {
+          id: data.userId,
+          name: data.name,
+          email: email.trim(),
+          role: data.role as UserRole,
+          trustScore: userTrustScore,
+        },
+        data.refreshToken
+      )
 
       setSuccessMessage(`Authenticated as ${data.name} (Admin). Access granted.`)
 

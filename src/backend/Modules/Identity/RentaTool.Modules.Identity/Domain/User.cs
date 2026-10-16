@@ -24,6 +24,22 @@ public class User : BaseEntity
     public bool IsActive { get; private set; } = true;
     public string? SuspensionReason { get; private set; }
     public string? ProfilePhotoUrl { get; private set; }
+    public string? RefreshToken { get; private set; }
+    public DateTime? RefreshTokenExpiresAtUtc { get; private set; }
+
+    public void SetRefreshToken(string token, DateTime expiresAtUtc)
+    {
+        RefreshToken = token;
+        RefreshTokenExpiresAtUtc = expiresAtUtc;
+        MarkUpdated();
+    }
+
+    public void RevokeRefreshToken()
+    {
+        RefreshToken = null;
+        RefreshTokenExpiresAtUtc = null;
+        MarkUpdated();
+    }
 
     public void SetVerified() { IsVerified = true; MarkUpdated(); }
     public void SetUnverified() { IsVerified = false; MarkUpdated(); }
@@ -41,3 +57,4 @@ public class User : BaseEntity
         MarkUpdated();
     }
 }
+

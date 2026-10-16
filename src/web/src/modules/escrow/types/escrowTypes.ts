@@ -19,6 +19,8 @@ export interface EscrowHold {
   status: EscrowStatus
   heldAtUtc: string
   settledAtUtc?: string
+  equipmentId?: string
+  equipmentTitle?: string
 }
 
 export interface DamageClaim {
@@ -36,6 +38,8 @@ export interface DamageClaim {
   createdAtUtc: string
   // Optional pre-rental baseline photo for side-by-side inspection
   baselinePhotoUrl?: string
+  equipmentTitle?: string
+  pickupPhotos?: string[]
 }
 
 export interface AdjudicateClaimRequest {

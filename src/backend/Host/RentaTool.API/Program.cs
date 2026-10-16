@@ -119,6 +119,8 @@ using (var scope = app.Services.CreateScope())
                     ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT TRUE;
                     ALTER TABLE users ADD COLUMN IF NOT EXISTS suspension_reason character varying(500);
                     ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo_url character varying(2048);
+                    ALTER TABLE users ADD COLUMN IF NOT EXISTS refresh_token character varying(256);
+                    ALTER TABLE users ADD COLUMN IF NOT EXISTS refresh_token_expires_at_utc timestamp with time zone;
                     ALTER TABLE categories ADD COLUMN IF NOT EXISTS specification_schema_json jsonb NOT NULL DEFAULT '[]'::jsonb;
                 ");
             }

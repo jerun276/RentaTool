@@ -28,6 +28,32 @@ public class CreateEquipmentDto
     public List<ToolImageDto> Images { get; set; } = new();
 }
 
+public class UpdateEquipmentDto
+{
+    [Required(ErrorMessage = "Title is required.")]
+    [StringLength(150, MinimumLength = 3, ErrorMessage = "Title must be between 3 and 150 characters.")]
+    public string Title { get; set; } = string.Empty;
+
+    public string Description { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "CategoryId is required.")]
+    public Guid CategoryId { get; set; }
+
+    [Range(0.01, 1000000.0, ErrorMessage = "Daily rate must be greater than zero.")]
+    public decimal DailyRate { get; set; }
+
+    [Range(0.01, 10000000.0, ErrorMessage = "Replacement value must be greater than zero.")]
+    public decimal ReplacementValue { get; set; }
+
+    [Required(ErrorMessage = "Location is required.")]
+    public string Location { get; set; } = string.Empty;
+
+    public string SpecificationsJson { get; set; } = "{}";
+
+    public List<ToolImageDto>? Images { get; set; }
+}
+
+
 public class ToolImageDto
 {
     public string ImageUrl { get; set; } = string.Empty;
@@ -39,6 +65,12 @@ public class EquipmentResponseDto
 {
     public Guid Id { get; set; }
     public Guid OwnerId { get; set; }
+    public string OwnerName { get; set; } = string.Empty;
+    public string? OwnerPhoneNumber { get; set; }
+    public bool OwnerIsVerified { get; set; }
+    public int OwnerTrustScore { get; set; } = 50;
+    public DateTime? OwnerMemberSinceUtc { get; set; }
+    public string? OwnerProfilePhotoUrl { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public Guid CategoryId { get; set; }

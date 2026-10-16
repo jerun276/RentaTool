@@ -39,7 +39,7 @@ public class BookingServiceTests
         result.OwnerId.Should().Be(_ownerId);
         result.DailyRate.Should().Be(2500m);
         result.TotalRentalFee.Should().Be(7500m); // 3 days * 2500
-        result.Status.Should().Be(BookingStatus.Confirmed.ToString());
+        result.Status.Should().Be(BookingStatus.Requested.ToString());
 
         var savedSchedule = await context.Set<BookingSchedule>().FirstOrDefaultAsync(s => s.BookingId == result.Id);
         savedSchedule.Should().NotBeNull();
@@ -161,6 +161,37 @@ public class BookingServiceTests
         // Assert
         renterBookings.Should().HaveCount(1);
         renterBookings.First().RenterId.Should().Be(_renterId);
+    }
+
+    [Fact]
+    public async Task GetActiveBookings_IncludesCompletedBookings_SoReturnsPersistOnRefresh()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.Create(nameof(GetActiveBookings_IncludesCompletedBookings_SoReturnsPersistOnRefresh));
+        var bookingService = new BookingService(context);
+
+        var created = await bookingService.CreateBookingAsync(new CreateBookingRequestDto
+        {
+            EquipmentId = Guid.NewGuid(),
+            OwnerId = _ownerId,
+            StartDate = DateTime.UtcNow.Date.AddDays(1),
+            EndDate = DateTime.UtcNow.Date.AddDays(3),
+            DailyRate = 2000m
+        }, _renterId);
+
+        // Transition booking to Active then Completed (simulating pickup and return)
+        var bookingEntity = await context.Set<Domain.Booking>().FirstAsync(b => b.Id == created.Id);
+        bookingEntity.Confirm();
+        bookingEntity.Activate();
+        bookingEntity.Complete();
+        await context.SaveChangesAsync();
+
+        // Act
+        var renterBookings = await bookingService.GetActiveBookingsAsync(_renterId);
+
+        // Assert
+        renterBookings.Should().HaveCount(1);
+        renterBookings.First().Status.Should().Be(BookingStatus.Completed.ToString());
     }
 
     [Fact]

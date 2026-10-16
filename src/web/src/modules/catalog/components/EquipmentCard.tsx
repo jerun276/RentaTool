@@ -1,5 +1,5 @@
 import React from "react"
-import { ShieldAlert, History, MapPin, Eye, AlertTriangle } from "lucide-react"
+import { ShieldAlert, History, MapPin, Eye, AlertTriangle, CheckCircle2, ChevronRight } from "lucide-react"
 import { EquipmentDto } from "../types/catalogTypes"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -8,12 +8,14 @@ interface EquipmentCardProps {
   equipment: EquipmentDto
   onViewHistory: (equipment: EquipmentDto) => void
   onInspect: (equipment: EquipmentDto) => void
+  onSelectEquipment?: (equipment: EquipmentDto) => void
 }
 
 export const EquipmentCard: React.FC<EquipmentCardProps> = ({
   equipment,
   onViewHistory,
   onInspect,
+  onSelectEquipment,
 }) => {
   const primaryImage =
     equipment.images.find((img) => img.isPrimary)?.imageUrl ||
@@ -39,10 +41,20 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({
     }
   }
 
+  const handleCardClick = () => {
+    if (onSelectEquipment) {
+      onSelectEquipment(equipment)
+    }
+  }
+
   return (
-    <div className="group relative rounded-xl border border-border/80 bg-card/60 backdrop-blur-md overflow-hidden transition-all duration-300 hover:border-emerald-500/40 hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] hover:-translate-y-1">
-      {/* Photo Preview Container */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted/40">
+    <div className="group relative rounded-xl border border-border/80 bg-card/60 backdrop-blur-md overflow-hidden transition-all duration-300 hover:border-emerald-500/40 hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] hover:-translate-y-1 flex flex-col justify-between">
+      {/* Photo Preview Container (Clickable) */}
+      <div
+        onClick={handleCardClick}
+        className="relative aspect-[16/10] w-full overflow-hidden bg-muted/40 cursor-pointer"
+        title="Click to view full equipment & owner dossier"
+      >
         <img
           src={primaryImage}
           alt={equipment.title}
@@ -59,6 +71,14 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({
           </span>
         </div>
 
+        {/* View Details Hover Overlay Button */}
+        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="px-2 py-1 rounded-md text-[11px] font-medium bg-emerald-600/90 text-white backdrop-blur-md flex items-center gap-1 shadow-lg">
+            <span>View Details</span>
+            <ChevronRight className="h-3 w-3" />
+          </span>
+        </div>
+
         {/* Location pill */}
         <div className="absolute bottom-3 left-3 flex items-center gap-1 text-xs text-white/90 font-medium">
           <MapPin className="h-3.5 w-3.5 text-emerald-400" />
@@ -67,14 +87,50 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({
       </div>
 
       {/* Content */}
-      <div className="p-5 space-y-4">
-        <div>
-          <h3 className="font-semibold text-base text-foreground leading-snug tracking-tight group-hover:text-emerald-400 transition-colors line-clamp-1">
-            {equipment.title}
-          </h3>
-          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-            {equipment.description || "Commercial grade equipment verified for peer-to-peer jobsite rental."}
-          </p>
+      <div className="p-5 space-y-4 flex-1 flex flex-col justify-between">
+        <div className="space-y-2">
+          <div
+            onClick={handleCardClick}
+            className="cursor-pointer"
+            title="Click to view full equipment details"
+          >
+            <h3 className="font-semibold text-base text-foreground leading-snug tracking-tight group-hover:text-emerald-400 transition-colors line-clamp-1">
+              {equipment.title}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+              {equipment.description || "Commercial grade equipment verified for peer-to-peer jobsite rental."}
+            </p>
+          </div>
+
+          {/* Owner Dossier Chip */}
+          <div
+            onClick={handleCardClick}
+            className="flex items-center justify-between text-xs p-2 rounded-lg bg-muted/30 border border-border/50 hover:border-emerald-500/30 cursor-pointer transition-colors"
+            title="View owner details"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="h-6 w-6 rounded-full bg-emerald-950/60 border border-emerald-500/40 flex items-center justify-center text-[10px] text-emerald-400 font-bold shrink-0">
+                {(equipment.ownerName || "O").charAt(0).toUpperCase()}
+              </div>
+              <div className="truncate">
+                <span className="text-[10px] text-muted-foreground block leading-none">Owner</span>
+                <span className="font-medium text-foreground truncate block text-xs">
+                  {equipment.ownerName || "Verified Fleet Owner"}
+                </span>
+              </div>
+              {equipment.ownerIsVerified && (
+                <span title="Verified Owner" className="inline-flex shrink-0">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                </span>
+              )}
+            </div>
+
+            {equipment.ownerTrustScore !== undefined && (
+              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-500/20 shrink-0">
+                {equipment.ownerTrustScore} TS
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Rate & Replacement Value */}
@@ -130,27 +186,36 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({
         </div>
 
         {/* Action Controls */}
-        <div className="grid grid-cols-2 gap-2 pt-1">
+        <div className="grid grid-cols-3 gap-1.5 pt-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCardClick}
+            className="flex items-center justify-center gap-1 text-[11px] text-emerald-400 border-emerald-500/30 hover:bg-emerald-950/20 px-2"
+          >
+            <Eye className="h-3 w-3" />
+            Details
+          </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => onViewHistory(equipment)}
-            className="flex items-center gap-1.5 text-xs text-slate-300 border-border/80 hover:border-emerald-500/40"
+            className="flex items-center justify-center gap-1 text-[11px] text-slate-300 border-border/80 hover:border-emerald-500/40 px-2"
           >
-            <History className="h-3.5 w-3.5 text-emerald-400" />
-            Inspection Log
+            <History className="h-3 w-3 text-emerald-400" />
+            Logs
           </Button>
           <Button
             variant="default"
             size="sm"
             onClick={() => onInspect(equipment)}
-            className="flex items-center gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white"
+            className="flex items-center justify-center gap-1 text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white px-2"
           >
-            <Eye className="h-3.5 w-3.5" />
-            Inspect Condition
+            Inspect
           </Button>
         </div>
       </div>
     </div>
   )
 }
+

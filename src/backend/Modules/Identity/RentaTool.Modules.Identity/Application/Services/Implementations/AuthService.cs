@@ -23,11 +23,13 @@ public sealed class AuthService(AppDbContext db, ITokenService tokens) : IAuthSe
             throw new InvalidOperationException("An account with this phone number already exists.");
 
         var user = new User(request.Name, email, PasswordHasher.Hash(request.Password), role, request.PhoneNumber);
+        var token = tokens.Create(user);
+        user.SetRefreshToken(token.RefreshToken, DateTime.UtcNow.AddDays(14));
         db.Set<User>().Add(user);
         db.Set<UserRoleAssignment>().Add(new UserRoleAssignment(user.Id, role));
         db.Set<TrustLedger>().Add(new TrustLedger(user.Id, 50, "Account created", "registration", 50));
         await db.SaveChangesAsync();
-        return tokens.Create(user);
+        return token;
     }
 
     public async Task<TokenResponseDto?> LoginAsync(LoginRequestDto request)
@@ -40,6 +42,33 @@ public sealed class AuthService(AppDbContext db, ITokenService tokens) : IAuthSe
         if (!user.IsActive)
             throw new InvalidOperationException($"Account is suspended: {user.SuspensionReason ?? "Administrative action"}. Please contact support.");
 
-        return tokens.Create(user);
+        var token = tokens.Create(user);
+        user.SetRefreshToken(token.RefreshToken, DateTime.UtcNow.AddDays(14));
+        await db.SaveChangesAsync();
+        return token;
+    }
+
+    public async Task<TokenResponseDto?> RefreshTokenAsync(string refreshToken)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+            return null;
+
+        var tokenClean = refreshToken.Trim();
+        var user = await db.Set<User>().SingleOrDefaultAsync(x => x.RefreshToken == tokenClean);
+        if (user is null)
+            return null;
+
+        if (user.RefreshTokenExpiresAtUtc.HasValue && user.RefreshTokenExpiresAtUtc.Value < DateTime.UtcNow)
+            return null;
+
+        if (!user.IsActive)
+            throw new InvalidOperationException($"Account is suspended: {user.SuspensionReason ?? "Administrative action"}. Please contact support.");
+
+        var newToken = tokens.Create(user);
+        user.SetRefreshToken(newToken.RefreshToken, DateTime.UtcNow.AddDays(14));
+        await db.SaveChangesAsync();
+
+        return newToken;
     }
 }
+

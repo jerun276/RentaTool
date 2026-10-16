@@ -7,7 +7,8 @@ import {
   AlertCircle,
   FileText,
   UserCheck,
-  Send
+  Send,
+  Wrench
 } from "lucide-react"
 import { useEscrowStore } from "../store/useEscrowStore"
 import type { ClaimStatus } from "../types/escrowTypes"
@@ -15,7 +16,7 @@ import { PhotoInspectionViewer } from "../components/PhotoInspectionViewer"
 import { AdjudicationModal } from "../components/AdjudicationModal"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 
 export const ClaimArbitrationDeskPage: React.FC = () => {
   const {
@@ -198,7 +199,12 @@ export const ClaimArbitrationDeskPage: React.FC = () => {
                     {getStatusBadge(claim.status)}
                   </div>
 
-                  <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                  <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                    <Wrench className="h-3.5 w-3.5 text-amber-400 flex-shrink-0" />
+                    <span className="truncate">{claim.equipmentTitle || "Fleet Equipment Asset"}</span>
+                  </div>
+
+                  <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2">
                     {claim.damageDescription}
                   </p>
 
@@ -229,9 +235,15 @@ export const ClaimArbitrationDeskPage: React.FC = () => {
                       <CardTitle className="text-lg font-bold flex items-center gap-2">
                         Inspection Dossier: CLAIM-{activeClaim.claimId.slice(0, 8).toUpperCase()}
                       </CardTitle>
-                      <CardDescription className="text-xs">
-                        Booking ID: <span className="font-mono">{activeClaim.bookingId}</span>
-                      </CardDescription>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-foreground font-medium mt-1">
+                        <span className="flex items-center gap-1.5 text-amber-400 font-semibold">
+                          <Wrench className="h-3.5 w-3.5" />
+                          {activeClaim.equipmentTitle || "Fleet Equipment Asset"}
+                        </span>
+                        <span className="text-muted-foreground">•</span>
+                        <span className="text-muted-foreground">Booking Ref:</span>
+                        <span className="font-mono text-muted-foreground">{activeClaim.bookingId}</span>
+                      </div>
                     </div>
                     {getStatusBadge(activeClaim.status)}
                   </div>
@@ -240,7 +252,7 @@ export const ClaimArbitrationDeskPage: React.FC = () => {
                   {/* Photo Viewer */}
                   <PhotoInspectionViewer
                     damagePhotos={activeClaim.evidencePhotos}
-                    baselinePhoto={activeClaim.baselinePhotoUrl}
+                    baselinePhoto={activeClaim.baselinePhotoUrl || (activeClaim.pickupPhotos && activeClaim.pickupPhotos.length > 0 ? activeClaim.pickupPhotos[0] : undefined)}
                     damageDescription={activeClaim.damageDescription}
                   />
 

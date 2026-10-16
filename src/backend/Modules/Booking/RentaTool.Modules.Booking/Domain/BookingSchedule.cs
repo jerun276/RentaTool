@@ -41,4 +41,14 @@ public class BookingSchedule : BaseEntity
         Reason = reason;
         MarkUpdated();
     }
+
+    public void TruncateBlockedEndDate(DateTime newEndDate, string reason)
+    {
+        if (newEndDate > BlockedEndDate)
+            throw new ArgumentException("New end date must be on or before current blocked end date.", nameof(newEndDate));
+
+        BlockedEndDate = DateTime.SpecifyKind(newEndDate, DateTimeKind.Utc);
+        Reason = reason;
+        MarkUpdated();
+    }
 }

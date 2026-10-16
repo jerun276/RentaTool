@@ -31,7 +31,8 @@ export const HandoverTokenModal: React.FC<HandoverTokenModalProps> = ({ booking,
   useEffect(() => {
     if (booking) {
       // Auto-select Pickup if not verified, else Return
-      setEventType(booking.pickupVerified ? 2 : 1)
+      const defaultType = (booking.status === "Active" || booking.pickupVerified) ? 2 : 1
+      setEventType(defaultType)
       setTokenData(null)
       setVerificationSuccess(null)
       setSimulateScanMode(false)
