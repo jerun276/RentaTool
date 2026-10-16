@@ -66,7 +66,7 @@ export const identityApi = {
     body.append("nicDocument", document)
     return axiosClient.post("/users/kyc", body, { headers: { "Content-Type": "multipart/form-data" } })
   },
-  reviewKyc: (userId: string, status: "Approved" | "Rejected", rejectionReason?: string) =>
+  reviewKyc: (userId: string, status: "Approved" | "Rejected" | "Pending", rejectionReason?: string) =>
     axiosClient.patch(`/users/${userId}/verification-status`, { status, rejectionReason }),
   getTrustScore: (userId: string) => axiosClient.get<TrustScoreResponse>(`/users/${userId}/trust-score`),
   getKycSubmissions: (params?: { status?: string; search?: string }) =>

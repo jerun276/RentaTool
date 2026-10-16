@@ -158,6 +158,26 @@ export const KycTrustComplianceView: React.FC = () => {
     }
   }
 
+  const handleResetToPending = async () => {
+    if (!activeCandidate) return
+    setIsProcessing(true)
+    try {
+      await identityApi.reviewKyc(activeCandidate.userId, "Pending")
+      setFeedback({
+        type: "success",
+        message: `KYC status for ${activeCandidate.name} reset to normal pending state.`,
+      })
+      await fetchKycQueue()
+    } catch (err: any) {
+      setFeedback({
+        type: "error",
+        message: apiErrorMessage(err),
+      })
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
   const handleRequestReupload = async () => {
     setRejectionReasonText("Document quality insufficient or blurry - please re-upload clear photographs of your NIC.")
     setRejectModalOpen(true)
@@ -639,38 +659,124 @@ export const KycTrustComplianceView: React.FC = () => {
           </div>
 
           {/* Action Approval Bar */}
-          <div className="pt-3 border-t border-[#1f2937] flex flex-wrap items-center justify-between gap-3">
-            <button
-              onClick={() => {
-                setRejectionReasonText("Document illegible or failed biometric threshold")
-                setRejectModalOpen(true)
-              }}
-              disabled={isProcessing}
-              className="h-9 px-4 rounded bg-[#93000a]/25 hover:bg-[#93000a]/40 text-[#ffb4ab] font-mono text-[12px] font-semibold border border-[#ffb4ab]/30 flex items-center gap-1.5 transition-colors disabled:opacity-50"
-            >
-              <span className="material-symbols-outlined text-[16px]">cancel</span>
-              <span>Flag Suspicious / Reject</span>
-            </button>
+          {(() => {
+            const isCandidateVerified = activeCandidate.status === "VERIFIED" || currentApproval === "approved"
+            const isCandidateFlagged = activeCandidate.status === "FLAGGED" || currentApproval === "rejected"
 
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleRequestReupload}
-                disabled={isProcessing}
-                className="h-9 px-3 rounded bg-[#262a33] hover:bg-[#31353e] text-white font-mono text-[12px] transition-colors border border-[#1f2937] disabled:opacity-50"
-              >
-                Request Re-upload
-              </button>
+            return (
+              <div className="pt-3 border-t border-[#1f2937] flex flex-wrap items-center justify-between gap-3">
+                {isCandidateVerified ? (
+                  <>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#10b981]/15 text-[#4edea3] border border-[#10b981]/30">
+                      <span className="material-symbols-outlined text-[18px]">verified</span>
+                      <span className="font-mono text-[12px] font-semibold">Trust Credential Active & Issued</span>
+                    </div>
 
-              <button
-                onClick={handleApprove}
-                disabled={isProcessing}
-                className="h-9 px-5 rounded bg-[#10b981] hover:bg-[#4edea3] text-[#003824] font-mono text-[12px] font-bold flex items-center gap-1.5 transition-all shadow-md disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-[16px]">verified</span>
-                <span>{isProcessing ? "Saving..." : "Approve & Issue Trust Credential"}</span>
-              </button>
-            </div>
-          </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={handleResetToPending}
+                        disabled={isProcessing}
+                        className="h-9 px-3 rounded bg-[#262a33] hover:bg-[#31353e] text-[#bbcabf] hover:text-white font-mono text-[12px] transition-colors border border-[#1f2937] flex items-center gap-1.5 disabled:opacity-50"
+                        title="Reset member verification status back to normal pending state"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">restart_alt</span>
+                        <span>Reset to Pending</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setRejectionReasonText("Post-verification compliance audit flagged suspicious activity or altered documents")
+                          setRejectModalOpen(true)
+                        }}
+                        disabled={isProcessing}
+                        className="h-9 px-4 rounded bg-[#93000a]/25 hover:bg-[#93000a]/40 text-[#ffb4ab] font-mono text-[12px] font-semibold border border-[#ffb4ab]/30 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">cancel</span>
+                        <span>Revoke & Flag Suspicious</span>
+                      </button>
+                    </div>
+                  </>
+                ) : isCandidateFlagged ? (
+                  <>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#93000a]/20 text-[#ffb4ab] border border-[#ffb4ab]/30 max-w-sm">
+                      <span className="material-symbols-outlined text-[18px] shrink-0">gavel</span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-mono text-[12px] font-semibold">Flagged / Verification Declined</span>
+                        {activeCandidate.rejectionReason && (
+                          <span className="text-[10px] text-[#ffb4ab]/80 font-mono truncate" title={activeCandidate.rejectionReason}>
+                            {activeCandidate.rejectionReason}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={handleRequestReupload}
+                        disabled={isProcessing}
+                        className="h-9 px-3 rounded bg-[#262a33] hover:bg-[#31353e] text-white font-mono text-[12px] transition-colors border border-[#1f2937] disabled:opacity-50"
+                      >
+                        Request Re-upload
+                      </button>
+
+                      <button
+                        onClick={handleResetToPending}
+                        disabled={isProcessing}
+                        className="h-9 px-3.5 rounded bg-[#262a33] hover:bg-[#31353e] text-[#ffb95f] hover:text-[#ffd899] font-mono text-[12px] font-semibold transition-colors border border-[#e29100]/40 flex items-center gap-1.5 disabled:opacity-50"
+                        title="Change status back to normal pending verification state"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">restart_alt</span>
+                        <span>Unflag / Reset to Normal State</span>
+                      </button>
+
+                      <button
+                        onClick={handleApprove}
+                        disabled={isProcessing}
+                        className="h-9 px-4 rounded bg-[#10b981] hover:bg-[#4edea3] text-[#003824] font-mono text-[12px] font-bold flex items-center gap-1.5 transition-all shadow-md disabled:opacity-50"
+                        title="Clear flag and grant trust credential"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">verified</span>
+                        <span>{isProcessing ? "Saving..." : "Clear Flag & Approve"}</span>
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        setRejectionReasonText("Document illegible or failed biometric threshold")
+                        setRejectModalOpen(true)
+                      }}
+                      disabled={isProcessing}
+                      className="h-9 px-4 rounded bg-[#93000a]/25 hover:bg-[#93000a]/40 text-[#ffb4ab] font-mono text-[12px] font-semibold border border-[#ffb4ab]/30 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">cancel</span>
+                      <span>Flag Suspicious / Reject</span>
+                    </button>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={handleRequestReupload}
+                        disabled={isProcessing}
+                        className="h-9 px-3 rounded bg-[#262a33] hover:bg-[#31353e] text-white font-mono text-[12px] transition-colors border border-[#1f2937] disabled:opacity-50"
+                      >
+                        Request Re-upload
+                      </button>
+
+                      <button
+                        onClick={handleApprove}
+                        disabled={isProcessing}
+                        className="h-9 px-5 rounded bg-[#10b981] hover:bg-[#4edea3] text-[#003824] font-mono text-[12px] font-bold flex items-center gap-1.5 transition-all shadow-md disabled:opacity-50"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">verified</span>
+                        <span>{isProcessing ? "Saving..." : "Approve & Issue Trust Credential"}</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )
+          })()}
         </div>
         )}
       </div>
