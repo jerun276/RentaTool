@@ -1,0 +1,13 @@
+﻿Production-mode API security-header and exposure retest; 2026-10-08
+GET /health => HTTP 200
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  Strict-Transport-Security: 
+  Server: Kestrel
+GET /swagger => HTTP 404
+GET /swagger/index.html => HTTP 404
+GET /swagger/v1/swagger.json => HTTP 404
+GET /api/v1/users => HTTP 401
+OPTIONS untrusted origin => HTTP 204; allow-origin=; allow-credentials=
+Runtime note: current local PostgreSQL credentials returned SQLSTATE 28P01 during startup. Production mode stayed responsive for the recorded health, authorization, Swagger, headers and CORS probes; no database-backed catalog operation was used.

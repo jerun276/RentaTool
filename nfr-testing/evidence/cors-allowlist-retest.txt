@@ -1,0 +1,15 @@
+Allowed local origin:
+HTTP/1.1 204 No Content
+Date: Wed, 07 Oct 2026 15:45:48 GMT
+Server: Kestrel
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Headers: authorization,content-type
+Access-Control-Allow-Methods: GET
+Access-Control-Allow-Origin: http://127.0.0.1:3000
+Vary: Origin
+
+Untrusted origin:
+HTTP/1.1 204 No Content
+Date: Wed, 07 Oct 2026 15:45:48 GMT
+Server: Kestrel
+

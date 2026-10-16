@@ -1,0 +1,6 @@
+"TimestampUtc","Step","Endpoint","Expected","Actual","Result","Detail"
+"2026-10-07T16:13:18.5204693Z","Initial startup","/health","200","200","PASS","Started the local API process for this recovery test."
+"2026-10-07T16:13:18.7065437Z","Initial service probe","/api/v1/equipment","200","200","PASS","Read-only catalog request before interruption."
+"2026-10-07T16:13:21.7517314Z","API stopped","/health","000","000","PASS","Expected connection failure while the local API process was stopped."
+"2026-10-07T16:13:23.3515815Z","API restarted","/health","200","200","PASS","Health endpoint recovered in 1.59 seconds after process restart."
+"2026-10-07T16:13:23.5388743Z","Post-restart catalog probe","/api/v1/equipment","200","200","PASS","Read-only catalog request after API recovery."

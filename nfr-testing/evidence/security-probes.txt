@@ -1,0 +1,5 @@
+admin-user-list-without-token: HTTP 401
+authenticated-profile-without-token: HTTP 401
+invalid-login: HTTP 401
+cors-preflight-response: HTTP/1.1 204 No Content Date: Mon, 05 Oct 2026 14:49:30 GMT Server: Kestrel Access-Control-Allow-Credentials: true Access-Control-Allow-Headers: 
+authorization Access-Control-Allow-Methods: GET Access-Control-Allow-Origin: https://untrusted.invalid Vary: Origin  204

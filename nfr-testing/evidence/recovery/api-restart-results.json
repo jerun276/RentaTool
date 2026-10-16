@@ -1,0 +1,47 @@
+﻿[
+    {
+        "TimestampUtc":  "2026-10-07T16:13:18.5204693Z",
+        "Step":  "Initial startup",
+        "Endpoint":  "/health",
+        "Expected":  "200",
+        "Actual":  "200",
+        "Result":  "PASS",
+        "Detail":  "Started the local API process for this recovery test."
+    },
+    {
+        "TimestampUtc":  "2026-10-07T16:13:18.7065437Z",
+        "Step":  "Initial service probe",
+        "Endpoint":  "/api/v1/equipment",
+        "Expected":  "200",
+        "Actual":  "200",
+        "Result":  "PASS",
+        "Detail":  "Read-only catalog request before interruption."
+    },
+    {
+        "TimestampUtc":  "2026-10-07T16:13:21.7517314Z",
+        "Step":  "API stopped",
+        "Endpoint":  "/health",
+        "Expected":  "000",
+        "Actual":  "000",
+        "Result":  "PASS",
+        "Detail":  "Expected connection failure while the local API process was stopped."
+    },
+    {
+        "TimestampUtc":  "2026-10-07T16:13:23.3515815Z",
+        "Step":  "API restarted",
+        "Endpoint":  "/health",
+        "Expected":  "200",
+        "Actual":  "200",
+        "Result":  "PASS",
+        "Detail":  "Health endpoint recovered in 1.59 seconds after process restart."
+    },
+    {
+        "TimestampUtc":  "2026-10-07T16:13:23.5388743Z",
+        "Step":  "Post-restart catalog probe",
+        "Endpoint":  "/api/v1/equipment",
+        "Expected":  "200",
+        "Actual":  "200",
+        "Result":  "PASS",
+        "Detail":  "Read-only catalog request after API recovery."
+    }
+]

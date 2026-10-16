@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="19" failures="0" errors="0" time="7.482">
+    <testsuite name="src/test/login.test.tsx" timestamp="2026-10-06T08:43:15.413Z" hostname="LAPTOP-9JA5L7AK" tests="15" failures="0" errors="0" skipped="0" time="5.225">
+        <testcase classname="src/test/login.test.tsx" name="LoginPage form and user interactions &gt; renders labelled inputs and toggles password visibility" time="0.156">
+            <system-err>
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/test/login.test.tsx" name="LoginPage form and user interactions &gt; quick fills the real staff credentials" time="0.027">
+        </testcase>
+        <testcase classname="src/test/login.test.tsx" name="LoginPage form and user interactions &gt; uses native required and email validation without making an API request" time="0.023">
+        </testcase>
+        <testcase classname="src/test/login.test.tsx" name="LoginPage form and user interactions &gt; shows inline validation for a direct empty form submission" time="0.026">
+        </testcase>
+        <testcase classname="src/test/login.test.tsx" name="LoginPage form and user interactions &gt; submits trimmed credentials, loads trust score, persists admin auth, and shows success" time="0.61">
+        </testcase>
+        <testcase classname="src/test/login.test.tsx" name="LoginPage form and user interactions &gt; shows a disabled loading state while authentication is pending" time="0.359">
+        </testcase>
+        <testcase classname="src/test/login.test.tsx" name="LoginPage form and user interactions &gt; gracefully uses fallback trust score when ledger lookup fails" time="0.563">
+        </testcase>
+        <testcase classname="src/test/login.test.tsx" name="LoginPage form and user interactions &gt; shows a useful message for HTTP 400" time="0.41">
+        </testcase>
+        <testcase classname="src/test/login.test.tsx" name="LoginPage form and user interactions &gt; shows a useful message for HTTP 401" time="0.569">
+            <system-err>
+Session expired or unauthorized request. Logging out...
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/test/login.test.tsx" name="LoginPage form and user interactions &gt; shows a useful message for HTTP 403" time="0.349">
+        </testcase>
+        <testcase classname="src/test/login.test.tsx" name="LoginPage form and user interactions &gt; shows a useful message for HTTP 404" time="0.576">
+        </testcase>
+        <testcase classname="src/test/login.test.tsx" name="LoginPage form and user interactions &gt; shows a useful message for HTTP 500" time="0.635">
+        </testcase>
+        <testcase classname="src/test/login.test.tsx" name="LoginPage form and user interactions &gt; shows a network error and preserves the login screen" time="0.335">
+        </testcase>
+        <testcase classname="src/test/login.test.tsx" name="LoginPage form and user interactions &gt; denies unexpected/empty API data without crashing or authenticating" time="0.578">
+        </testcase>
+        <testcase classname="src/test/login.test.tsx" name="LoginPage form and user interactions &gt; shows the expired-session message from the actual login query state" time="0.007">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/test/protected-route.test.tsx" timestamp="2026-10-06T08:43:15.419Z" hostname="LAPTOP-9JA5L7AK" tests="4" failures="0" errors="0" skipped="0" time="0.079">
+        <testcase classname="src/test/protected-route.test.tsx" name="ProtectedRoute access control &gt; redirects unauthenticated visitors to login" time="0.052">
+            <system-err>
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/test/protected-route.test.tsx" name="ProtectedRoute access control &gt; allows an authenticated Admin to access the protected page" time="0.004">
+        </testcase>
+        <testcase classname="src/test/protected-route.test.tsx" name="ProtectedRoute access control &gt; denies authenticated Renter users and exposes sign out" time="0.015">
+        </testcase>
+        <testcase classname="src/test/protected-route.test.tsx" name="ProtectedRoute access control &gt; denies authenticated Owner users and exposes sign out" time="0.007">
+        </testcase>
+    </testsuite>
+</testsuites>

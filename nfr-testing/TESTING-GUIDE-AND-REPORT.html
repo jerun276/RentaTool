@@ -1,0 +1,346 @@
+<!doctype html><html><head><meta charset="utf-8"><title>RentaTool Testing Guide and Report</title><style>
+@page{size:A4;margin:17mm 16mm 18mm;@bottom-right{content:"RentaTool · Testing Guide and Report · " counter(page);font:8pt Arial;color:#718291}}
+@page testplan{size:A4 landscape;margin:13mm 13mm 15mm;@bottom-right{content:"RentaTool · Testing Guide and Report · " counter(page);font:8pt Arial;color:#718291}}
+*{box-sizing:border-box}body{font:10pt/1.48 Arial,Helvetica,sans-serif;color:#182433;margin:0}h1,h2,h3,h4{color:#12304a;line-height:1.2;break-after:avoid}h1{font-size:25pt;margin:0 0 20px;border-bottom:2px solid #18758a;padding-bottom:9px}h2{font-size:17pt;margin:22px 0 9px}h3{font-size:12pt;margin:16px 0 6px}h4{font-size:10pt}p{margin:6px 0 10px}ul,ol{padding-left:22px;margin:5px 0 12px}li{margin:3px 0}table{width:100%;border-collapse:collapse;font-size:8.5pt;margin:9px 0 14px;break-inside:auto}tr{break-inside:avoid}th{background:#12304a;color:white;text-align:left;padding:7px}td{border-bottom:1px solid #d7e0e5;padding:6px;vertical-align:top}.doc.plan{page:testplan}.plan table{font-size:7.2pt}.plan th,.plan td{padding:4px}pre{white-space:pre-wrap;word-break:break-word;background:#f1f5f7;border-left:3px solid #18758a;padding:9px;font:8pt/1.4 Consolas,monospace;break-inside:avoid}code{font:8.5pt Consolas,monospace;background:#f1f5f7;padding:1px 3px}pre code{background:none;padding:0}a{color:#16758a;text-decoration:none}hr{border:0;border-top:1px solid #ccd7dc;margin:14px 0}.cover{height:255mm;display:flex;flex-direction:column;justify-content:center;page-break-after:always}.brand{font-size:11pt;letter-spacing:2px;color:#18758a;font-weight:bold;text-transform:uppercase}.cover h1{font-size:34pt;border:0;margin:18px 0 8px}.subtitle{font-size:15pt;color:#526b7b;max-width:145mm}.meta{margin-top:34px;background:#f0f6f8;border-left:5px solid #18758a;padding:16px 19px}.meta div{margin:5px 0}.doc{page-break-before:always}.section-kicker{font-size:8pt;letter-spacing:1.4px;color:#16758a;font-weight:bold;margin-bottom:7px}.note{color:#647789;font-size:9pt}
+</style></head><body><section class="cover"><div class="brand">Software Quality Assurance · Project Report</div><h1>RentaTool<br>Testing Guide &amp; Report</h1><div class="subtitle">Detailed web, API, and Flutter test cases, recorded outcomes, and repeatable run commands.</div><div class="meta"><div><b>Project:</b> RentaTool rental platform</div><div><b>Source documents:</b> NFR report, test plan, run guide, and Flutter test report</div><div><b>Report date:</b> 8 October 2026</div><div><b>Coverage:</b> Web, API, Flutter mobile, accessibility, load, security, reliability, and recovery</div></div><p class="note" style="margin-top:24px">Results and limits follow the saved logs. No unverified case is reported as passed.</p></section><section class="doc"><div class="section-kicker">RENTOOL · TESTING DOCUMENT</div><h1>Detailed NFR Test Report</h1><h1>SE3090 Non-functional testing report</h1>
+<h2>Scope and real-system inventory</h2>
+<p>This report covers only non-functional testing. Functional unit, widget, and routine E2E suites are out of scope and are not counted as NFR evidence.</p>
+<p>Flutter unit/widget, functional E2E, and catalog API integration cases are documented separately in <code>FLUTTER_TEST_REPORT.md</code>; those results are not counted in the NFR summary below.</p>
+<ul>
+<li>React app: <code>src/web</code> (React 18/Vite); login <code>/login</code>; protected operations, catalog, bookings, identity/KYC, claims, escrow and arbitration routes. User journeys found include login, equipment browsing/management, KYC, booking/handover, claims and escrow.</li>
+<li>ASP.NET Core API: <code>src/backend/Host/RentaTool.API</code>; modular Identity, Catalog, Booking and Escrow APIs. The auth endpoints are <code>POST /api/v1/auth/login</code> and <code>/register</code>; public reads include <code>GET /api/v1/equipment</code>; admin/identity endpoints include <code>GET /api/v1/users</code> (Admin role), <code>GET /api/v1/users/{id}</code> (authenticated, self/Admin).</li>
+<li>PostgreSQL: local Windows service <code>postgresql-x64-18</code>, configured by the API connection string. Credentials are not reproduced here.</li>
+<li>Flutter app: sibling repo <code>../RentaTool-mobile</code>; login/register/KYC, catalog, booking/handover and escrow/claims screens. Connected physical device: Samsung SM-E556B (Android 16, API 36; ADB serial <code>R9ZXA0206LN</code>).</li>
+<li>Agentic AI: <code>src/ai_service/main.py</code>, FastAPI health and <code>/api/v1/ai/*</code> routes. Python runtime was unavailable, so no live AI service test was possible.</li>
+</ul>
+<p>The API was started in Development at <code>http://127.0.0.1:5000</code>; Vite served the actual React app at <code>http://127.0.0.1:3000</code>. API startup ran the existing <code>EnsureCreated</code>/schema compatibility and seed checks against the configured local PostgreSQL database. Test requests were read-only apart from an invalid login; no business records were created or changed.</p>
+<h2>Summary</h2>
+<table>
+<tr><th>ID</th><th>NFR Type</th><th>Component</th><th>Tool</th><th>Result</th></tr>
+<tr><td>NFR-PERF-001</td><td>Performance</td><td>Web</td><td>Playwright</td><td>PASS, 230.60 ms DOMContentLoaded on latest local run</td></tr>
+<tr><td>NFR-PERF-002</td><td>Performance</td><td>API</td><td>curl</td><td>PASS, observed response timings</td></tr>
+<tr><td>NFR-PERF-003</td><td>Performance</td><td>Flutter</td><td>Flutter profile/integration tooling</td><td>NOT RUN, frame metrics not collected</td></tr>
+<tr><td>NFR-LOAD-001</td><td>Load</td><td>API</td><td>k6</td><td>PASS, 280 requests, zero errors</td></tr>
+<tr><td>NFR-STRESS-001</td><td>Stress</td><td>API</td><td>k6</td><td>PASS, exploratory read-only profile through 30 configured VUs; no failure observed</td></tr>
+<tr><td>NFR-SEC-001</td><td>Security</td><td>API</td><td>curl</td><td>PASS, tested probes only</td></tr>
+<tr><td>NFR-SEC-002</td><td>Security</td><td>API</td><td>curl</td><td>PASS after fix; allowlisted origin accepted, untrusted origin denied</td></tr>
+<tr><td>NFR-SEC-003</td><td>Security</td><td>Web/API</td><td>OWASP ZAP</td><td>BLOCKED, installer blocked by Windows security</td></tr>
+<tr><td>NFR-USE-001</td><td>Usability</td><td>Web</td><td>Playwright</td><td>PASS, targeted login checks</td></tr>
+<tr><td>NFR-USE-002</td><td>Usability</td><td>Flutter</td><td>Flutter integration_test</td><td>PARTIAL; semantics finder narrowed, device retest blocked</td></tr>
+<tr><td>NFR-A11Y-001</td><td>Accessibility</td><td>Web</td><td>Lighthouse/axe-core Playwright</td><td>PASS, six scans across default/session-expired login states in three browsers; zero detected violations; Lighthouse accessibility 1.00</td></tr>
+<tr><td>NFR-A11Y-002</td><td>Accessibility</td><td>Web</td><td>Playwright</td><td>PASS, limited names/focus check</td></tr>
+<tr><td>NFR-COMP-001</td><td>Compatibility</td><td>Web</td><td>Playwright Chromium</td><td>PASS, three viewport sizes</td></tr>
+<tr><td>NFR-COMP-002</td><td>Compatibility</td><td>Web</td><td>Playwright</td><td>PASS, 21 route checks across Chromium, Firefox and WebKit; 30 tests passed across the full NFR suite</td></tr>
+<tr><td>NFR-COMP-003</td><td>Compatibility</td><td>Flutter</td><td>Flutter integration_test</td><td>PASS, limited to Android 16 phone/login screen</td></tr>
+<tr><td>NFR-COMP-004</td><td>Compatibility</td><td>Web</td><td>Playwright Chromium</td><td>PASS, login route/control render</td></tr>
+<tr><td>NFR-REL-001</td><td>Reliability</td><td>API</td><td>PowerShell + curl</td><td>PASS, 20/20 reads succeeded</td></tr>
+<tr><td>NFR-REL-002</td><td>Reliability</td><td>Flutter</td><td>Flutter integration_test</td><td>NOT RUN, repeated/offline scenario not executed</td></tr>
+<tr><td>NFR-REC-001</td><td>Recovery</td><td>API</td><td>PowerShell process restart + HTTP probes</td><td>PASS (limited API scope), 5 checks passed; health recovered in 1.59 seconds</td></tr>
+</table>
+<p>The exploratory k6 stress profile was read-only and reached a measured maximum of 29 active VUs out of 30 configured. It is not a capacity certification because no expected production load or SLA is specified.</p>
+<h2>Tools used</h2>
+<table>
+<tr><th>Tool</th><th>NFR use</th><th>Status/evidence</th></tr>
+<tr><td>Playwright Test + Chromium/Firefox/WebKit</td><td>Web usability, responsive layout, axe scans, route compatibility and navigation timing</td><td>Full 30-test run passed on 8 October; output at <code>src/web/evidence/nfr-expanded-web-run.log</code>, reports/screenshots under <code>src/web/nfr-playwright-report/</code> and <code>src/web/nfr-test-results/</code>, axe output under <code>evidence/axe-login-*.{json,png}</code> and <code>evidence/axe-login-session-expired-*.{json,png}</code></td></tr>
+<tr><td>curl.exe</td><td>Live API response timing, authentication/authorization and CORS probes</td><td>Executed; see <code>evidence/api-probes.txt</code> and <code>evidence/security-probes.txt</code></td></tr>
+<tr><td>k6</td><td>Read-only API load and exploratory stress profiles</td><td>Load 1→3→5 VUs and stress 5→10→20→30 VUs executed; see <code>evidence/k6-summary.json</code> and <code>evidence/k6-stress-summary.json</code></td></tr>
+<tr><td>PowerShell</td><td>20 sequential API reliability requests and CSV/JSON summary creation</td><td>Executed; see <code>evidence/reliability-catalog-20.csv</code> and <code>evidence/reliability-summary.json</code></td></tr>
+<tr><td>Flutter <code>integration_test</code> / <code>flutter test</code></td><td>Mobile login semantics and viewport-fit checks on Samsung SM-E556B, Android 16/API 36</td><td>Historical M02 passed; M01's source finder is now narrowed. Retest was blocked when phone disconnected; see <code>evidence/mobile/</code> and sibling mobile run log</td></tr>
+<tr><td>ADB</td><td>Detect connected Android target and read model/OS information</td><td>Executed; serial <code>R9ZXA0206LN</code></td></tr>
+<tr><td><code>dotnet run</code> / ASP.NET Core</td><td>Start the real API under test</td><td>Executed locally on port 5000</td></tr>
+<tr><td>PostgreSQL</td><td>Database dependency for the API</td><td>Local PostgreSQL service was running; no test business data was changed</td></tr>
+<tr><td>npm/Vite</td><td>Serve the real React application</td><td>Executed locally on port 3000</td></tr>
+<tr><td>OWASP ZAP</td><td>Planned passive security scanning</td><td>Installer attempt was blocked by Windows security (flagged as malware/PUP); no scan report</td></tr>
+<tr><td>Lighthouse/axe</td><td>Web accessibility and performance audit</td><td>Executed; axe had 0 detected violations in all three browsers; Lighthouse HTML/JSON saved</td></tr>
+<tr><td>Firefox/WebKit</td><td>Cross-browser testing</td><td>Installed; login/browser and axe checks passed on both</td></tr>
+<tr><td>Flutter profile tooling</td><td>Planned mobile performance/frame analysis</td><td>Not run; no Flutter performance result</td></tr>
+</table>
+<h3>CORS finding fix and retest (7 October 2026)</h3>
+<p>The original probe found that <code>https://untrusted.invalid</code> was echoed with <code>Access-Control-Allow-Credentials: true</code>. Replaced wildcard origin handling with <code>Cors:AllowedOrigins</code> configuration and <code>WithOrigins(...)</code>. Configured local origins are <code>localhost</code> and <code>127.0.0.1</code> on ports 3000 and 5173; deployments must set their actual frontend origins.</p>
+<p>Build: <code>dotnet build .\Host\RentaTool.API\RentaTool.API.csproj --no-restore</code> succeeded with 0 warnings and 0 errors. OPTIONS retest to <code>/api/v1/equipment</code>: <code>http://127.0.0.1:3000</code> returned 204 with matching <code>Access-Control-Allow-Origin</code> and credentials headers; <code>https://untrusted.invalid</code> returned 204 with neither CORS permission header. Evidence: <code>evidence/cors-allowlist-retest.txt</code>. This verifies these CORS policy cases; it is not a replacement for ZAP or a broader security review.</p>
+<h3>API recovery test (7 October 2026)</h3>
+<p>Ran <code>nfr-testing/recovery/api_restart_recovery.ps1</code>. The script launched the local API, verified <code>/health</code> and <code>/api/v1/equipment</code> returned 200, stopped the process and observed the expected connection failure, then restarted it. <code>/health</code> returned 200 after <strong>1.59 seconds</strong> and the read-only equipment catalog returned 200. <strong>All five recorded checks passed.</strong> CSV/JSON results and process logs are in <code>evidence/recovery/</code>. This is API process recovery evidence only; browser/mobile retry behavior, recovery from an interrupted write, and mobile reconnection were not tested.</p>
+<h2>Executed commands and results</h2>
+<ol start="1">
+<li>API (started with the locally configured Development environment):</li>
+</ol>
+<pre><code>   $env:ASPNETCORE_ENVIRONMENT='Development'; dotnet run --no-launch-profile --project src/backend/Host/RentaTool.API/RentaTool.API.csproj --urls http://127.0.0.1:5000 --verbosity quiet</code></pre>
+<p>The initial sandboxed restore was denied access to NuGet (NU1301). It was retried with approved elevated execution and succeeded. API startup completed. <code>/health</code>, <code>/swagger/index.html</code>, and <code>/api/v1/equipment</code> returned HTTP 200; single-observation times were 6.88 ms, 2.20 ms, and 11.75 ms, respectively. The API startup/schema operations are the only database writes in this campaign.</p>
+<ol start="2">
+<li>Web server:</li>
+</ol>
+<pre><code>   npm.cmd run dev -- --host 127.0.0.1</code></pre>
+<p>Vite became available at <code>http://127.0.0.1:3000</code>.</p>
+<ol start="3">
+<li>Targeted NFR browser checks (real React page; no mocked API was needed by these page-load/layout checks):</li>
+</ol>
+<pre><code>   npx.cmd playwright test e2e/nonfunctional.spec.ts --reporter=list</code></pre>
+<p>Result: <strong>5 passed</strong>: mobile, tablet and desktop fit; login accessible names and keyboard focus; login page timing. The performance case now logs and attaches the measured navigation timing. The latest isolated retest recorded <strong>230.60 ms DOMContentLoaded</strong>; <code>src/web/evidence/nfr-performance-run.log</code> contains the output and the Playwright result has a <code>navigation-timing.json</code> attachment. Screenshots are in <code>nfr-testing/evidence/web/</code>; original Playwright outputs remain in <code>src/web/test-results/</code>. The existing 5,000 ms guard is not a project SLA; 230.60 ms is one local observation.</p>
+<p>Additional independent browser-engine check:</p>
+<pre><code>   npx.cmd playwright test nfr-tests/browser-compat.spec.ts --config=playwright.nfr.config.ts --project=chromium</code></pre>
+<p>Result: <strong>1 passed</strong> in Chromium; screenshot saved in <code>nfr-testing/evidence/web/chromium-compat-login.png</code> and original in <code>src/web/nfr-test-results/</code>. Its first attempt timed out while Playwright waited for an external Google font during screenshot capture. The test was adjusted to abort external font requests (as the existing NFR spec already does), then rerun successfully. This was test harness setup, not an application defect.</p>
+<p>After browser installation, the original login compatibility suite was run:</p>
+<pre><code>   npx.cmd playwright test nfr-tests --config=playwright.nfr.config.ts --reporter=list</code></pre>
+<p>Original result: <strong>6 passed</strong>: login compatibility and axe accessibility cases on Chromium, Firefox, and WebKit.</p>
+<p>Expanded full-suite result on 8 October: <strong>30 passed</strong>: six axe checks for default login and session-expired error state, 21 route checks, and three login browser-render checks across Chromium/Firefox/WebKit. Protected routes were checked while unauthenticated; authenticated admin dashboards were not rendered. Raw output: <code>src/web/evidence/nfr-expanded-web-run.log</code>; browser screenshots and test results: <code>src/web/nfr-test-results/</code>; axe JSON/screenshots: <code>evidence/axe-login-{chromium,firefox,webkit}.{json,png}</code> and <code>evidence/axe-login-session-expired-{chromium,firefox,webkit}.{json,png}</code>.</p>
+<p>The main NFR page suite, including its added axe test, returned six passing test lines:</p>
+<pre><code>   npx.cmd playwright test e2e/nonfunctional.spec.ts --reporter=list</code></pre>
+<p>Log: <code>src/web/evidence/nfr-web-playwright-final.log</code>. PowerShell wrapped a Node color warning as an error record, although Playwright printed <strong>6 passed</strong>; treat the six individual Playwright test outcomes as passed and the shell pipeline exit as non-clean.</p>
+<ol start="4">
+<li>Lighthouse production-preview audit:</li>
+</ol>
+<pre><code>   npm.cmd run build
+   npm.cmd run preview -- --host 127.0.0.1 --port 4173
+   npm.cmd exec -- lighthouse http://127.0.0.1:4173/login --only-categories=accessibility,performance --output=json,html --output-path=../../nfr-testing/evidence/lighthouse-login-final --chrome-path="$chrome" --chrome-flags="--no-sandbox --ignore-certificate-errors"</code></pre>
+<p>Results: Lighthouse accessibility <strong>1.00</strong>, performance <strong>0.86</strong> on the local production preview. The earlier first audit identified the Show Password hit target as 22×28 px, below the 24×24 minimum used by Lighthouse's target-size audit (accessibility score 0.95). The button hit area was enlarged in <code>LoginPage.tsx</code>; the production retest reached accessibility 1.00. axe had zero automatically detected WCAG A/AA violations before and after. Lighthouse still reports performance opportunities such as unused JavaScript; no performance SLA is defined. HTML/JSON reports: <code>evidence/lighthouse-login-final.report.html</code> and <code>.report.json</code>.</p>
+<ol start="5">
+<li>API load test (read-only k6 profile):</li>
+</ol>
+<pre><code>   k6 run .\nfr-testing\k6\read_only.js --summary-export .\nfr-testing\evidence\k6-summary.json</code></pre>
+<p>The profile sends GET requests to <code>/health</code> and <code>/api/v1/equipment</code> while ramping through 1, 3, and 5 VUs. The saved summary dated 6 October records <strong>280 requests</strong>, <strong>280 checks passed</strong>, <strong>0 failed</strong>, throughput <strong>4.65 requests/s</strong>, average response time <strong>1.18 ms</strong>, p95 <strong>2.65 ms</strong>, and maximum <strong>28.31 ms</strong>. No project latency SLA is defined, so this is a scenario result, not an SLA verdict. Evidence: <code>evidence/k6-summary.json</code>.</p>
+<ol start="6">
+<li>API security probes (equivalent calls were run individually with curl):</li>
+</ol>
+<pre><code>   curl.exe -sS -o NUL -w '%{http_code}' http://127.0.0.1:5000/api/v1/users
+   curl.exe -sS -o NUL -w '%{http_code}' http://127.0.0.1:5000/api/v1/users/00000000-0000-0000-0000-000000000001
+   curl.exe -sS -H 'Content-Type: application/json' --data-binary '@nfr-testing/evidence/invalid-login.json' -o nfr-testing/evidence/invalid-login-response.json -w '%{http_code}' http://127.0.0.1:5000/api/v1/auth/login
+   curl.exe -sS -D - -o NUL -X OPTIONS -H 'Origin: https://untrusted.invalid' -H 'Access-Control-Request-Method: GET' -H 'Access-Control-Request-Headers: authorization' http://127.0.0.1:5000/api/v1/equipment</code></pre>
+<p>Results: both protected user reads and invalid login returned <strong>401</strong>. The original CORS probe returned <strong>204</strong> while echoing the arbitrary origin; this was later fixed and retested as documented above. See <code>evidence/security-probes.txt</code> for the original finding and <code>evidence/cors-allowlist-retest.txt</code> for the passing retest.</p>
+<ol start="7">
+<li>API reliability: a PowerShell loop sent 20 sequential read-only GETs to <code>/api/v1/equipment</code>, saving each status and elapsed time to <code>evidence/reliability-catalog-20.csv</code>. Latest run: 20/20 returned HTTP 200 with curl exit code 0. Summary: min 2.11 ms, mean 4.91 ms, p95 12.19 ms, max 38.13 ms, 0 transport/non-200 failures. The CSV stores time in seconds; the summary converts it to milliseconds. This is a small local repetition check, not a load/stress test and has no project SLA. To reproduce after starting the API:</li>
+</ol>
+<pre><code>   $timings = @(); for ($i = 1; $i -le 20; $i++) { $result = &amp; curl.exe -sS -o NUL -w '%{http_code} %{time_total}' --max-time 10 http://127.0.0.1:5000/api/v1/equipment; $parts = $result -split ' '; $timings += [pscustomobject]@{Iteration=$i; Status=[int]$parts[0]; Seconds=[double]$parts[1]} }; $timings | Export-Csv -NoTypeInformation -Path nfr-testing/evidence/reliability-catalog-20.csv</code></pre>
+<ol start="8">
+<li>Flutter device NFR checks on Samsung SM-E556B (Android 16/API 36):</li>
+</ol>
+<pre><code>   flutter test integration_test/auth_flow_test.dart -d R9ZXA0206LN --plain-name 'TC-NF-M0' 2&gt;&amp;1 | Tee-Object -FilePath 'nfr_mobile_output.txt'
+   flutter test integration_test/auth_flow_test.dart -d R9ZXA0206LN --plain-name 'TC-NF-M02' 2&gt;&amp;1 | Tee-Object -FilePath 'nfr_mobile_m02_output.txt'</code></pre>
+<p>Historical TC-NF-M02 passed independently: login controls fit the 1080×2400 device viewport. Earlier TC-NF-M01 failed because its semantics finder returned both the visible label and the Semantics widget. The test source now explicitly finds the labeled <code>Semantics</code> widgets. A retest was attempted, but the device had disconnected: Flutter listed only Windows, Chrome, and Edge. Therefore the finder correction is <strong>not yet retested on device</strong>. Prior logs are in <code>evidence/mobile/</code>; the latest disconnected retest attempt is <code>RentaTool-mobile/nfr_mobile_output.txt</code>.</p>
+<p>The existing screenshot-driver attempt failed because the project lacks a direct <code>package:test</code> dependency (<code>Could not find package test or file test:test</code>). Flutter test result logs are saved, but no screenshot was produced by that driver attempt.</p>
+<ol start="9">
+<li>Exploratory API stress test:</li>
+</ol>
+<pre><code>   k6 run .\nfr-testing\k6\stress_read_only.js --summary-export .\nfr-testing\evidence\k6-stress-summary.json 2&gt;&amp;1 | Tee-Object -FilePath .\nfr-testing\evidence\k6-stress-run.log</code></pre>
+<p>Stages ramped 5→10→20→30 configured VUs, then down to zero, for 70 seconds. The run recorded <strong>3,780 requests</strong>, <strong>3,780 successful checks</strong>, <strong>0 failed requests</strong>, peak observed <strong>29 VUs</strong>, average request duration <strong>1.78 ms</strong>, p95 <strong>4.51 ms</strong>, max <strong>163.69 ms</strong>, throughput <strong>53.68 requests/s</strong>. After ramp-down, <code>GET /health</code> returned 200 in 0.85 ms and <code>GET /api/v1/equipment</code> returned 200 in 3.63 ms. Evidence: <code>evidence/k6-stress-summary.json</code>, <code>evidence/k6-stress-run.log</code>, and <code>evidence/stress-post-run-probe.txt</code>. This is a moderate exploratory local stress profile, not a validated system capacity limit. No outage was introduced, so this does not establish recovery after a failure.</p>
+<h2>Defect found</h2>
+<p><strong>DEF-NFR-001 — NFR-SEC-002 — FIXED AND RETESTED</strong></p>
+<ul>
+<li>Original finding: API CORS permitted arbitrary origins with credentials.</li>
+<li>Severity: Medium (configuration weakness; browser-based cross-origin exposure depends on authenticated browser context and endpoint data sensitivity).</li>
+<li>Priority: High; deployment origins must be explicitly configured for each environment.</li>
+<li>Reproduction: send OPTIONS to <code>/api/v1/equipment</code> with <code>Origin: https://untrusted.invalid</code>, requested method GET, and Authorization header. See <code>evidence/security-probes.txt</code>.</li>
+<li>Expected: untrusted origin receives no credentialed CORS permission.</li>
+<li>Actual before fix: HTTP 204; arbitrary origin echoed with credentials allowed.</li>
+<li>Fix: replaced wildcard origin handling with configured <code>Cors:AllowedOrigins</code> and <code>WithOrigins(...)</code>.</li>
+<li>Retest: <code>http://127.0.0.1:3000</code> received matching allow-origin and credentials headers; <code>https://untrusted.invalid</code> received neither. See <code>evidence/cors-allowlist-retest.txt</code>.</li>
+<li>Deployment action: configure the exact production web/mobile origins for each environment before deployment.</li>
+</ul>
+<p>No other defects were inferred from unavailable scans or test categories.</p>
+<p><strong>WEB-NFR-A11Y-002 — Fixed and retested:</strong> Lighthouse identified the Show Password button as an undersized touch target (22×28 px). The button now has a 24×24 px minimum hit area. The production-preview Lighthouse accessibility score increased from 0.95 to 1.00; axe reported zero automatic violations in Chromium, Firefox, and WebKit. Lighthouse performance score was 0.86; remaining performance opportunities are recorded in its HTML report.</p>
+<h2>BLOCKED checks and exact setup limits</h2>
+<ul>
+<li>Load: the saved k6 summary records <strong>280 requests</strong> (140 health checks and 140 catalog checks); all 280 checks passed with <strong>0 failed requests</strong>. Throughput was 4.65 requests/s; average response time 1.18 ms, p95 2.65 ms, maximum 28.31 ms. No project-defined latency limit was found, so PASS means the scenario completed with successful endpoint checks, not that an SLA was met. Evidence: <code>evidence/k6-summary.json</code> (6 October 2026). Re-run from the RentaTool repository folder with the API running: <code>k6 run nfr-testing/k6/read_only.js --summary-export nfr-testing/evidence/k6-summary.json</code>.</li>
+<li>Stress: the read-only 5→10→20→30 VU exploratory profile completed without failed requests; no failure point was reached up to this level. This is not a capacity certification; expected production load and SLA remain undefined.</li>
+<li>ZAP: installation was attempted through winget, but Windows security blocked the official ZAP installer download as containing malware or potentially unwanted software. No workaround/bypass was attempted; no ZAP scan/report exists.</li>
+<li>Accessibility: axe and Lighthouse ran. The three-browser axe scans reported zero automatic violations; Lighthouse production preview scored accessibility 1.00 and performance 0.86. The axe contrast rule was marked incomplete for gradient backgrounds, so manual contrast review is still needed. These tools do not prove total WCAG conformance.</li>
+<li>Browser compatibility: Chromium, Firefox, and WebKit login checks passed. Coverage is only the login route and controls, not all business workflows.</li>
+<li>Flutter: historical M02 viewport check passed on the Samsung phone. M01's finder source was narrowed after its ambiguous result, but the phone disconnected before the retest; Flutter reported no matching device. Mobile frame performance, repeated/offline reliability, broader workflows and recovery remain untested. Android build output warned about SDK XML version compatibility, but prior filtered tests ran.</li>
+<li>Recovery: API stop/restart was tested; health recovered in 1.59 seconds and catalog returned 200. Client retry UX, interrupted-write data consistency and mobile reconnection remain untested.</li>
+<li>AI: Python runtime and live AI service were unavailable; AI subsystem NFR behavior is not covered.</li>
+</ul>
+<h2>Viva demonstration</h2>
+<ol start="1">
+<li>Show <code>TEST_PLAN.md</code> and explain the scope limits: stress passed only at the tested level, ZAP remains blocked, Lighthouse/axe covered the login route, API recovery covered process restart, and several mobile NFR areas remain untested.</li>
+<li>Open <code>src/web/test-results/</code> and show the Playwright screenshots for each viewport plus the login keyboard/name check.</li>
+<li>Show <code>evidence/reliability-summary.json</code> and CSV; explain the 20 sequential read-only API calls and that this is reliability smoke evidence, not capacity evidence.</li>
+<li>Re-run the two unauthenticated curl requests (both should return 401), then compare OPTIONS responses for an allowed origin and an untrusted origin. Show the CORS retest evidence and environment allowlist configuration.</li>
+<li>Demonstrate <code>nfr-testing/k6/read_only.js</code> for load and <code>nfr-testing/k6/stress_read_only.js</code> for the separate staged exploratory stress run.</li>
+<li>Open the Lighthouse HTML report and axe JSON/screenshots; explain the button target-size fix and the gradient contrast items axe could not determine automatically.</li>
+<li>Show the ZAP installation block in the report; do not claim a ZAP scan. Reconnect an Android phone to rerun <code>TC-NF-M01</code> before presenting its corrected finder as passing.</li>
+<li>Run <code>nfr-testing/recovery/api_restart_recovery.ps1</code> to demonstrate the API becoming unavailable and recovering after restart; explain the client retry/mobile recovery boundary.</li>
+</ol></section><section class="doc plan"><div class="section-kicker">RENTOOL · TESTING DOCUMENT</div><h1>NFR Test Plan</h1><h1>NFR test plan and outcomes</h1>
+<p>Test environment: local ASP.NET Development API (<code>127.0.0.1:5000</code>), PostgreSQL service, Vite React web (<code>127.0.0.1:3000</code>), and a Samsung SM-E556B running Android 16/API 36 for the historical mobile result. The phone disconnected before the latest mobile retest. No performance SLA was found in the project, so timing values are observations and are not pass/fail SLA judgments. BLOCKED/NOT RUN means no test result exists; the reason is stated in the row or detailed report.</p>
+<table>
+<tr><th>Test ID</th><th>NFR Type</th><th>System Component</th><th>Feature/Scenario</th><th>Tool</th><th>Test Objective</th><th>Expected Result</th><th>Actual Result</th><th>Status</th><th>Evidence Location</th></tr>
+<tr><td>NFR-PERF-001</td><td>Performance</td><td>Web</td><td>Login route first navigation at desktop viewport</td><td>Playwright Chromium</td><td>Measure DOMContentLoaded and check login renders</td><td>Timing is recorded; local 5,000 ms guard is not a project SLA</td><td>Latest retest: 230.60 ms DOMContentLoaded; login heading rendered; test passed</td><td>PASS (single local observation)</td><td><code>src/web/evidence/nfr-performance-run.log</code>; Playwright <code>test-results/</code> attachment <code>navigation-timing.json</code></td></tr>
+<tr><td>NFR-PERF-002</td><td>Performance</td><td>API</td><td>Health and equipment catalog request</td><td>curl</td><td>Capture response time and response code</td><td>Endpoint responds; report observed latency without invented limit</td><td>health HTTP 200 in 6.88 ms; equipment HTTP 200 in 11.75 ms (single initial observations)</td><td>PASS (observed)</td><td><code>evidence/api-probes.txt</code></td></tr>
+<tr><td>NFR-PERF-003</td><td>Performance</td><td>Flutter</td><td>Measure real-device frame/build performance</td><td>Flutter profile/integration tooling</td><td>Record frame timing/jank on target device</td><td>Actual frame metrics captured</td><td>Not run; no mobile performance instrumentation/profile capture was performed</td><td>NOT RUN</td><td><code>FINAL_REPORT.md</code></td></tr>
+<tr><td>NFR-LOAD-001</td><td>Load</td><td>API/PostgreSQL</td><td>Gradual read-only health + equipment load, 1→3→5 VUs</td><td>k6</td><td>Record requests, latency distribution, errors, throughput</td><td>No data mutations; metrics reported; no project SLA available</td><td>Saved summary (<code>evidence/k6-summary.json</code>, 6 Oct): 280 requests; 280 checks passed; 0 failed; avg 1.18 ms, p95 2.65 ms, max 28.31 ms; 4.65 requests/s</td><td>PASS (scenario checks; no SLA)</td><td><code>evidence/k6-summary.json</code></td></tr>
+<tr><td>NFR-STRESS-001</td><td>Stress</td><td>API/PostgreSQL</td><td>Read-only staged load at 5→10→20→30 VUs, then ramp down</td><td>k6</td><td>Observe response degradation/errors under exploratory load and check API after load stops</td><td>Actual load, errors, latency and post-load availability recorded; no project capacity SLA</td><td>3,780 requests; 3,780 checks passed; 0 failed; peak observed 29/30 VUs; avg 1.78 ms, p95 4.51 ms, max 163.69 ms; after ramp-down health/catalog returned 200. No failure point found up to this test level; no outage was induced</td><td>PASS (exploratory profile only; not capacity proof)</td><td><code>evidence/k6-stress-summary.json</code>; <code>evidence/k6-stress-run.log</code>; <code>evidence/stress-post-run-probe.txt</code></td></tr>
+<tr><td>NFR-SEC-001</td><td>Security</td><td>API</td><td>Unauthenticated admin/user endpoints and invalid login</td><td>curl</td><td>Check authorization boundaries and bad credentials</td><td>Protected endpoints return 401; invalid login rejects; no token issued</td><td>Admin user list 401; user profile 401; invalid login 401</td><td>PASS (these probes only)</td><td><code>evidence/security-probes.txt</code>; <code>evidence/invalid-login-response.json</code></td></tr>
+<tr><td>NFR-SEC-002</td><td>Security</td><td>API</td><td>CORS preflight from allowed local web origin and arbitrary origin</td><td>curl</td><td>Verify credentialed CORS is restricted to configured trusted origins</td><td>Allowed origin receives CORS headers; untrusted origin receives no CORS permission headers</td><td>Retest: <code>http://127.0.0.1:3000</code> returned 204 with matching allow-origin and credentials; <code>https://untrusted.invalid</code> returned 204 without allow-origin/allow-credentials headers</td><td>PASS (retested)</td><td><code>evidence/cors-allowlist-retest.txt</code>; <code>src/backend/Host/RentaTool.API/Program.cs</code>; <code>appsettings.json</code></td></tr>
+<tr><td>NFR-SEC-003</td><td>Security</td><td>Web/API</td><td>Passive OWASP web/API scan</td><td>OWASP ZAP baseline</td><td>Identify scanner-reported passive findings on local app</td><td>Report findings by tool severity</td><td>BLOCKED: winget began ZAP 2.17 installation, but Windows security blocked the downloaded installer as malware or potentially unwanted software; scan not run</td><td>BLOCKED</td><td><code>FINAL_REPORT.md</code></td></tr>
+<tr><td>NFR-USE-001</td><td>Usability</td><td>Web</td><td>Login form labels, password visibility control, keyboard focus; responsive viewports</td><td>Playwright Chromium</td><td>Check key login-page cues and layouts at 375/768/1440 px</td><td>Controls visible/labeled/focusable; no horizontal overflow</td><td>All 5 targeted tests passed</td><td>PASS</td><td><code>src/web/test-results/</code></td></tr>
+<tr><td>NFR-USE-002</td><td>Usability</td><td>Flutter</td><td>Login field semantics and viewport fit</td><td>Flutter integration_test on Samsung SM-E556B, Android 16/API 36</td><td>Check labels, keyboard usability and screen fit</td><td>NFR assertions pass on real device</td><td>Historical M02 viewport-fit passed; M01 had an ambiguous finder and its test source is now narrowed to Semantics widgets. Retest attempted but blocked because the phone disconnected and Flutter found no device</td><td>PARTIAL (fix awaiting device retest)</td><td><code>evidence/mobile/mobile-nfr-two-case-run.txt</code>; <code>RentaTool-mobile/nfr_mobile_output.txt</code></td></tr>
+<tr><td>NFR-A11Y-001</td><td>Accessibility</td><td>Web</td><td>Default login and session-expired alert states in Chromium/Firefox/WebKit</td><td>Lighthouse + axe-core Playwright</td><td>Find automatically detectable WCAG A/AA issues on login and its error state</td><td>Per-browser/state results saved; violations and incomplete rules triaged</td><td>Six axe scans passed with 0 automatically detected violations; Lighthouse login accessibility 1.00, performance 0.86. Gradient contrast remains incomplete for manual review; not full WCAG conformance</td><td>PASS (automated scope)</td><td><code>evidence/axe-login-*.json/.png</code>; <code>evidence/axe-login-session-expired-*.json/.png</code>; Lighthouse HTML/JSON; <code>src/web/evidence/nfr-expanded-web-run.log</code></td></tr>
+<tr><td>NFR-A11Y-002</td><td>Accessibility</td><td>Web</td><td>Login accessible names and keyboard focus</td><td>Playwright Chromium</td><td>Verify accessible naming/focus behavior</td><td>Named fields and keyboard focus work</td><td>Passed targeted browser assertion; not a full WCAG audit</td><td>PASS (limited)</td><td><code>src/web/test-results/</code></td></tr>
+<tr><td>NFR-COMP-001</td><td>Compatibility</td><td>Web</td><td>Login page responsive layout in Chromium</td><td>Playwright Chromium</td><td>Check mobile/tablet/desktop viewport rendering</td><td>Controls fit viewport without horizontal overflow</td><td>3 viewport cases passed</td><td>PASS (single browser only)</td><td><code>src/web/test-results/</code></td></tr>
+<tr><td>NFR-COMP-002</td><td>Compatibility</td><td>Web</td><td>Login, registration redirect and five protected route redirects in three engines</td><td>Playwright</td><td>Compare rendering and unauthenticated auth-guard behavior</td><td>Login renders; protected paths consistently redirect to login</td><td>21 checks passed (7 route behaviors × Chromium/Firefox/WebKit). Authenticated admin dashboards were not tested because no admin session was supplied</td><td>PASS (route/redirect scope)</td><td><code>src/web/evidence/nfr-expanded-web-run.log</code>; <code>src/web/nfr-test-results/</code></td></tr>
+<tr><td>NFR-COMP-003</td><td>Compatibility</td><td>Flutter</td><td>Login screen layout on physical Android phone</td><td>Flutter integration_test; Samsung SM-E556B, Android 16/API 36</td><td>Record actual device/OS and check screen behavior</td><td>Test result tied to actual device/OS</td><td>TC-NF-M02 viewport-fit passed on this device; coverage limited to this device and login screen</td><td>PASS (limited)</td><td><code>evidence/mobile/mobile-viewport-fit-pass.txt</code></td></tr>
+<tr><td>NFR-COMP-004</td><td>Compatibility</td><td>Web</td><td>Login route/control rendering in Chromium</td><td>Playwright</td><td>Verify route and controls in installed engine</td><td>Controls visible; screenshot saved</td><td>1 Chromium browser-engine check passed</td><td>PASS (Chromium only)</td><td><code>src/web/nfr-test-results/</code></td></tr>
+<tr><td>NFR-REL-001</td><td>Reliability</td><td>API</td><td>Repeat GET equipment catalog 20 times</td><td>PowerShell + curl</td><td>Check consistent response status and latency</td><td>Repeated requests remain valid; actual failures recorded</td><td>Latest run: 20/20 HTTP 200; 0 transport/non-200 failures; min 2.11 ms, mean 4.91 ms, p95 12.19 ms, max 38.13 ms</td><td>PASS (20 requests; no project SLA)</td><td><code>evidence/reliability-catalog-20.csv</code>; <code>evidence/reliability-summary.json</code></td></tr>
+<tr><td>NFR-REL-002</td><td>Reliability</td><td>Flutter</td><td>Repeat login/API workflows and offline behavior</td><td>Flutter integration_test/device</td><td>Check consistency and app stability</td><td>Repeated real-device workflow results recorded</td><td>Not tested; no repeated/offline reliability case executed; phone currently disconnected</td><td>NOT RUN</td><td><code>FINAL_REPORT.md</code></td></tr>
+<tr><td>NFR-REC-001</td><td>Recovery</td><td>API</td><td>Stop/restart local API process and probe health/catalog before and after</td><td>PowerShell recovery script + ASP.NET Core + PostgreSQL</td><td>Verify service becomes unavailable when stopped and recovers after restart</td><td>Unavailable state is detected; health and read-only catalog recover; elapsed recovery is recorded</td><td>API stopped: health probe returned expected connection failure; after restart health and catalog returned HTTP 200; health recovered in 1.59 seconds</td><td>PASS (API recovery scope; client retry/mobile recovery not tested)</td><td><code>recovery/api_restart_recovery.ps1</code>; <code>evidence/recovery/api-restart-results.csv</code>; <code>evidence/recovery/api-restart-results.json</code>; API process logs</td></tr>
+</table></section><section class="doc"><div class="section-kicker">RENTOOL · TESTING DOCUMENT</div><h1>NFR Test Run Guide</h1><h1>SE3090 NFR run guide</h1>
+<p>This guide is for <strong>non-functional testing only</strong>. Run commands in PowerShell. From the repository root, use <code>C:\Users\ASUS\Desktop\Rental\RentaTool</code>. Start PostgreSQL before starting the API. The API uses its configured local database and runs its normal schema/seed checks on startup. Test calls below do not create business data.</p>
+<h2>Tools used and their purpose</h2>
+<table>
+<tr><th>Tool</th><th>Used for</th><th>Actual use/status</th></tr>
+<tr><td>Playwright Test</td><td>React web usability, responsive layout, axe integration, browser compatibility and page timing</td><td>Chromium, Firefox, and WebKit used; login checks and axe tests passed</td></tr>
+<tr><td>curl.exe</td><td>API response-time observations and security probes</td><td>Used against the live local API; HTTP statuses and timings were saved</td></tr>
+<tr><td>k6</td><td>API load and exploratory stress testing</td><td>Load 1→3→5 and stress 5→10→20→30 virtual-user profiles executed; summaries saved</td></tr>
+<tr><td>PowerShell</td><td>Repeat the API catalog GET 20 times, collect response codes/timings, export CSV</td><td>Used; all 20 calls returned HTTP 200</td></tr>
+<tr><td>Flutter <code>integration_test</code> / <code>flutter test</code></td><td>Mobile login usability and viewport-fit checks</td><td>Historical M02 passed; M01 finder was narrowed in source, but the latest retest was blocked because the Android device disconnected</td></tr>
+<tr><td>Android Debug Bridge (ADB)</td><td>Detect and identify the attached Android device</td><td>Used to identify serial <code>R9ZXA0206LN</code>, model and Android version</td></tr>
+<tr><td>ASP.NET Core <code>dotnet run</code></td><td>Run the actual API under test</td><td>Used in Development at <code>http://127.0.0.1:5000</code></td></tr>
+<tr><td>PostgreSQL</td><td>Database used by the actual local API</td><td>Local service was running; API startup performed its normal schema/seed checks; test requests did not modify business data</td></tr>
+<tr><td>Vite via npm</td><td>Serve the actual React application for Playwright</td><td>Used at <code>http://127.0.0.1:3000</code>; Playwright config can start it automatically</td></tr>
+<tr><td>OWASP ZAP</td><td>Passive web/API security scan</td><td>Installation blocked by Windows security; no scan/report exists</td></tr>
+<tr><td>Lighthouse and axe</td><td>Web accessibility and performance audits</td><td>Ran against login; axe zero violations, Lighthouse accessibility 1.00 and performance 0.86</td></tr>
+<tr><td>Firefox and WebKit</td><td>Additional Playwright browser engines</td><td>Installed; login and axe checks passed</td></tr>
+<tr><td>Flutter profile/performance tooling</td><td>Planned mobile frame/jank measurement</td><td>No performance measurement was run</td></tr>
+</table>
+<h2>Start services</h2>
+<p>Open PowerShell window 1, from the RentaTool repository root:</p>
+<pre><code>$env:ASPNETCORE_ENVIRONMENT = "Development"
+dotnet run --no-launch-profile --project .\src\backend\Host\RentaTool.API\RentaTool.API.csproj --urls http://127.0.0.1:5000</code></pre>
+<p>Leave it running for API, k6, security, and Flutter tests. Web Playwright starts Vite itself using its config, normally at <code>http://127.0.0.1:3000</code>.</p>
+<h2>Web usability, layout, accessibility smoke, performance observation</h2>
+<p>From <code>C:\Users\ASUS\Desktop\Rental\RentaTool\src\web</code>:</p>
+<pre><code>npx.cmd playwright test e2e/nonfunctional.spec.ts --reporter=list</code></pre>
+<p>This runs five real React login-page checks: mobile/tablet/desktop layouts, login accessible names and keyboard focus, and a page-render timing assertion. Previous result: <strong>5 passed</strong>. The timing assertion checks DOMContentLoaded under the test's existing 5-second budget; that budget is not a project SLA. The accessible-name check is a limited smoke check, not WCAG conformance.</p>
+<p>The timing test logs the observed DOMContentLoaded duration and attaches <code>navigation-timing.json</code>. Latest isolated rerun: <strong>230.60 ms</strong>, test passed. Log: <code>src/web/evidence/nfr-performance-run.log</code>; this is one local observation, not an SLA.</p>
+<p>Evidence:</p>
+<ul>
+<li>Screenshots: <code>RentaTool/nfr-testing/evidence/web/</code></li>
+<li>Playwright raw output, trace, and screenshots: <code>RentaTool/src/web/test-results/</code></li>
+</ul>
+<h2>Web compatibility</h2>
+<p>Run the installed Chromium check from <code>src\web</code>:</p>
+<pre><code>npx.cmd playwright test nfr-tests/browser-compat.spec.ts --config=playwright.nfr.config.ts --project=chromium</code></pre>
+<p>Previous result: <strong>1 passed</strong>. Screenshot: <code>RentaTool/nfr-testing/evidence/web/chromium-compat-login.png</code>.</p>
+<p>The expanded route and redirect matrix was executed in all three engines:</p>
+<pre><code>Remove-Item Env:NO_COLOR -ErrorAction SilentlyContinue
+npx.cmd playwright test nfr-tests --config=playwright.nfr.config.ts --reporter=list 2&gt;&amp;1 | Tee-Object -FilePath evidence/nfr-expanded-web-run.log</code></pre>
+<p>Latest full run: <strong>30 passed</strong>. This checks login rendering, public registration and protected-route redirects while unauthenticated in three engines. Authenticated dashboard workflows are not established by these checks. HTML/raw output: <code>src/web/nfr-playwright-report/</code> and <code>src/web/nfr-test-results/</code>; full log: <code>src/web/evidence/nfr-expanded-web-run.log</code>.</p>
+<h2>API performance observation</h2>
+<p>With the API running, from any PowerShell window:</p>
+<pre><code>curl.exe -sS -o NUL -w "health: HTTP %{http_code}, %{time_total}s`n" http://127.0.0.1:5000/health
+curl.exe -sS -o NUL -w "equipment: HTTP %{http_code}, %{time_total}s`n" http://127.0.0.1:5000/api/v1/equipment</code></pre>
+<p>Previously observed one-request results were health 200/6.88 ms and equipment 200/11.75 ms. These are single local observations, not an SLA. Saved initial measurements: <code>nfr-testing/evidence/api-probes.txt</code>.</p>
+<h2>API load test (k6)</h2>
+<p>Open a second PowerShell window at the RentaTool repository root, while the API is running:</p>
+<pre><code>k6 run .\nfr-testing\k6\read_only.js --summary-export .\nfr-testing\evidence\k6-summary.json</code></pre>
+<p>The prepared test ramps through 1, 3, then 5 virtual users and sends only GET requests to <code>/health</code> and <code>/api/v1/equipment</code>; it lasts about 60 seconds. The saved summary (<code>evidence/k6-summary.json</code>, dated 6 October) records <strong>280 requests, 280 checks passed, 0 failed; 4.65 requests/s; avg 1.18 ms, p95 2.65 ms, max 28.31 ms</strong>. No project latency limit was defined.</p>
+<p>Evidence: <code>nfr-testing/evidence/k6-summary.json</code>. k6 console output appears in the terminal; to save a separate text log, add <code>2&gt;&amp;1 | Tee-Object -FilePath .\nfr-testing\evidence\k6-run.log</code> to the command.</p>
+<h2>Stress test</h2>
+<p>Run a separate read-only exploratory profile from the RentaTool root with the API running:</p>
+<pre><code>k6 run .\nfr-testing\k6\stress_read_only.js --summary-export .\nfr-testing\evidence\k6-stress-summary.json 2&gt;&amp;1 | Tee-Object -FilePath .\nfr-testing\evidence\k6-stress-run.log</code></pre>
+<p>Stages are 5→10→20→30 configured VUs then ramp down (70 seconds). Latest run: 3,780 requests/checks passed, 0 failed, 29 peak observed VUs, avg 1.78 ms, p95 4.51 ms, max 163.69 ms, throughput 53.68 requests/s. After ramp-down health/catalog returned HTTP 200; see <code>evidence/stress-post-run-probe.txt</code>. No errors or failure point were observed up to this test level. This is exploratory, not a capacity certification; no production load baseline or SLA is documented.</p>
+<h2>API security probes</h2>
+<p>With the API running, from the RentaTool repository root:</p>
+<pre><code>curl.exe -sS -o NUL -w "admin users without token: HTTP %{http_code}`n" http://127.0.0.1:5000/api/v1/users
+curl.exe -sS -o NUL -w "user profile without token: HTTP %{http_code}`n" http://127.0.0.1:5000/api/v1/users/00000000-0000-0000-0000-000000000001
+curl.exe -sS -H "Content-Type: application/json" --data-binary "@.\nfr-testing\evidence\invalid-login.json" -o .\nfr-testing\evidence\invalid-login-response.json -w "invalid login: HTTP %{http_code}`n" http://127.0.0.1:5000/api/v1/auth/login
+curl.exe -sS -D - -o NUL -X OPTIONS -H "Origin: https://untrusted.invalid" -H "Access-Control-Request-Method: GET" -H "Access-Control-Request-Headers: authorization" http://127.0.0.1:5000/api/v1/equipment</code></pre>
+<p>Prior outcomes: protected user endpoints and invalid login returned 401. Run the fixed CORS check for an allowed local site and an untrusted origin:</p>
+<pre><code>curl.exe -sS -D - -o NUL -X OPTIONS -H "Origin: http://127.0.0.1:3000" -H "Access-Control-Request-Method: GET" -H "Access-Control-Request-Headers: authorization" http://127.0.0.1:5000/api/v1/equipment
+curl.exe -sS -D - -o NUL -X OPTIONS -H "Origin: https://untrusted.invalid" -H "Access-Control-Request-Method: GET" -H "Access-Control-Request-Headers: authorization" http://127.0.0.1:5000/api/v1/equipment</code></pre>
+<p>The allowed origin should get matching <code>Access-Control-Allow-Origin</code> and credentials headers. The untrusted origin should get neither CORS permission header. Retest output is saved in <code>nfr-testing/evidence/cors-allowlist-retest.txt</code>; the original finding is preserved in <code>evidence/security-probes.txt</code>. Configure exact production origins in the deployment environment.</p>
+<h2>OWASP ZAP security scan</h2>
+<p><strong>Not run.</strong> Winget began installing ZAP 2.17, but Windows security blocked the downloaded installer, labeling it malware or potentially unwanted software. I did not bypass that protection. No ZAP report exists. If resolved through your approved security software process, run a passive baseline scan against local web/API and save reports under <code>nfr-testing/evidence/</code>. Do not claim a ZAP result until the scan is executed.</p>
+<h2>API reliability repetition</h2>
+<p>With the API running, from <code>C:\Users\ASUS\Desktop\Rental\RentaTool</code>:</p>
+<pre><code>$timings = @()
+for ($i = 1; $i -le 20; $i++) {
+    $result = &amp; curl.exe -sS -o NUL -w '%{http_code} %{time_total}' --max-time 10 http://127.0.0.1:5000/api/v1/equipment
+    $parts = $result -split ' '
+    $timings += [pscustomobject]@{ Iteration = $i; Status = [int]$parts[0]; Seconds = [double]$parts[1] }
+}
+$timings | Export-Csv -NoTypeInformation -Path .\nfr-testing\evidence\reliability-catalog-20.csv</code></pre>
+<p>This is a small sequential repeatability check, not a load test. Inspect each response status and duration in the CSV; the existing summary is <code>nfr-testing/evidence/reliability-summary.json</code>.</p>
+<h2>Accessibility audit</h2>
+<p>Dependencies and test harness are installed. Run axe against the login page in all three browsers:</p>
+<pre><code>cd C:\Users\ASUS\Desktop\Rental\RentaTool\src\web
+npx.cmd playwright test nfr-tests/accessibility.spec.ts --config=playwright.nfr.config.ts --reporter=list</code></pre>
+<p>Latest run: zero automatically detectable WCAG A/AA violations in Chromium, Firefox and WebKit. To repeat Lighthouse, first build and run <code>npm.cmd run preview -- --host 127.0.0.1 --port 4173</code> in a separate terminal, then run:</p>
+<pre><code>$chrome = node -e "console.log(require('playwright').chromium.executablePath())"
+npm.cmd exec -- lighthouse http://127.0.0.1:4173/login --only-categories=accessibility,performance --output=json,html --output-path=../../nfr-testing/evidence/lighthouse-login-final --chrome-path="$chrome" --chrome-flags="--no-sandbox --ignore-certificate-errors"</code></pre>
+<p>Latest production-preview scores: accessibility <strong>1.00</strong>, performance <strong>0.86</strong>. The password visibility button was enlarged after Lighthouse initially reported its hit area as 22×28 px; the retest reports no target-size failure. Evidence: <code>evidence/lighthouse-login-final.report.{html,json}</code>, <code>evidence/axe-login-{chromium,firefox,webkit}.{json,png}</code>. Axe marked several gradient contrast checks incomplete, so manual review remains useful. This audit covers <code>/login</code> only and is not a full conformance certificate.</p>
+<h2>Flutter unit, widget, integration, and mobile UI checks</h2>
+<p>The Flutter project is the sibling folder <code>C:\Users\ASUS\Desktop\Rental\RentaTool-mobile</code>. See <code>FLUTTER_TEST_REPORT.md</code> for the test cases and recorded outcomes. Its results are based on timestamped raw logs and the saved LCOV file; the older mobile <code>test_report.md</code> totals are superseded.</p>
+<p>The historical Android target was Samsung SM-E556B, Android 16/API 36, ADB serial <code>R9ZXA0206LN</code>. The phone was disconnected during the latest M01 retest.</p>
+<p>Connect an Android phone or emulator and identify it with <code>flutter devices</code>. Run commands from the Flutter project root:</p>
+<pre><code>flutter test --coverage
+flutter test integration_test/auth_flow_test.dart -d &lt;device-id&gt; --plain-name 'TC-ID-'
+flutter test integration_test/auth_flow_test.dart -d &lt;device-id&gt; --plain-name 'TC-NF-M01'
+flutter test integration_test/auth_flow_test.dart -d &lt;device-id&gt; --plain-name 'TC-NF-M02'
+flutter test integration_test/catalog_live_api_test.dart -d &lt;device-id&gt;</code></pre>
+<p>Latest saved statuses: the broad unit/widget output recorded 156 passes and 3 test-file load errors; the catalog API case passed; TC-NF-M02 passed historically on one Android device; the M01 device retest is blocked because no phone was connected. The latest saved full-app Flutter web E2E log records 4 passes and 1 login failure caused by a missing <code>flutter_secure_storage</code> plugin implementation. These are not full-suite passes.</p>
+<h2>API recovery test</h2>
+<p>The API process restart recovery scenario is implemented and was executed. To repeat it, first make sure no API is already using port 5000. The script starts and stops only the API process it launches; it refuses to run if the port is occupied. PostgreSQL must be running because the API performs its configured startup checks.</p>
+<p>From the RentaTool repository root:</p>
+<pre><code>powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\nfr-testing\recovery\api_restart_recovery.ps1</code></pre>
+<p>It probes <code>/health</code> and <code>/api/v1/equipment</code>, stops the local API process, confirms the health endpoint is unreachable, restarts the API, then probes health and catalog again. Latest run: all five checks passed; health recovered in 1.59 seconds. Results and API logs are written to <code>nfr-testing/evidence/recovery/</code>. This is API process recovery only; browser retry/user messaging, mobile reconnect, and data consistency across an interrupted write were not tested.</p>
+<h2>Flutter performance and reliability</h2>
+<p><strong>Not run.</strong> The current Flutter NFR cases do not collect frame/jank metrics, repeated workflow behavior, or network outage/reconnect behavior. Flutter unit/widget tests are functional tests and are not substitutes for these NFR cases. No result or screenshot should be claimed for these categories until a device-targeted test has been implemented and executed.</p>
+<h2>Summary status</h2>
+<ul>
+<li><strong>Executed:</strong> web Playwright suite; Chromium/Firefox/WebKit login compatibility and axe; production Lighthouse; API timing and auth/CORS probes; k6 load and exploratory stress; API reliability loop; historical Flutter M02.</li>
+<li><strong>Fixed and retested:</strong> login password-toggle target size; Lighthouse accessibility 1.00 and axe zero violations in the three engines; API CORS origin allowlist blocks untrusted origins.</li>
+<li><strong>Partial/blocked:</strong> Flutter M01 source finder was narrowed but device retest is blocked by phone disconnect.</li>
+<li><strong>Not run/blocked:</strong> OWASP ZAP (Windows security blocked installer), mobile performance/reliability/recovery and client retry behavior, live AI checks.</li>
+</ul>
+<p>Full detailed results and the assignment test-plan matrix: <code>TEST_PLAN.md</code> and <code>FINAL_REPORT.md</code> in this folder.</p></section><section class="doc"><div class="section-kicker">RENTOOL · TESTING DOCUMENT</div><h1>Flutter Test Report</h1><h1>RentaTool Flutter Test Report</h1>
+<p>This report records Flutter test cases and the outcomes supported by saved logs. It is text-only; screenshots are not embedded in this testing guide.</p>
+<h2>Recorded results</h2>
+<table>
+<tr><th>Test area</th><th>Saved evidence</th><th>Recorded result</th></tr>
+<tr><td>Unit and widget suite</td><td><code>RentaTool-mobile/unit_test_output.txt</code> (6 October 2026)</td><td><strong>156 passed, 3 test files failed to load.</strong> The failing files report <code>Undefined name 'main'</code> from the generated test listener. The latest saved broad run is not a full-suite pass.</td></tr>
+<tr><td>Line coverage</td><td><code>RentaTool-mobile/coverage/lcov.info</code></td><td><strong>62.92%</strong> (733 of 1,165 lines). This differs from the older mobile report's 64.46% figure.</td></tr>
+<tr><td>Full-app Flutter web E2E</td><td><code>RentaTool-mobile/e2e_output_fixed.txt</code> (3 October 2026)</td><td><strong>4 passed, 1 failed.</strong> The login case failed with <code>MissingPluginException</code> for <code>flutter_secure_storage</code>; do not describe the suite as 5/5 passing.</td></tr>
+<tr><td>Catalog API integration</td><td><code>RentaTool-mobile/integration_test_output_flutter_xplat01.txt</code> (6 October 2026)</td><td><strong>1 test passed:</strong> <code>XPLAT-01</code> read the shared seeded catalog.</td></tr>
+<tr><td>Mobile login viewport</td><td><code>RentaTool-mobile/nfr_mobile_m02_output.txt</code> (6 October 2026)</td><td><strong>TC-NF-M02 passed</strong> on the Samsung SM-E556B running Android 16/API 36 at 1080 × 2400. This is one device and one login screen.</td></tr>
+<tr><td>Mobile login accessibility/usability</td><td><code>RentaTool-mobile/nfr_mobile_output.txt</code> (7 October 2026)</td><td><strong>Retest blocked:</strong> no Android device was connected. The source finder was narrowed after an earlier ambiguous result, but the change has not been retested on device.</td></tr>
+</table>
+<p>An earlier combined unit/widget log (<code>RentaTool-mobile/all_tests_combined_output.txt</code>, 4 October) records 229 passing tests. It is historical and does not replace the later 6 October run with three test-load errors. The older <code>RentaTool-mobile/test_report.md</code> contained superseded totals; this report uses the timestamped raw output and current LCOV file.</p>
+<h2>Flutter test cases</h2>
+<h3>Identity integration cases</h3>
+<p>These nine cases are implemented in <code>RentaTool-mobile/integration_test/auth_flow_test.dart</code>. The current saved logs do not contain a case-by-case result for this suite, so each result is marked <strong>not verified</strong> rather than inferred from a screenshot or a different test run.</p>
+<table>
+<tr><th>Case</th><th>Scenario</th><th>Expected result</th><th>Recorded result</th></tr>
+<tr><td>TC-ID-01</td><td>Reject empty or malformed login details</td><td>Required-field and email validation is shown; login service is not called</td><td>Not verified in current saved logs</td></tr>
+<tr><td>TC-ID-02</td><td>Reject invalid login credentials</td><td>Authentication error is shown and no token is stored</td><td>Not verified in current saved logs</td></tr>
+<tr><td>TC-ID-03</td><td>Login and load profile trust data</td><td>Session is stored; catalog and authenticated profile display</td><td>Not verified in current saved logs</td></tr>
+<tr><td>TC-ID-04</td><td>Validate required registration fields</td><td>Missing required values prevent registration</td><td>Not verified in current saved logs</td></tr>
+<tr><td>TC-ID-05</td><td>Validate password confirmation and phone</td><td>Invalid values show validation feedback</td><td>Not verified in current saved logs</td></tr>
+<tr><td>TC-ID-06</td><td>Handle a registration server error</td><td>Recoverable server error is displayed</td><td>Not verified in current saved logs</td></tr>
+<tr><td>TC-ID-07</td><td>Register an owner</td><td>Selected owner role is submitted and catalog opens</td><td>Not verified in current saved logs</td></tr>
+<tr><td>TC-ID-08</td><td>Reject an invalid Sri Lankan NIC</td><td>NIC validation prevents KYC submission</td><td>Not verified in current saved logs</td></tr>
+<tr><td>TC-ID-09</td><td>Require the front KYC document image</td><td>Missing image prevents KYC submission</td><td>Not verified in current saved logs</td></tr>
+</table>
+<h3>Mobile non-functional cases</h3>
+<table>
+<tr><th>Case</th><th>Scenario</th><th>Expected result</th><th>Actual result</th><th>Status</th></tr>
+<tr><td>TC-NF-M01</td><td>Login accessibility, field labels, keyboard use, and layout stability</td><td>Controls expose labels; keyboard use does not cause a layout exception</td><td>The finder was narrowed after an earlier ambiguous match, but the latest device attempt stopped because the Android device was unavailable</td><td><strong>PARTIAL — retest blocked</strong></td></tr>
+<tr><td>TC-NF-M02</td><td>Login controls fit within the mobile viewport</td><td>Login fields and sign-in action remain visible within the viewport</td><td>Passed at 1080 × 2400 on Samsung SM-E556B, Android 16/API 36</td><td><strong>PASS — one device only</strong></td></tr>
+</table>
+<h3>Other Flutter flow cases</h3>
+<table>
+<tr><th>Test case</th><th>Scenario</th><th>Recorded result</th></tr>
+<tr><td>XPLAT-01</td><td>Read the shared seeded catalog from the API</td><td><strong>PASS</strong> in the saved 6 October run</td></tr>
+<tr><td>E2E Catalog Flow</td><td>Catalog, search, add equipment, detail, inspection, and history</td><td>Test is implemented; no matching run result was found in the saved logs</td></tr>
+<tr><td>E2E Booking Flow</td><td>Active bookings, booking details, QR handover, scanner, and map search</td><td>Test is implemented; no matching run result was found in the saved logs</td></tr>
+<tr><td>E2E Escrow Flow</td><td>Escrow overview, claim details, and damage claim form</td><td>Test is implemented; no matching run result was found in the saved logs</td></tr>
+</table>
+<h2>Rerun guide</h2>
+<p>Run commands from <code>C:\Users\ASUS\Desktop\Rental\RentaTool-mobile</code>. Connect an Android phone or emulator first and check its ID with <code>flutter devices</code>.</p>
+<p>Run unit and widget tests with coverage:</p>
+<pre><code>flutter test --coverage</code></pre>
+<p>Run the nine identity integration cases on Android:</p>
+<pre><code>flutter test integration_test/auth_flow_test.dart -d &lt;device-id&gt; --plain-name 'TC-ID-'</code></pre>
+<p>Run the mobile NFR cases separately:</p>
+<pre><code>flutter test integration_test/auth_flow_test.dart -d &lt;device-id&gt; --plain-name 'TC-NF-M01'
+flutter test integration_test/auth_flow_test.dart -d &lt;device-id&gt; --plain-name 'TC-NF-M02'</code></pre>
+<p>Run the catalog API integration check with the API and its configured database available:</p>
+<pre><code>flutter test integration_test/catalog_live_api_test.dart -d &lt;device-id&gt;</code></pre></section></body></html>

@@ -73,7 +73,7 @@ Thumbs.db
 .agent/
 AGENTS.md
 
-nfr-testing/
-e2e/
-evidence/
-nfr-tests/
+# nfr-testing/
+# e2e/
+# evidence/
+# nfr-tests/

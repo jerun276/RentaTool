@@ -1,0 +1,4 @@
+Post-stress responsiveness probe (after k6 returned to 0 VUs)
+GET /health HTTP 200, 0.000851s
+GET /api/v1/equipment HTTP 200, 0.003631s
+No forced outage was introduced; this is post-load availability only, not service recovery testing.

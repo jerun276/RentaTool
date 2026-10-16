@@ -1,0 +1,12 @@
+{
+    "run_utc":  "2026-10-06T08:28:23.3881901Z",
+    "endpoint":  "GET http://127.0.0.1:5000/api/v1/equipment",
+    "requested":  20,
+    "http_200":  20,
+    "non_200_or_transport_errors":  0,
+    "min_ms":  2.11,
+    "mean_ms":  4.91,
+    "max_ms":  38.13,
+    "p95_ms":  12.19,
+    "throughput_requests_per_second":  null
+}

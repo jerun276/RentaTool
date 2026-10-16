@@ -1,0 +1,15 @@
+{
+  "defectId": "WEB-A11Y-001",
+  "testCaseId": "E2E-NF-AXE-01",
+  "scanner": "axe-core Playwright",
+  "run": "Initial executed scan before correction",
+  "rule": "color-contrast",
+  "impact": "serious",
+  "target": "Login page public-account notice",
+  "foreground": "#6b7280",
+  "background": "#181c24",
+  "measuredContrast": "3.53:1",
+  "requiredContrast": "4.5:1",
+  "fix": "Changed notice text color to #9ca3af",
+  "retest": "Final axe scan passed with zero WCAG 2.1 A/AA violations"
+}

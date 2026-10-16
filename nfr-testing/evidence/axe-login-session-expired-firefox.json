@@ -1,0 +1,279 @@
+{
+  "url": "http://127.0.0.1:3000/login?session_expired=true",
+  "browser": "firefox",
+  "state": "session-expired alert",
+  "violations": [],
+  "passes": 23,
+  "incomplete": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "tags": [
+        "cat.color",
+        "wcag2aa",
+        "wcag143",
+        "TTv5",
+        "TT13.c",
+        "EN-301-549",
+        "EN-9.1.4.3",
+        "ACT",
+        "RGAAv4",
+        "RGAA-3.2.1"
+      ],
+      "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "helpUrl": "https://dequeuniversity.com/rules/axe/4.13/color-contrast?application=playwright",
+      "nodes": [
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "15.0pt (20px)",
+                "fontWeight": "normal",
+                "messageKey": "bgGradient",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div class=\"w-8 h-8 rounded-lg bg-gradient-to-br from-[#10b981]/30 to-[#00422b]/50 border border-[#10b981]/40 flex items-center justify-center text-[#4edea3] shadow-[0_0_12px_rgba(16,185,129,0.3)] transition-transform group-hover:scale-105\">",
+                  "target": [
+                    ".w-8"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a background gradient"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"material-symbols-outlined text-[20px]\">hardware</span>",
+          "target": [
+            ".w-8 > .text-\\[20px\\].material-symbols-outlined"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "11.3pt (15px)",
+                "fontWeight": "bold",
+                "messageKey": "bgGradient",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<header class=\"relative z-10 w-full px-6 py-4 flex items-center justify-between border-b border-[#1f2937]/80 bg-[#181c24]/50 backdrop-blur-md\">",
+                  "target": [
+                    "header"
+                  ]
+                },
+                {
+                  "html": "<div class=\"absolute inset-0 opacity-[0.03] pointer-events-none\" style=\"background-image: linear-gradient(to right, rgb(255, 255, 255) 1px, transparent 1px), linear-gradient(rgb(255, 255, 255) 1px, transparent 1px); background-size: 32px 32px;\"></div>",
+                  "target": [
+                    ".opacity-\\[0\\.03\\]"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a background gradient"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"font-bold text-[15px] text-[#dfe2ee] tracking-tight leading-tight\">RentaTool <span class=\"text-[#4edea3]\">LK</span></span>",
+          "target": [
+            ".text-\\[15px\\]"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "11.3pt (15px)",
+                "fontWeight": "bold",
+                "messageKey": "bgGradient",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<header class=\"relative z-10 w-full px-6 py-4 flex items-center justify-between border-b border-[#1f2937]/80 bg-[#181c24]/50 backdrop-blur-md\">",
+                  "target": [
+                    "header"
+                  ]
+                },
+                {
+                  "html": "<div class=\"absolute inset-0 opacity-[0.03] pointer-events-none\" style=\"background-image: linear-gradient(to right, rgb(255, 255, 255) 1px, transparent 1px), linear-gradient(rgb(255, 255, 255) 1px, transparent 1px); background-size: 32px 32px;\"></div>",
+                  "target": [
+                    ".opacity-\\[0\\.03\\]"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a background gradient"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"text-[#4edea3]\">LK</span>",
+          "target": [
+            ".text-\\[15px\\] > .text-\\[\\#4edea3\\]"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "6.8pt (9px)",
+                "fontWeight": "normal",
+                "messageKey": "bgGradient",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<header class=\"relative z-10 w-full px-6 py-4 flex items-center justify-between border-b border-[#1f2937]/80 bg-[#181c24]/50 backdrop-blur-md\">",
+                  "target": [
+                    "header"
+                  ]
+                },
+                {
+                  "html": "<div class=\"absolute inset-0 opacity-[0.03] pointer-events-none\" style=\"background-image: linear-gradient(to right, rgb(255, 255, 255) 1px, transparent 1px), linear-gradient(rgb(255, 255, 255) 1px, transparent 1px); background-size: 32px 32px;\"></div>",
+                  "target": [
+                    ".opacity-\\[0\\.03\\]"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a background gradient"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<span class=\"text-[9px] text-[#86948a] font-mono tracking-widest uppercase font-semibold\">Heavy Equipment P2P Protocol</span>",
+          "target": [
+            ".tracking-widest"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": "bgGradient",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div class=\"absolute inset-0 opacity-[0.03] pointer-events-none\" style=\"background-image: linear-gradient(to right, rgb(255, 255, 255) 1px, transparent 1px), linear-gradient(rgb(255, 255, 255) 1px, transparent 1px); background-size: 32px 32px;\"></div>",
+                  "target": [
+                    ".opacity-\\[0\\.03\\]"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a background gradient"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<div>Sri Lanka Heavy Machinery &amp; Power Tool P2P Rental System</div>",
+          "target": [
+            ".mt-6 > div:nth-child(1)"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "7.5pt (10px)",
+                "fontWeight": "normal",
+                "messageKey": "bgGradient",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div class=\"absolute inset-0 opacity-[0.03] pointer-events-none\" style=\"background-image: linear-gradient(to right, rgb(255, 255, 255) 1px, transparent 1px), linear-gradient(rgb(255, 255, 255) 1px, transparent 1px); background-size: 32px 32px;\"></div>",
+                  "target": [
+                    ".opacity-\\[0\\.03\\]"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a background gradient"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<div class=\"text-[10px] text-[#6b7280]\">Secured by cryptographic token validation &amp; multi-party escrow contracts.</div>",
+          "target": [
+            ".text-\\[\\#6b7280\\]"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+        },
+        {
+          "any": [
+            {
+              "id": "color-contrast",
+              "data": {
+                "contrastRatio": 0,
+                "fontSize": "7.5pt (10px)",
+                "fontWeight": "normal",
+                "messageKey": "bgGradient",
+                "expectedContrastRatio": "4.5:1"
+              },
+              "relatedNodes": [
+                {
+                  "html": "<footer class=\"relative z-10 w-full px-6 py-3 border-t border-[#1f2937]/80 bg-[#181c24]/30 backdrop-blur-sm text-center text-[10px] font-mono text-[#86948a]\">© 2026 RentaTool LK · All rights reserved · Colombo Infrastructure Node</footer>",
+                  "target": [
+                    "footer"
+                  ]
+                },
+                {
+                  "html": "<div class=\"absolute inset-0 opacity-[0.03] pointer-events-none\" style=\"background-image: linear-gradient(to right, rgb(255, 255, 255) 1px, transparent 1px), linear-gradient(rgb(255, 255, 255) 1px, transparent 1px); background-size: 32px 32px;\"></div>",
+                  "target": [
+                    ".opacity-\\[0\\.03\\]"
+                  ]
+                }
+              ],
+              "impact": "serious",
+              "message": "Element's background color could not be determined due to a background gradient"
+            }
+          ],
+          "all": [],
+          "none": [],
+          "impact": "serious",
+          "html": "<footer class=\"relative z-10 w-full px-6 py-3 border-t border-[#1f2937]/80 bg-[#181c24]/30 backdrop-blur-sm text-center text-[10px] font-mono text-[#86948a]\">© 2026 RentaTool LK · All rights reserved · Colombo Infrastructure Node</footer>",
+          "target": [
+            "footer"
+          ],
+          "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a background gradient"
+        }
+      ]
+    }
+  ],
+  "timestamp": "2026-10-08T08:50:35.537Z"
+}
