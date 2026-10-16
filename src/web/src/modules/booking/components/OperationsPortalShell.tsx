@@ -348,17 +348,19 @@ export const OperationsPortalShell: React.FC<OperationsPortalShellProps> = ({
                   <span className="text-[13px]">User Governance & KYC</span>
                 </div>
                 <span
-                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold transition-colors ${
+                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold transition-colors min-w-[36px] text-center ${
                     deskCounts.kycPending > 0
                       ? "bg-[#e29100]/20 text-[#ffb95f]"
                       : "bg-[#10b981]/20 text-[#4edea3]"
                   }`}
                 >
-                  {deskCounts.loaded
-                    ? deskCounts.kycPending > 0
+                  {deskCounts.loaded ? (
+                    deskCounts.kycPending > 0
                       ? `${deskCounts.kycPending} Pending`
                       : "Verified"
-                    : "4 Pending"}
+                  ) : (
+                    <span className="inline-block w-7 h-2 bg-[#ffb95f]/40 animate-pulse rounded my-0.5" />
+                  )}
                 </span>
               </button>
 
@@ -376,17 +378,19 @@ export const OperationsPortalShell: React.FC<OperationsPortalShellProps> = ({
                   <span className="text-[13px]">Fleet & Wear Hub</span>
                 </div>
                 <span
-                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold transition-colors ${
+                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold transition-colors min-w-[36px] text-center ${
                     deskCounts.wearLocks > 0
                       ? "bg-[#93000a]/40 text-[#ffb4ab]"
                       : "bg-[#10b981]/20 text-[#4edea3]"
                   }`}
                 >
-                  {deskCounts.loaded
-                    ? deskCounts.wearLocks > 0
+                  {deskCounts.loaded ? (
+                    deskCounts.wearLocks > 0
                       ? `${deskCounts.wearLocks} Locks`
                       : "Healthy"
-                    : "2 Locks"}
+                  ) : (
+                    <span className="inline-block w-7 h-2 bg-[#ffb4ab]/40 animate-pulse rounded my-0.5" />
+                  )}
                 </span>
               </button>
 
@@ -403,10 +407,14 @@ export const OperationsPortalShell: React.FC<OperationsPortalShellProps> = ({
                   <span className="material-symbols-outlined text-[18px]">inventory_2</span>
                   <span className="text-[13px]">Equipment Catalog</span>
                 </div>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#10b981]/20 text-[#4edea3] font-bold">
-                  {deskCounts.loaded && deskCounts.totalFleet > 0
-                    ? `${deskCounts.totalFleet} Fleet`
-                    : "Fleet"}
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#10b981]/20 text-[#4edea3] font-bold min-w-[36px] text-center">
+                  {deskCounts.loaded ? (
+                    deskCounts.totalFleet > 0
+                      ? `${deskCounts.totalFleet} Fleet`
+                      : "Fleet"
+                  ) : (
+                    <span className="inline-block w-7 h-2 bg-[#4edea3]/40 animate-pulse rounded my-0.5" />
+                  )}
                 </span>
               </button>
 
@@ -424,17 +432,19 @@ export const OperationsPortalShell: React.FC<OperationsPortalShellProps> = ({
                   <span className="text-[13px]">AI Arbitration</span>
                 </div>
                 <span
-                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold transition-colors ${
+                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold transition-colors min-w-[36px] text-center ${
                     deskCounts.activeClaims > 0
                       ? "bg-[#571bc1]/40 text-[#d0bcff]"
                       : "bg-[#10b981]/20 text-[#4edea3]"
                   }`}
                 >
-                  {deskCounts.loaded
-                    ? deskCounts.activeClaims > 0
+                  {deskCounts.loaded ? (
+                    deskCounts.activeClaims > 0
                       ? `${deskCounts.activeClaims} Claims`
                       : "Settled"
-                    : "3 Claims"}
+                  ) : (
+                    <span className="inline-block w-7 h-2 bg-[#d0bcff]/40 animate-pulse rounded my-0.5" />
+                  )}
                 </span>
               </button>
 

@@ -85,14 +85,12 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
   }, [])
 
   // Computed Live Metrics from Backend DB
-  const activeUnitsCount = realBookings.length > 0 ? realBookings.length : 39 + realEquipment.length
+  const activeUnitsCount = realBookings.length
   const escrowTotalValue = realEquipment.length > 0
     ? realEquipment.reduce((acc, eq) => acc + (eq.replacementValue || 0), 435000)
-    : 840000
-  const activeLockouts = realEquipment.length > 0
-    ? realEquipment.filter((eq) => eq.requiresMaintenanceCheck || eq.status === "UnderMaintenance").length
-    : 2
-  const activeClaimsCount = realClaimsCount > 0 ? realClaimsCount : 3
+    : 0
+  const activeLockouts = realEquipment.filter((eq) => eq.requiresMaintenanceCheck || eq.status === "UnderMaintenance").length
+  const activeClaimsCount = realClaimsCount
 
   // Dynamic Category Unit Counts
   const excavatorCount = 2 + realEquipment.filter((eq: any) => {
@@ -423,12 +421,19 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
           </div>
 
           <div className="flex items-baseline justify-between pt-1">
-            <div>
-              <span className="text-3xl font-extrabold font-mono text-white">
-                {activeUnitsCount}
-              </span>
-              <span className="text-[13px] text-[#bbcabf] ml-1">Units</span>
-            </div>
+            {loadingRealData ? (
+              <div className="flex items-center gap-2 py-1">
+                <div className="h-8 w-16 bg-[#262a33] animate-pulse rounded" />
+                <span className="text-[13px] text-[#bbcabf]">Units</span>
+              </div>
+            ) : (
+              <div>
+                <span className="text-3xl font-extrabold font-mono text-white">
+                  {activeUnitsCount}
+                </span>
+                <span className="text-[13px] text-[#bbcabf] ml-1">Units</span>
+              </div>
+            )}
             {/* Sparkline SVG */}
             <div className="w-20 h-7">
               <svg className="w-full h-full text-[#4edea3]" fill="none" viewBox="0 0 100 30">
@@ -476,9 +481,13 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
 
           <div className="pt-1 flex items-baseline gap-1.5">
             <span className="text-[11px] font-mono text-[#86948a] uppercase font-semibold">LKR</span>
-            <span className="text-3xl font-extrabold font-mono text-[#4edea3]">
-              {escrowTotalValue.toLocaleString()}
-            </span>
+            {loadingRealData ? (
+              <div className="h-8 w-36 bg-[#262a33] animate-pulse rounded my-0.5" />
+            ) : (
+              <span className="text-3xl font-extrabold font-mono text-[#4edea3]">
+                {escrowTotalValue.toLocaleString()}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center justify-between text-[11px] pt-1 text-[#bbcabf] border-t border-[#1f2937] font-mono">
@@ -505,12 +514,19 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
           </div>
 
           <div className="pt-1 flex items-baseline justify-between">
-            <div>
-              <span className="text-3xl font-extrabold font-mono text-[#d0bcff]">
-                {activeClaimsCount}
-              </span>
-              <span className="text-[13px] text-[#bbcabf] ml-1">Claims Pending</span>
-            </div>
+            {loadingRealData ? (
+              <div className="flex items-center gap-2 py-1">
+                <div className="h-8 w-12 bg-[#262a33] animate-pulse rounded" />
+                <span className="text-[13px] text-[#bbcabf]">Claims Pending</span>
+              </div>
+            ) : (
+              <div>
+                <span className="text-3xl font-extrabold font-mono text-[#d0bcff]">
+                  {activeClaimsCount}
+                </span>
+                <span className="text-[13px] text-[#bbcabf] ml-1">Claims Pending</span>
+              </div>
+            )}
             <span className="px-2 py-0.5 rounded bg-[#e29100]/20 text-[#ffb95f] font-mono text-[10px] font-bold">
               Action Required
             </span>
@@ -537,12 +553,19 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
           </div>
 
           <div className="pt-1 flex items-baseline justify-between">
-            <div>
-              <span className="text-3xl font-extrabold font-mono text-[#ffb4ab]">
-                {activeLockouts}
-              </span>
-              <span className="text-[13px] text-[#bbcabf] ml-1">Heavy Units</span>
-            </div>
+            {loadingRealData ? (
+              <div className="flex items-center gap-2 py-1">
+                <div className="h-8 w-12 bg-[#262a33] animate-pulse rounded" />
+                <span className="text-[13px] text-[#bbcabf]">Heavy Units</span>
+              </div>
+            ) : (
+              <div>
+                <span className="text-3xl font-extrabold font-mono text-[#ffb4ab]">
+                  {activeLockouts}
+                </span>
+                <span className="text-[13px] text-[#bbcabf] ml-1">Heavy Units</span>
+              </div>
+            )}
             <span className="material-symbols-outlined text-[#ffb4ab] text-[20px]">lock_reset</span>
           </div>
 
@@ -579,21 +602,24 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
           {/* Filter Chips (flex-wrap to prevent cut off) */}
           <div className="flex flex-wrap items-center gap-1.5">
             {[
-              { id: "all", label: `All Classes (${allClassesCount})` },
-              { id: "excavators", label: `Excavators (${excavatorCount})` },
-              { id: "concrete", label: `Concrete Tech (${concreteCount})` },
-              { id: "demolition", label: `Demolition (${demolitionCount})` },
+              { id: "all", label: loadingRealData ? "All Classes" : `All Classes (${allClassesCount})` },
+              { id: "excavators", label: loadingRealData ? "Excavators" : `Excavators (${excavatorCount})` },
+              { id: "concrete", label: loadingRealData ? "Concrete Tech" : `Concrete Tech (${concreteCount})` },
+              { id: "demolition", label: loadingRealData ? "Demolition" : `Demolition (${demolitionCount})` },
             ].map((chip) => (
               <button
                 key={chip.id}
                 onClick={() => setEquipmentFilter(chip.id)}
-                className={`px-2.5 py-1 rounded font-mono text-[11px] whitespace-nowrap transition-colors ${
+                className={`px-2.5 py-1 rounded font-mono text-[11px] whitespace-nowrap transition-colors flex items-center gap-1.5 ${
                   equipmentFilter === chip.id
                     ? "bg-[#262a33] text-[#4edea3] font-semibold border border-[#10b981]/40"
                     : "bg-[#1c2028] text-[#bbcabf] hover:text-white border border-[#1f2937]"
                 }`}
               >
-                {chip.label}
+                <span>{chip.label}</span>
+                {loadingRealData && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3]/50 animate-pulse" />
+                )}
               </button>
             ))}
           </div>
