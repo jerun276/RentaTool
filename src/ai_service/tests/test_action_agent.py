@@ -21,6 +21,22 @@ class TestAllowListedTools:
         assert get_equipment_replacement_cost("Unknown Futuristic Drill") == BENCHMARK_REPLACEMENT_COSTS["default"]
         assert get_equipment_replacement_cost("") == BENCHMARK_REPLACEMENT_COSTS["default"]
 
+    def test_get_equipment_replacement_cost_with_custom_replacement_value(self):
+        # Specific catalog replacement value (e.g. 200,000 for Generator) takes precedence
+        assert get_equipment_replacement_cost("generator", replacement_value=200000.0) == 200000.0
+        assert get_equipment_replacement_cost("unknown drill", replacement_value=75000.0) == 75000.0
+
+    def test_compute_repair_deduction_uses_custom_replacement_value(self):
+        result = compute_repair_deduction(
+            equipment_category="generator",
+            damage_severity="moderate",
+            rental_duration_days=3,
+            held_deposit=25000.0,
+            replacement_value=200000.0,
+        )
+        assert result["benchmark_replacement_cost"] == 200000.0
+        assert result["gross_damage_estimate"] == 50000.0  # 25% of 200,000
+
     def test_calculate_rental_wear_factor_bounds(self):
         # Short rental, new tool -> small wear discount
         wear_short = calculate_rental_wear_factor(rental_duration_days=1, tool_age_months=1)

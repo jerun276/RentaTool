@@ -40,8 +40,14 @@ SEVERITY_REPAIR_RATIOS: Dict[str, float] = {
 }
 
 
-def get_equipment_replacement_cost(equipment_category: str) -> float:
+def get_equipment_replacement_cost(
+    equipment_category: str,
+    replacement_value: Optional[float] = None
+) -> float:
     """Allow-listed tool: returns the authoritative market replacement benchmark for the equipment."""
+    if replacement_value is not None and replacement_value > 0:
+        return float(replacement_value)
+
     cleaned = (equipment_category or "").strip().lower()
     for key, val in BENCHMARK_REPLACEMENT_COSTS.items():
         if key in cleaned:
@@ -68,13 +74,14 @@ def compute_repair_deduction(
     rental_duration_days: int,
     held_deposit: float,
     tool_age_months: int = 6,
-    manual_repair_estimate: Optional[float] = None
+    manual_repair_estimate: Optional[float] = None,
+    replacement_value: Optional[float] = None,
 ) -> Dict[str, Any]:
     """
     Allow-listed tool: executes deterministic repair & deduction calculation.
     Caps the final deduction strictly to held_deposit to prevent negative escrow balances.
     """
-    replacement_cost = get_equipment_replacement_cost(equipment_category)
+    replacement_cost = get_equipment_replacement_cost(equipment_category, replacement_value)
     wear_factor = calculate_rental_wear_factor(rental_duration_days, tool_age_months)
 
     severity_key = damage_severity.strip().lower() if damage_severity else "moderate"
@@ -162,15 +169,19 @@ class ActionToolAgent:
         manual_repair_estimate: Optional[float] = None,
         claim_id: Optional[str] = None,
         booking_id: Optional[str] = None,
+        replacement_value: Optional[float] = None,
     ) -> ActionProposal:
         """Evaluates deduction proposal using allow-listed tools with audit logging."""
         tool_calls: List[Dict[str, Any]] = []
 
         # Tool Call 1: Benchmark replacement lookup
-        cost = get_equipment_replacement_cost(equipment_category)
+        cost = get_equipment_replacement_cost(equipment_category, replacement_value)
         tool_calls.append({
             "tool": "get_equipment_replacement_cost",
-            "inputs": {"equipment_category": equipment_category},
+            "inputs": {
+                "equipment_category": equipment_category,
+                "replacement_value": replacement_value,
+            },
             "output": cost
         })
 
@@ -189,14 +200,16 @@ class ActionToolAgent:
             rental_duration_days=rental_duration_days,
             held_deposit=held_deposit,
             tool_age_months=tool_age_months,
-            manual_repair_estimate=manual_repair_estimate
+            manual_repair_estimate=manual_repair_estimate,
+            replacement_value=replacement_value,
         )
         tool_calls.append({
             "tool": "compute_repair_deduction",
             "inputs": {
                 "equipment_category": equipment_category,
                 "damage_severity": damage_severity,
-                "held_deposit": held_deposit
+                "held_deposit": held_deposit,
+                "replacement_value": replacement_value,
             },
             "output": calc
         })
@@ -240,6 +253,8 @@ def action_agent_node(state: Dict[str, Any]) -> Dict[str, Any]:
     tool_age = int(state.get("tool_age_months", 6))
     estimate = state.get("manual_repair_estimate")
     estimate_val = float(estimate) if estimate is not None else None
+    rep_val = state.get("replacement_value")
+    replacement_value = float(rep_val) if rep_val is not None else None
 
     proposal = agent.evaluate_deduction(
         equipment_category=equipment,
@@ -249,7 +264,8 @@ def action_agent_node(state: Dict[str, Any]) -> Dict[str, Any]:
         tool_age_months=tool_age,
         manual_repair_estimate=estimate_val,
         claim_id=state.get("claim_id"),
-        booking_id=state.get("booking_id")
+        booking_id=state.get("booking_id"),
+        replacement_value=replacement_value,
     )
 
     state["action_proposal"] = asdict(proposal)

@@ -150,6 +150,8 @@ class ActionExecutionRequest(BaseModel):
     held_deposit: float = Field(..., ge=0)
     claim_id: Optional[str] = None
     booking_id: Optional[str] = None
+    replacement_value: Optional[float] = None
+    owner_claimed_amount: Optional[float] = None
 
 
 @app.post("/api/v1/ai/execute-action")
@@ -163,6 +165,7 @@ def execute_deduction_calculation(request: ActionExecutionRequest) -> Dict[str, 
             held_deposit=request.held_deposit,
             claim_id=request.claim_id,
             booking_id=request.booking_id,
+            replacement_value=request.replacement_value,
         )
         return {
             "claim_id": proposal.claim_id,
