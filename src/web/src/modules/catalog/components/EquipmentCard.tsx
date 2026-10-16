@@ -158,22 +158,20 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({
               Cumulative Usage
             </span>
             <span
-              className={`font-mono font-medium ${
-                isOverThreshold ? "text-amber-400 font-bold" : "text-slate-300"
-              }`}
+              className={`font-mono font-medium ${isOverThreshold ? "text-amber-400 font-bold" : "text-slate-300"
+                }`}
             >
               {equipment.accumulatedRentalDays} / 60 days
             </span>
           </div>
           <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                isOverThreshold
-                  ? "bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]"
-                  : wearPercentage > 70
+              className={`h-full rounded-full transition-all duration-500 ${isOverThreshold
+                ? "bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]"
+                : wearPercentage > 70
                   ? "bg-emerald-400/80"
                   : "bg-emerald-500"
-              }`}
+                }`}
               style={{ width: `${wearPercentage}%` }}
             />
           </div>

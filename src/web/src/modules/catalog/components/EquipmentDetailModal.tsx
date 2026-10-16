@@ -48,13 +48,13 @@ export const EquipmentDetailModal: React.FC<EquipmentDetailModalProps> = ({
   const images = equipment.images && equipment.images.length > 0
     ? equipment.images
     : [
-        {
-          imageUrl:
-            "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80",
-          angle: "General",
-          isPrimary: true,
-        },
-      ]
+      {
+        imageUrl:
+          "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=800&q=80",
+        angle: "General",
+        isPrimary: true,
+      },
+    ]
 
   const activeImage = images[activeImageIndex] || images[0]
 
@@ -109,18 +109,18 @@ export const EquipmentDetailModal: React.FC<EquipmentDetailModalProps> = ({
 
   const formattedMemberSince = equipment.ownerMemberSinceUtc
     ? new Date(equipment.ownerMemberSinceUtc).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
     : null
 
   const formattedListedDate = equipment.createdAt
     ? new Date(equipment.createdAt).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
     : null
 
   return (
@@ -186,7 +186,7 @@ export const EquipmentDetailModal: React.FC<EquipmentDetailModalProps> = ({
                 <img
                   src={activeImage.imageUrl}
                   alt={`${equipment.title} - ${activeImage.angle}`}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
                 <div className="absolute bottom-3 left-3 flex items-center gap-2">
@@ -209,11 +209,10 @@ export const EquipmentDetailModal: React.FC<EquipmentDetailModalProps> = ({
                     <button
                       key={idx}
                       onClick={() => setActiveImageIndex(idx)}
-                      className={`relative h-16 w-20 shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
-                        activeImageIndex === idx
+                      className={`relative h-16 w-20 shrink-0 rounded-lg overflow-hidden border-2 transition-all ${activeImageIndex === idx
                           ? "border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)] scale-105"
                           : "border-border/60 opacity-70 hover:opacity-100 hover:border-emerald-500/50"
-                      }`}
+                        }`}
                     >
                       <img
                         src={img.imageUrl}
@@ -267,9 +266,8 @@ export const EquipmentDetailModal: React.FC<EquipmentDetailModalProps> = ({
                       Cumulative Rental Wear
                     </span>
                     <span
-                      className={`font-mono text-xs font-bold ${
-                        isOverThreshold ? "text-amber-400" : "text-emerald-400"
-                      }`}
+                      className={`font-mono text-xs font-bold ${isOverThreshold ? "text-amber-400" : "text-emerald-400"
+                        }`}
                     >
                       {equipment.accumulatedRentalDays} / 60 days
                     </span>
@@ -277,13 +275,12 @@ export const EquipmentDetailModal: React.FC<EquipmentDetailModalProps> = ({
 
                   <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        isOverThreshold
+                      className={`h-full rounded-full transition-all duration-500 ${isOverThreshold
                           ? "bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.6)]"
                           : wearPercentage > 75
-                          ? "bg-emerald-400/80"
-                          : "bg-emerald-500"
-                      }`}
+                            ? "bg-emerald-400/80"
+                            : "bg-emerald-500"
+                        }`}
                       style={{ width: `${wearPercentage}%` }}
                     />
                   </div>
@@ -428,8 +425,8 @@ export const EquipmentDetailModal: React.FC<EquipmentDetailModalProps> = ({
                     {trustScore >= 80
                       ? "High Reliability Tier"
                       : trustScore >= 60
-                      ? "Standard Verified"
-                      : "Needs Review"}
+                        ? "Standard Verified"
+                        : "Needs Review"}
                   </span>
                 </div>
 
