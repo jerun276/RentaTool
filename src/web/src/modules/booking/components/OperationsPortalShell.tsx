@@ -450,36 +450,6 @@ export const OperationsPortalShell: React.FC<OperationsPortalShellProps> = ({
 
             </nav>
           </div>
-
-          {/* Infrastructure & Ledger Links */}
-          <div className="space-y-1">
-            <div className="px-2 py-1 text-[10px] font-mono text-[#86948a] uppercase tracking-wider">
-              Infrastructure & Ledger
-            </div>
-            <nav className="space-y-1 text-[#bbcabf]">
-              <div
-                onClick={() => onSelectDesk("desk04")}
-                className="cursor-pointer group flex items-center gap-2.5 px-3 py-2 rounded text-[13px] hover:bg-[#1c2028] hover:text-[#dfe2ee] transition-all"
-              >
-                <span className="material-symbols-outlined text-[18px]">account_balance</span>
-                <span>Escrow Vault</span>
-              </div>
-              <div
-                onClick={() => onSelectDesk("desk01")}
-                className="cursor-pointer group flex items-center gap-2.5 px-3 py-2 rounded text-[13px] hover:bg-[#1c2028] hover:text-[#dfe2ee] transition-all"
-              >
-                <span className="material-symbols-outlined text-[18px]">receipt_long</span>
-                <span>Audit Trail</span>
-              </div>
-              <div
-                onClick={() => onSelectDesk("desk01")}
-                className="cursor-pointer group flex items-center gap-2.5 px-3 py-2 rounded text-[13px] hover:bg-[#1c2028] hover:text-[#dfe2ee] transition-all"
-              >
-                <span className="material-symbols-outlined text-[18px]">insights</span>
-                <span>API Telemetry</span>
-              </div>
-            </nav>
-          </div>
         </div>
 
         {/* System Telematics Pod & Admin Profile */}
