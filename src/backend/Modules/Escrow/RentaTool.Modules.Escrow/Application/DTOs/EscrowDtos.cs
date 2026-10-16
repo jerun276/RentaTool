@@ -21,7 +21,8 @@ public record FileClaimRequest(
     Guid BookingId,
     Guid FiledByUserId,
     string DamageDescription,
-    List<string>? EvidencePhotos
+    List<string>? EvidencePhotos,
+    decimal? ClaimAmount = null
 );
 
 public record DamageClaimResponse(
@@ -38,7 +39,10 @@ public record DamageClaimResponse(
     DateTime? AdjudicatedAtUtc,
     DateTime CreatedAtUtc,
     List<string>? PickupPhotos = null,
-    string? EquipmentTitle = null
+    string? EquipmentTitle = null,
+    decimal? ClaimAmount = null,
+    decimal? ReplacementValue = null,
+    decimal? EscrowHeld = null
 );
 
 public record AdjudicateClaimRequest(

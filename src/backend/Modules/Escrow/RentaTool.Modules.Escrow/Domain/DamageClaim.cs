@@ -22,7 +22,8 @@ public class DamageClaim : BaseEntity
         Guid bookingId,
         Guid filedByUserId,
         string damageDescription,
-        string evidencePhotosJson)
+        string evidencePhotosJson,
+        decimal proposedDeduction = 0m)
     {
         if (bookingId == Guid.Empty)
             throw new ArgumentException("BookingId cannot be empty.", nameof(bookingId));
@@ -34,7 +35,7 @@ public class DamageClaim : BaseEntity
         FiledByUserId = filedByUserId;
         DamageDescription = damageDescription;
         EvidencePhotosJson = string.IsNullOrWhiteSpace(evidencePhotosJson) ? "[]" : evidencePhotosJson;
-        ProposedDeduction = 0m;
+        ProposedDeduction = Math.Max(0m, proposedDeduction);
         Status = ClaimStatus.Filed;
     }
 
@@ -46,7 +47,16 @@ public class DamageClaim : BaseEntity
 
     public void SetAIEvaluationResult(decimal proposedDeduction, string? explanation = null)
     {
-        ProposedDeduction = Math.Max(0m, proposedDeduction);
+        var evaluatedAmount = Math.Max(0m, proposedDeduction);
+        if (ProposedDeduction <= 0m)
+        {
+            ProposedDeduction = evaluatedAmount;
+        }
+        else if (!FinalDeduction.HasValue)
+        {
+            FinalDeduction = evaluatedAmount;
+        }
+
         if (!string.IsNullOrWhiteSpace(explanation))
         {
             AdjudicationNotes = explanation;

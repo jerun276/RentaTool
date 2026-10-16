@@ -248,4 +248,51 @@ public class ClaimServiceTests
         var updatedHold = await context.Set<EscrowHold>().FindAsync(hold.Id);
         updatedHold!.Status.Should().Be(EscrowStatus.Disbursed);
     }
+
+    [Fact]
+    public async Task FileClaim_WithValidClaimAmount_SetsProposedDeduction()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.Create(nameof(FileClaim_WithValidClaimAmount_SetsProposedDeduction));
+        await SetupEscrowHoldAsync(context, 20000m);
+        var claimService = new ClaimService(context, _httpClientFactory);
+
+        var request = new FileClaimRequest(
+            _bookingId,
+            _ownerId,
+            "Cracked safety casing",
+            new List<string> { "photo1.jpg" },
+            ClaimAmount: 14500m
+        );
+
+        // Act
+        var result = await claimService.FileClaimAsync(request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.ProposedDeduction.Should().Be(14500m);
+        result.ClaimAmount.Should().Be(14500m);
+    }
+
+    [Fact]
+    public async Task FileClaim_ClaimAmountZeroOrNegative_ThrowsArgumentException()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.Create(nameof(FileClaim_ClaimAmountZeroOrNegative_ThrowsArgumentException));
+        await SetupEscrowHoldAsync(context, 20000m);
+        var claimService = new ClaimService(context, _httpClientFactory);
+
+        var request = new FileClaimRequest(
+            _bookingId,
+            _ownerId,
+            "Cracked casing",
+            null,
+            ClaimAmount: -500m
+        );
+
+        // Act & Assert
+        var act = () => claimService.FileClaimAsync(request);
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*Claim amount must be greater than zero*");
+    }
 }

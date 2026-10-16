@@ -36,9 +36,11 @@ public class ClaimService : IClaimService
         }
 
         // 2. Validate booking state and owner authorization if booking is present
+        RentaTool.Modules.Booking.Domain.Booking? booking = null;
+        Equipment? equipment = null;
         try
         {
-            var booking = await _context.Set<RentaTool.Modules.Booking.Domain.Booking>()
+            booking = await _context.Set<RentaTool.Modules.Booking.Domain.Booking>()
                 .FirstOrDefaultAsync(b => b.Id == request.BookingId, cancellationToken);
             if (booking != null)
             {
@@ -62,12 +64,34 @@ public class ClaimService : IClaimService
                     throw new InvalidOperationException($"Cannot file a damage claim for booking with status '{booking.Status}'. Claims are only permitted for Active or Completed rentals.");
                 }
 
+                equipment = await _context.Set<Equipment>()
+                    .FirstOrDefaultAsync(e => e.Id == booking.EquipmentId, cancellationToken);
+
                 booking.MarkDisputed();
             }
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains("Cannot create a DbSet"))
         {
             // Booking module DbSet not registered in isolated Escrow test runner
+        }
+
+        // Validate owner claimed amount against equipment replacement value
+        decimal initialClaimAmount = 0m;
+        if (request.ClaimAmount.HasValue)
+        {
+            if (request.ClaimAmount.Value <= 0)
+            {
+                throw new ArgumentException("Claim amount must be greater than zero.", nameof(request.ClaimAmount));
+            }
+
+            if (equipment != null && equipment.ReplacementValue > 0 && request.ClaimAmount.Value > equipment.ReplacementValue)
+            {
+                throw new ArgumentException(
+                    $"Claim amount (LKR {request.ClaimAmount.Value:N2}) cannot exceed the equipment's replacement value (LKR {equipment.ReplacementValue:N2}).",
+                    nameof(request.ClaimAmount));
+            }
+
+            initialClaimAmount = request.ClaimAmount.Value;
         }
 
         // 3. Mark associated escrow as disputed if present and validate hold
@@ -102,7 +126,8 @@ public class ClaimService : IClaimService
             request.BookingId,
             request.FiledByUserId,
             request.DamageDescription,
-            photosJson
+            photosJson,
+            initialClaimAmount
         );
 
         _context.Set<DamageClaim>().Add(claim);
@@ -114,7 +139,7 @@ public class ClaimService : IClaimService
             ClaimStatus.Filed.ToString(),
             "ClientPortal",
             photosJson,
-            $"Claim filed by owner: {request.DamageDescription}"
+            $"Claim filed by owner: {request.DamageDescription}. Claimed Amount: LKR {initialClaimAmount:N2}"
         );
         _context.Set<WorkflowStateAudit>().Add(audit);
 
@@ -129,13 +154,15 @@ public class ClaimService : IClaimService
             var client = _httpClientFactory.CreateClient("AIService");
             var payload = new
             {
-                equipment_category = "General Equipment",
+                equipment_category = equipment?.Title ?? "General Equipment",
                 damage_severity = "moderate", // simplified for demo
                 rental_duration_days = 5,
                 tool_age_months = 6,
                 held_deposit = escrow?.DepositAmount ?? 0,
                 claim_id = claim.Id.ToString(),
-                booking_id = claim.BookingId.ToString()
+                booking_id = claim.BookingId.ToString(),
+                owner_claimed_amount = initialClaimAmount,
+                replacement_value = equipment?.ReplacementValue ?? 0
             };
 
             var aiResponse = await client.PostAsJsonAsync("/api/v1/ai/execute-action", payload, cancellationToken);
@@ -358,10 +385,11 @@ public class ClaimService : IClaimService
 
         List<string> pickupPhotos = new();
         string? equipmentTitle = null;
+        RentaTool.Modules.Booking.Domain.Booking? booking = null;
 
         try
         {
-            var booking = await _context.Set<RentaTool.Modules.Booking.Domain.Booking>()
+            booking = await _context.Set<RentaTool.Modules.Booking.Domain.Booking>()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(b => b.Id == claim.BookingId, cancellationToken);
 
@@ -430,6 +458,36 @@ public class ClaimService : IClaimService
             // Fallback gracefully if database or relationship isn't populated
         }
 
+        decimal? replacementValue = null;
+        decimal? escrowHeld = null;
+        try
+        {
+            var escrow = await _context.Set<EscrowHold>()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.BookingId == claim.BookingId, cancellationToken);
+            if (escrow != null)
+            {
+                escrowHeld = escrow.DepositAmount;
+            }
+
+            if (booking != null)
+            {
+                var eqVal = await _context.Set<Equipment>()
+                    .AsNoTracking()
+                    .Where(e => e.Id == booking.EquipmentId)
+                    .Select(e => (decimal?)e.ReplacementValue)
+                    .FirstOrDefaultAsync(cancellationToken);
+                if (eqVal.HasValue)
+                {
+                    replacementValue = eqVal.Value;
+                }
+            }
+        }
+        catch
+        {
+            // fallback gracefully
+        }
+
         return new DamageClaimResponse(
             claim.Id,
             claim.BookingId,
@@ -444,7 +502,10 @@ public class ClaimService : IClaimService
             claim.AdjudicatedAtUtc,
             claim.CreatedAtUtc,
             pickupPhotos.Count > 0 ? pickupPhotos : null,
-            equipmentTitle
+            equipmentTitle,
+            claim.ProposedDeduction,
+            replacementValue,
+            escrowHeld
         );
     }
 
@@ -472,7 +533,12 @@ public class ClaimService : IClaimService
             claim.AdjudicationNotes,
             claim.AdjudicatedByUserId,
             claim.AdjudicatedAtUtc,
-            claim.CreatedAtUtc
+            claim.CreatedAtUtc,
+            null,
+            null,
+            claim.ProposedDeduction,
+            null,
+            null
         );
     }
 }
