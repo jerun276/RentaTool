@@ -91,6 +91,19 @@ export const CatalogDashboardPage: React.FC = () => {
     setEquipmentList((prev) => [newEq, ...prev])
   }
 
+  const handleDeleteEquipment = async (equipment: EquipmentDto) => {
+    if (!window.confirm(`Are you sure you want to permanently delete "${equipment.title}"? This listing will be removed from the catalog.`)) {
+      return
+    }
+    try {
+      await catalogApi.deleteEquipment(equipment.id)
+      setSelectedForDetail(null)
+      await loadData()
+    } catch (err: any) {
+      alert(apiErrorMessage(err))
+    }
+  }
+
   return (
     <div className="container px-4 sm:px-8 py-8 space-y-8 max-w-7xl">
       {/* Top Header & Actions */}
@@ -266,6 +279,7 @@ export const CatalogDashboardPage: React.FC = () => {
         onClose={() => setSelectedForDetail(null)}
         onViewHistory={handleOpenHistory}
         onInspect={handleOpenInspect}
+        onDelete={handleDeleteEquipment}
       />
 
       <InspectionTimelineModal

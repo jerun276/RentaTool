@@ -190,4 +190,72 @@ public class EquipmentControllerTests
         okResult.StatusCode.Should().Be(StatusCodes.Status200OK);
         okResult.Value.Should().BeEquivalentTo(response);
     }
+
+    [Fact]
+    public async Task DeleteEquipment_Success_Returns200Ok()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _mockEquipmentService
+            .Setup(s => s.DeleteAsync(id, It.IsAny<Guid>(), It.IsAny<bool>()))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _controller.DeleteEquipment(id);
+
+        // Assert
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.StatusCode.Should().Be(StatusCodes.Status200OK);
+    }
+
+    [Fact]
+    public async Task DeleteEquipment_NotFound_Returns404NotFound()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _mockEquipmentService
+            .Setup(s => s.DeleteAsync(id, It.IsAny<Guid>(), It.IsAny<bool>()))
+            .ThrowsAsync(new KeyNotFoundException("Equipment not found"));
+
+        // Act
+        var result = await _controller.DeleteEquipment(id);
+
+        // Assert
+        var notFoundResult = result.Should().BeOfType<NotFoundObjectResult>().Subject;
+        notFoundResult.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteEquipment_Forbidden_Returns403Forbidden()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _mockEquipmentService
+            .Setup(s => s.DeleteAsync(id, It.IsAny<Guid>(), It.IsAny<bool>()))
+            .ThrowsAsync(new UnauthorizedAccessException("Not authorized"));
+
+        // Act
+        var result = await _controller.DeleteEquipment(id);
+
+        // Assert
+        var objResult = result.Should().BeOfType<ObjectResult>().Subject;
+        objResult.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+    }
+
+    [Fact]
+    public async Task DeleteEquipment_ActiveRental_Returns400BadRequest()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _mockEquipmentService
+            .Setup(s => s.DeleteAsync(id, It.IsAny<Guid>(), It.IsAny<bool>()))
+            .ThrowsAsync(new InvalidOperationException("Cannot delete rented equipment"));
+
+        // Act
+        var result = await _controller.DeleteEquipment(id);
+
+        // Assert
+        var badRequestResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequestResult.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+    }
 }

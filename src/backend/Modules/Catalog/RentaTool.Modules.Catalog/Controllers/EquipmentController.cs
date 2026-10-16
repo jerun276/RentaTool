@@ -102,6 +102,38 @@ public class EquipmentController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Deletes an equipment listing (Owner or Admin only).
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteEquipment(Guid id)
+    {
+        try
+        {
+            var currentUserId = GetCurrentUserId();
+            var role = User.FindFirst(ClaimTypes.Role)?.Value ?? User.FindFirst("role")?.Value;
+            var isAdmin = string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase);
+
+            await _equipmentService.DeleteAsync(id, currentUserId, isAdmin);
+            return Ok(new { message = "Equipment listing successfully deleted." });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 
     /// <summary>
     /// 2. Lists equipment with category filtering, search terms, and pagination.

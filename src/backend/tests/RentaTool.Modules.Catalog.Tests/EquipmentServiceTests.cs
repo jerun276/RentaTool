@@ -267,4 +267,159 @@ public class EquipmentServiceTests
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
             .WithMessage("*not authorized*");
     }
+
+    [Fact]
+    public async Task DeleteAsync_Owner_DeletesSuccessfully()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.Create(nameof(DeleteAsync_Owner_DeletesSuccessfully));
+        var category = await context.Set<Category>().FirstAsync();
+        var service = new EquipmentService(context);
+
+        var created = await service.CreateAsync(new CreateEquipmentDto
+        {
+            Title = "DeWalt Circular Saw",
+            CategoryId = category.Id,
+            DailyRate = 2000m,
+            ReplacementValue = 30000m,
+            Location = "Colombo"
+        }, _testOwnerId);
+
+        // Act
+        var result = await service.DeleteAsync(created.Id, _testOwnerId);
+
+        // Assert
+        result.Should().BeTrue();
+
+        var dbEntity = await context.Set<Equipment>().FindAsync(created.Id);
+        dbEntity.Should().NotBeNull();
+        dbEntity!.IsDeleted.Should().BeTrue();
+
+        // Should no longer appear in GetByIdAsync
+        var fetched = await service.GetByIdAsync(created.Id);
+        fetched.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_Admin_DeletesSuccessfully()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.Create(nameof(DeleteAsync_Admin_DeletesSuccessfully));
+        var category = await context.Set<Category>().FirstAsync();
+        var service = new EquipmentService(context);
+
+        var created = await service.CreateAsync(new CreateEquipmentDto
+        {
+            Title = "Honda Generator",
+            CategoryId = category.Id,
+            DailyRate = 5000m,
+            ReplacementValue = 180000m,
+            Location = "Kandy"
+        }, _testOwnerId);
+
+        // Act - Different user ID but isAdmin = true
+        var result = await service.DeleteAsync(created.Id, Guid.NewGuid(), isAdmin: true);
+
+        // Assert
+        result.Should().BeTrue();
+        var dbEntity = await context.Set<Equipment>().FindAsync(created.Id);
+        dbEntity!.IsDeleted.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_NonOwnerNonAdmin_ThrowsUnauthorizedAccessException()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.Create(nameof(DeleteAsync_NonOwnerNonAdmin_ThrowsUnauthorizedAccessException));
+        var category = await context.Set<Category>().FirstAsync();
+        var service = new EquipmentService(context);
+
+        var created = await service.CreateAsync(new CreateEquipmentDto
+        {
+            Title = "Plate Compactor",
+            CategoryId = category.Id,
+            DailyRate = 3500m,
+            ReplacementValue = 90000m,
+            Location = "Colombo"
+        }, _testOwnerId);
+
+        // Act
+        var act = () => service.DeleteAsync(created.Id, Guid.NewGuid(), isAdmin: false);
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("*not authorized to delete*");
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenRented_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.Create(nameof(DeleteAsync_WhenRented_ThrowsInvalidOperationException));
+        var category = await context.Set<Category>().FirstAsync();
+        var service = new EquipmentService(context);
+
+        var created = await service.CreateAsync(new CreateEquipmentDto
+        {
+            Title = "Scaffolding Tower",
+            CategoryId = category.Id,
+            DailyRate = 4000m,
+            ReplacementValue = 120000m,
+            Location = "Negombo"
+        }, _testOwnerId);
+
+        var entity = await context.Set<Equipment>().FindAsync(created.Id);
+        entity!.ChangeStatus(EquipmentStatus.Rented);
+        await context.SaveChangesAsync();
+
+        // Act
+        var act = () => service.DeleteAsync(created.Id, _testOwnerId);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*currently rented*");
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenDisputed_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.Create(nameof(DeleteAsync_WhenDisputed_ThrowsInvalidOperationException));
+        var category = await context.Set<Category>().FirstAsync();
+        var service = new EquipmentService(context);
+
+        var created = await service.CreateAsync(new CreateEquipmentDto
+        {
+            Title = "Laser Level",
+            CategoryId = category.Id,
+            DailyRate = 1500m,
+            ReplacementValue = 45000m,
+            Location = "Galle"
+        }, _testOwnerId);
+
+        var entity = await context.Set<Equipment>().FindAsync(created.Id);
+        entity!.ChangeStatus(EquipmentStatus.Disputed);
+        await context.SaveChangesAsync();
+
+        // Act
+        var act = () => service.DeleteAsync(created.Id, _testOwnerId);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*active dispute*");
+    }
+
+    [Fact]
+    public async Task DeleteAsync_NonExistentEquipment_ThrowsKeyNotFoundException()
+    {
+        // Arrange
+        using var context = TestDbContextFactory.Create(nameof(DeleteAsync_NonExistentEquipment_ThrowsKeyNotFoundException));
+        var service = new EquipmentService(context);
+
+        // Act
+        var act = () => service.DeleteAsync(Guid.NewGuid(), _testOwnerId);
+
+        // Assert
+        await act.Should().ThrowAsync<KeyNotFoundException>();
+    }
 }

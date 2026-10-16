@@ -84,6 +84,11 @@ export const catalogApi = {
     return mapEquipmentDto(response.data)
   },
 
+  // Delete equipment listing (Owner or Admin only)
+  async deleteEquipment(id: string): Promise<void> {
+    await axiosClient.delete(`/equipment/${id}`)
+  },
+
   // Create new equipment listing
   async createEquipment(data: {
     title: string

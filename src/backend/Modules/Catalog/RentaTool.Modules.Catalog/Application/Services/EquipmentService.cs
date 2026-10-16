@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using RentaTool.Modules.Catalog.Application.DTOs;
 using RentaTool.Modules.Catalog.Domain;
 using RentaTool.Shared.Infrastructure.Persistence;
+using RentaTool.Shared.Kernel.Domain;
 
 namespace RentaTool.Modules.Catalog.Application.Services;
 
@@ -13,6 +14,7 @@ public interface IEquipmentService
     Task<EquipmentResponseDto?> GetByIdAsync(Guid id);
     Task<PagedResult<EquipmentResponseDto>> GetPagedListAsync(EquipmentFilterDto filter);
     Task<bool> CompleteMaintenanceAsync(Guid id);
+    Task<bool> DeleteAsync(Guid id, Guid currentUserId, bool isAdmin = false);
 }
 
 public class EquipmentService : IEquipmentService
@@ -190,6 +192,73 @@ public class EquipmentService : IEquipmentService
         if (equipment == null || equipment.IsDeleted) return false;
 
         equipment.CompleteMaintenance();
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> DeleteAsync(Guid id, Guid currentUserId, bool isAdmin = false)
+    {
+        var equipment = await _context.Set<Equipment>()
+            .FirstOrDefaultAsync(e => e.Id == id && !e.IsDeleted);
+
+        if (equipment == null)
+        {
+            throw new KeyNotFoundException($"Equipment with ID {id} was not found.");
+        }
+
+        if (equipment.OwnerId != currentUserId && !isAdmin)
+        {
+            throw new UnauthorizedAccessException("You are not authorized to delete this equipment.");
+        }
+
+        if (equipment.Status == EquipmentStatus.Rented)
+        {
+            throw new InvalidOperationException("Cannot delete equipment that is currently rented. Complete the rental return first.");
+        }
+
+        if (equipment.Status == EquipmentStatus.Disputed)
+        {
+            throw new InvalidOperationException("Cannot delete equipment involved in an active dispute.");
+        }
+
+        if (_context.Database.IsRelational())
+        {
+            var conn = _context.Database.GetDbConnection();
+            var shouldClose = false;
+            if (conn.State != System.Data.ConnectionState.Open)
+            {
+                await conn.OpenAsync();
+                shouldClose = true;
+            }
+
+            try
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+                    SELECT COUNT(*) 
+                    FROM bookings 
+                    WHERE equipment_id = @equipmentId 
+                      AND status IN (1, 2, 3, 6)"; // Requested(1), Confirmed(2), Active(3), Disputed(6)
+                
+                var param = cmd.CreateParameter();
+                param.ParameterName = "@equipmentId";
+                param.Value = id;
+                cmd.Parameters.Add(param);
+
+                var countObj = await cmd.ExecuteScalarAsync();
+                var activeBookingCount = Convert.ToInt32(countObj);
+                if (activeBookingCount > 0)
+                {
+                    throw new InvalidOperationException("Cannot delete equipment that has active reservations, ongoing rentals, or unresolved disputes.");
+                }
+            }
+            finally
+            {
+                if (shouldClose) await conn.CloseAsync();
+            }
+        }
+
+        equipment.SoftDelete();
         await _context.SaveChangesAsync();
         return true;
     }

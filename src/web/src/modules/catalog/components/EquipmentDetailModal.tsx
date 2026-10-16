@@ -22,8 +22,10 @@ import {
   CheckCircle2,
   Wrench,
   Camera,
+  Trash2,
 } from "lucide-react"
 import { EquipmentDto } from "../types/catalogTypes"
+import { useAuthStore } from "@/shared/store/useAuthStore"
 
 interface EquipmentDetailModalProps {
   equipment: EquipmentDto | null
@@ -31,6 +33,7 @@ interface EquipmentDetailModalProps {
   onClose: () => void
   onViewHistory: (equipment: EquipmentDto) => void
   onInspect: (equipment: EquipmentDto) => void
+  onDelete?: (equipment: EquipmentDto) => void
 }
 
 export const EquipmentDetailModal: React.FC<EquipmentDetailModalProps> = ({
@@ -39,7 +42,9 @@ export const EquipmentDetailModal: React.FC<EquipmentDetailModalProps> = ({
   onClose,
   onViewHistory,
   onInspect,
+  onDelete,
 }) => {
+  const { user } = useAuthStore()
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0)
   const [copiedField, setCopiedField] = useState<string | null>(null)
 
@@ -524,8 +529,22 @@ export const EquipmentDetailModal: React.FC<EquipmentDetailModalProps> = ({
 
         {/* Modal Footer */}
         <div className="p-4 border-t border-border/60 bg-muted/20 flex items-center justify-between">
-          <div className="text-xs text-muted-foreground font-mono">
-            Full audit log recorded under Escrow & Fleet Protocol
+          <div>
+            {user && (user.id === equipment.ownerId || user.role === "Admin") && onDelete ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => onDelete(equipment)}
+                className="text-xs flex items-center gap-1.5"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete Equipment
+              </Button>
+            ) : (
+              <div className="text-xs text-muted-foreground font-mono">
+                Full audit log recorded under Escrow & Fleet Protocol
+              </div>
+            )}
           </div>
           <Button variant="outline" size="sm" onClick={onClose} className="text-xs">
             Close Details
