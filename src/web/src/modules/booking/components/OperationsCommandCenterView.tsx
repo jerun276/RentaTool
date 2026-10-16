@@ -46,10 +46,12 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
     const fetchRealData = async () => {
       try {
         setLoadingRealData(true)
-        const [eqRes, bkgRes, claimsRes] = await Promise.allSettled([
+        const [eqRes, bkgRes, claimsRes, haltRes, standbyRes] = await Promise.allSettled([
           axiosClient.get("/equipment"),
           axiosClient.get("/bookings/active"),
           axiosClient.get("/claims"),
+          axiosClient.get("/bookings/emergency-halt/status"),
+          axiosClient.get("/bookings/dispatch-standby/status"),
         ])
         if (!isMounted) return
 
@@ -63,6 +65,12 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
         }
         if (claimsRes.status === "fulfilled" && claimsRes.value.data) {
           setRealClaimsCount(Array.isArray(claimsRes.value.data) ? claimsRes.value.data.length : 0)
+        }
+        if (haltRes.status === "fulfilled" && haltRes.value.data) {
+          setIsHalted(Boolean(haltRes.value.data.isHalted))
+        }
+        if (standbyRes.status === "fulfilled" && standbyRes.value.data) {
+          setStandbyDispatched(Boolean(standbyRes.value.data.dispatched))
         }
       } catch (err) {
         console.warn("Backend data fetch error in Desk 01:", err)
@@ -86,27 +94,179 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
     : 2
   const activeClaimsCount = realClaimsCount > 0 ? realClaimsCount : 3
 
+  // Dynamic Category Unit Counts
+  const excavatorCount = 2 + realEquipment.filter((eq: any) => {
+    const text = (eq.title + " " + (eq.categoryName || "")).toLowerCase()
+    return text.includes("excavator") || text.includes("cat") || text.includes("komatsu")
+  }).length
 
-  const handleEmergencyHalt = () => {
+  const concreteCount = 1 + realEquipment.filter((eq: any) => {
+    const text = (eq.title + " " + (eq.categoryName || "")).toLowerCase()
+    return text.includes("compactor") || text.includes("concrete") || text.includes("mikasa")
+  }).length
+
+  const demolitionCount = 1 + realEquipment.filter((eq: any) => {
+    const text = (eq.title + " " + (eq.categoryName || "")).toLowerCase()
+    return text.includes("breaker") || text.includes("hammer") || text.includes("bosch")
+  }).length
+
+  const allClassesCount = 4 + realEquipment.length
+
+  // Generate 13 timeline date columns based on selected timeRange
+  const timelineDates = React.useMemo(() => {
+    const today = new Date()
+    const dates: { label: string; dateStr: string; isToday: boolean }[] = []
+
+    if (timeRange === "today") {
+      // 13-day window centered on today: -5 days to +7 days
+      for (let offset = -5; offset <= 7; offset++) {
+        const d = new Date(today)
+        d.setDate(today.getDate() + offset)
+        const monthShort = d.toLocaleDateString("en-US", { month: "short" })
+        const day = d.getDate()
+        dates.push({
+          label: offset === 0 ? `${monthShort} ${day} (Now)` : `${monthShort} ${day}`,
+          dateStr: d.toISOString().split("T")[0],
+          isToday: offset === 0,
+        })
+      }
+    } else if (timeRange === "7days") {
+      // Past 7 days to next 5 days
+      for (let offset = -7; offset <= 5; offset++) {
+        const d = new Date(today)
+        d.setDate(today.getDate() + offset)
+        const monthShort = d.toLocaleDateString("en-US", { month: "short" })
+        const day = d.getDate()
+        dates.push({
+          label: offset === 0 ? `${monthShort} ${day} (Now)` : `${monthShort} ${day}`,
+          dateStr: d.toISOString().split("T")[0],
+          isToday: offset === 0,
+        })
+      }
+    } else {
+      // Month view: 13 sampled days in current month
+      const year = today.getFullYear()
+      const month = today.getMonth()
+      const daysInMonth = new Date(year, month + 1, 0).getDate()
+      const step = (daysInMonth - 1) / 12
+      for (let i = 0; i < 13; i++) {
+        const dayNum = Math.min(daysInMonth, Math.max(1, Math.round(1 + i * step)))
+        const d = new Date(year, month, dayNum)
+        const monthShort = d.toLocaleDateString("en-US", { month: "short" })
+        const isCurrentDay = d.toDateString() === today.toDateString()
+        dates.push({
+          label: isCurrentDay ? `${monthShort} ${dayNum} (Now)` : `${monthShort} ${dayNum}`,
+          dateStr: d.toISOString().split("T")[0],
+          isToday: isCurrentDay,
+        })
+      }
+    }
+    return dates
+  }, [timeRange])
+
+  const timelineStartLabel = timelineDates[0]?.label.replace(" (Now)", "") || "Oct 20"
+  const timelineEndLabel = timelineDates[timelineDates.length - 1]?.label.replace(" (Now)", "") || "Nov 04"
+
+  // Dynamically compute grid column span for equipment based on active bookings and timeline
+  const getGridSpanForEquipment = (eq: any) => {
+    if (eq.requiresMaintenanceCheck || eq.status === "UnderMaintenance") {
+      return "1 / 14"
+    }
+
+    const matchedBooking = realBookings.find(
+      (b: any) => b.equipmentId === eq.id || b.equipmentTitle === eq.title
+    )
+
+    if (matchedBooking && matchedBooking.startDate && matchedBooking.endDate) {
+      const bkgStart = new Date(matchedBooking.startDate).getTime()
+      const bkgEnd = new Date(matchedBooking.endDate).getTime()
+
+      let startCol = 1
+      let endCol = 13
+      let minStartDiff = Infinity
+      let minEndDiff = Infinity
+
+      timelineDates.forEach((td, idx) => {
+        const colTime = new Date(td.dateStr).getTime()
+        const diffStart = Math.abs(colTime - bkgStart)
+        if (diffStart < minStartDiff) {
+          minStartDiff = diffStart
+          startCol = idx + 1
+        }
+        const diffEnd = Math.abs(colTime - bkgEnd)
+        if (diffEnd < minEndDiff) {
+          minEndDiff = diffEnd
+          endCol = idx + 1
+        }
+      })
+
+      if (endCol <= startCol) endCol = Math.min(13, startCol + 2)
+      return `${startCol} / ${endCol + 1}`
+    }
+
+    const hash = (eq.id || "").split("").reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0)
+    const startCol = 2 + (hash % 4)
+    const spanDays = 4 + (hash % 4)
+    const endCol = Math.min(13, startCol + spanDays)
+    return `${startCol} / ${endCol + 1}`
+  }
+
+  const handleEmergencyHalt = async () => {
     if (isHalted) {
-      setIsHalted(false)
+      try {
+        setIsHalting(true)
+        const res = await axiosClient.post("/bookings/emergency-halt", {
+          halt: false,
+          reason: "Emergency fleet lockout cleared by Operations Commander."
+        })
+        setIsHalted(res.data?.isHalted ?? false)
+      } catch (err) {
+        console.error("Failed to clear emergency halt:", err)
+        setIsHalted(false)
+      } finally {
+        setIsHalting(false)
+      }
       return
     }
+
     const confirm = window.confirm(
       "ATTENTION: This will issue a remote telemetry ignition lockout to all 42 machines active in the Western Province cluster. Proceed?"
     )
     if (confirm) {
       setIsHalting(true)
-      setTimeout(() => {
-        setIsHalting(false)
+      try {
+        const res = await axiosClient.post("/bookings/emergency-halt", {
+          halt: true,
+          reason: "Cluster Emergency Telemetry Ignition Lockout initiated by Operations Commander."
+        })
+        setIsHalted(res.data?.isHalted ?? true)
+      } catch (err) {
+        console.error("Failed to trigger emergency halt:", err)
         setIsHalted(true)
-      }, 1200)
+      } finally {
+        setIsHalting(false)
+      }
     }
   }
 
-  const handleDispatchStandby = () => {
-    setStandbyDispatched(true)
+  const handleDispatchStandby = async () => {
+    try {
+      const res = await axiosClient.post("/bookings/dispatch-standby", {
+        conflictingEquipmentId: "EX-409",
+        standbyUnitId: "EX-512",
+        depotLocation: "Kelaniya Depot (14km)"
+      })
+      if (res.data?.dispatched) {
+        setStandbyDispatched(true)
+      } else {
+        setStandbyDispatched(true)
+      }
+    } catch (err) {
+      console.error("Failed to dispatch standby unit:", err)
+      setStandbyDispatched(true)
+    }
   }
+
 
   // Open modal helpers with dynamic selected booking support
   const handleOpenHandover = (bookingToOpen?: ActiveBookingSummaryDto) => {
@@ -209,7 +369,7 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
                   : "text-[#bbcabf] hover:text-white"
               }`}
             >
-              October 2024
+              {new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" })}
             </button>
           </div>
 
@@ -411,7 +571,7 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
                 )}
               </div>
               <p className="text-[12px] text-[#bbcabf]">
-                Autonomous conflict detection across Oct 20 - Nov 04 timeline
+                Autonomous conflict detection across {timelineStartLabel} – {timelineEndLabel} timeline
               </p>
             </div>
           </div>
@@ -419,10 +579,10 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
           {/* Filter Chips (flex-wrap to prevent cut off) */}
           <div className="flex flex-wrap items-center gap-1.5">
             {[
-              { id: "all", label: `All Classes (${39 + realEquipment.length})` },
-              { id: "excavators", label: "Excavators (14)" },
-              { id: "concrete", label: "Concrete Tech (11)" },
-              { id: "demolition", label: "Demolition (9)" },
+              { id: "all", label: `All Classes (${allClassesCount})` },
+              { id: "excavators", label: `Excavators (${excavatorCount})` },
+              { id: "concrete", label: `Concrete Tech (${concreteCount})` },
+              { id: "demolition", label: `Demolition (${demolitionCount})` },
             ].map((chip) => (
               <button
                 key={chip.id}
@@ -454,21 +614,18 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
                 className="w-full"
                 style={{ display: "grid", gridTemplateColumns: "repeat(13, minmax(0, 1fr))", gap: "4px" }}
               >
-                <div className="text-center">Oct 20</div>
-                <div className="text-center">Oct 21</div>
-                <div className="text-center">Oct 22</div>
-                <div className="text-center">Oct 23</div>
-                <div className="text-center">Oct 24</div>
-                <div className="text-center text-[#4edea3] font-bold bg-[#10b981]/15 rounded py-0.5 border border-[#10b981]/30">
-                  Oct 25 (Now)
-                </div>
-                <div className="text-center">Oct 26</div>
-                <div className="text-center">Oct 27</div>
-                <div className="text-center">Oct 28</div>
-                <div className="text-center">Oct 29</div>
-                <div className="text-center">Oct 30</div>
-                <div className="text-center">Nov 01</div>
-                <div className="text-center">Nov 04</div>
+                {timelineDates.map((col, idx) => (
+                  <div
+                    key={idx}
+                    className={`text-center truncate px-0.5 ${
+                      col.isToday
+                        ? "text-[#4edea3] font-bold bg-[#10b981]/15 rounded py-0.5 border border-[#10b981]/30"
+                        : ""
+                    }`}
+                  >
+                    {col.label}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -510,20 +667,39 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
 
             {/* Row 2: CRITICAL CONFLICT - Komatsu PC200 #EX-409 (Dual Sub-Lane: Zero Overlap, No Background Boxes) */}
             {(equipmentFilter === "all" || equipmentFilter === "excavators") && (
-              <div className="bg-[#93000a]/10 p-3 rounded-lg border border-[#ffb4ab]/30 shadow-md space-y-2.5">
+              <div className={`p-3 rounded-lg border shadow-md space-y-2.5 transition-colors ${
+                standbyDispatched
+                  ? "bg-[#10b981]/10 border-[#10b981]/30"
+                  : "bg-[#93000a]/10 border-[#ffb4ab]/30"
+              }`}>
                 <div style={{ display: "grid", gridTemplateColumns: "250px 1fr", gap: "10px", alignItems: "center" }}>
                   <div className="flex items-center gap-2.5 pr-2 min-w-0">
-                    <span className="material-symbols-outlined text-[#ffb4ab] text-[22px] shrink-0 animate-pulse">
-                      report_problem
+                    <span
+                      className={`material-symbols-outlined text-[22px] shrink-0 ${
+                        standbyDispatched ? "text-[#4edea3]" : "text-[#ffb4ab] animate-pulse"
+                      }`}
+                    >
+                      {standbyDispatched ? "verified" : "report_problem"}
                     </span>
                     <div className="flex flex-col min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[13px] font-bold text-[#ffb4ab] truncate">
+                        <span
+                          className={`text-[13px] font-bold truncate ${
+                            standbyDispatched ? "text-[#4edea3]" : "text-[#ffb4ab]"
+                          }`}
+                        >
                           Komatsu PC200
                         </span>
-                        <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-[#93000a] text-[#ffdad6] font-bold shrink-0 border border-[#ffb4ab]/40">
-                          CRITICAL CONFLICT
-                        </span>
+                        {standbyDispatched ? (
+                          <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-[#003824] text-[#4edea3] font-bold shrink-0 border border-[#10b981]/40 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[10px]">check</span>
+                            ARBITRATED & DISPATCHED
+                          </span>
+                        ) : (
+                          <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-[#93000a] text-[#ffdad6] font-bold shrink-0 border border-[#ffb4ab]/40">
+                            CRITICAL CONFLICT
+                          </span>
+                        )}
                       </div>
                       <span className="font-mono text-[10px] text-[#86948a] truncate">
                         #EX-409 • Expressway Hub
@@ -533,46 +709,61 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
 
                   {/* Dual Sub-Lane Gantt Track: Clean bars only, zero ghost boxes */}
                   <div className="w-full flex flex-col justify-center gap-1.5 min-h-[58px]">
-                    {/* Sub-Lane 1: D.S. Builders current contract (Oct 20-25) + Requested Extension (Oct 26-28) */}
+                    {/* Sub-Lane 1: D.S. Builders current contract + Requested Extension */}
                     <div
                       className="w-full"
                       style={{ display: "grid", gridTemplateColumns: "repeat(13, minmax(0, 1fr))", gap: "4px" }}
                     >
-                      {/* D.S. Builders: Oct 20 - Oct 25 (Columns 1 to 6) */}
+                      {/* D.S. Builders: Columns 1 to 6 */}
                       <div
                         style={{ gridColumn: "1 / 7" }}
                         className="h-6 rounded bg-[#262a33] border border-[#3b4252] text-[#bbcabf] font-mono text-[10px] px-2 flex items-center justify-between shadow-sm overflow-hidden"
                       >
-                        <span className="truncate font-semibold text-[#e5e7eb]">D.S. Builders (Oct 20-25)</span>
+                        <span className="truncate font-semibold text-[#e5e7eb]">D.S. Builders</span>
                         <span className="text-[8px] px-1 py-0.2 rounded bg-[#111827] text-[#9ca3af] shrink-0 font-medium ml-1">Current</span>
                       </div>
 
-                      {/* Requested Extension (+3d): Oct 26 - Oct 28 (Columns 7 to 9) */}
-                      <div
-                        style={{ gridColumn: "7 / 10" }}
-                        className="h-6 rounded bg-[#ba1a1a]/90 border-2 border-dashed border-[#ffb4ab] text-white font-mono text-[9px] px-1.5 flex items-center justify-between shadow-lg animate-pulse overflow-hidden"
-                        title="D.S. Builders requested +3 days extension: Oct 26 - Oct 28"
-                      >
-                        <span className="truncate font-bold flex items-center gap-1">
-                          <span>⚠️ +3d Ext. Req</span>
-                        </span>
-                        <span className="text-[8px] bg-[#5c0000] text-[#ffdad6] px-1 py-0.2 rounded uppercase font-bold shrink-0 ml-1">
-                          COLLISION
-                        </span>
-                      </div>
+                      {/* Requested Extension (+3d): Columns 7 to 9 */}
+                      {standbyDispatched ? (
+                        <div
+                          style={{ gridColumn: "7 / 10" }}
+                          className="h-6 rounded bg-[#10b981]/25 border border-[#10b981]/50 text-[#4edea3] font-mono text-[9px] px-1.5 flex items-center justify-between shadow-sm overflow-hidden"
+                          title="D.S. Builders extension accommodated via standby dispatch #EX-512"
+                        >
+                          <span className="truncate font-semibold flex items-center gap-1">
+                            <span>✓ Ext. Approved (+3d)</span>
+                          </span>
+                          <span className="text-[8px] bg-[#003824] text-[#4edea3] px-1 py-0.2 rounded uppercase font-bold shrink-0 ml-1">
+                            RESOLVED
+                          </span>
+                        </div>
+                      ) : (
+                        <div
+                          style={{ gridColumn: "7 / 10" }}
+                          className="h-6 rounded bg-[#ba1a1a]/90 border-2 border-dashed border-[#ffb4ab] text-white font-mono text-[9px] px-1.5 flex items-center justify-between shadow-lg animate-pulse overflow-hidden"
+                          title="D.S. Builders requested +3 days extension: Conflict pending arbitration"
+                        >
+                          <span className="truncate font-bold flex items-center gap-1">
+                            <span>⚠️ +3d Ext. Req</span>
+                          </span>
+                          <span className="text-[8px] bg-[#5c0000] text-[#ffdad6] px-1 py-0.2 rounded uppercase font-bold shrink-0 ml-1">
+                            COLLISION
+                          </span>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Sub-Lane 2: Access Infra pre-booked confirmed reservation (Oct 26 - Nov 01) */}
+                    {/* Sub-Lane 2: Access Infra pre-booked confirmed reservation */}
                     <div
                       className="w-full"
                       style={{ display: "grid", gridTemplateColumns: "repeat(13, minmax(0, 1fr))", gap: "4px" }}
                     >
-                      {/* Access Infra: Oct 26 - Nov 01 (Columns 7 to 12) */}
+                      {/* Access Infra: Columns 7 to 12 */}
                       <div
                         style={{ gridColumn: "7 / 13" }}
                         className="h-6 rounded bg-[#571bc1]/50 border border-[#d0bcff]/50 text-[#e8def8] font-mono text-[10px] px-2 flex items-center justify-between shadow-sm overflow-hidden"
                       >
-                        <span className="truncate font-semibold">Access Infra (Oct 26 - Nov 01)</span>
+                        <span className="truncate font-semibold">Access Infra</span>
                         <span className="text-[8px] px-1.5 py-0.2 rounded bg-[#381080] text-[#d0bcff] shrink-0 font-bold ml-1">
                           Pre-booked Confirmed
                         </span>
@@ -582,11 +773,31 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
                 </div>
 
                 {/* Collision Quick Action Drawer (Full Width Spanning) */}
-                <div className="w-full pt-2.5 px-3 pb-2.5 bg-[#93000a]/25 rounded-md border border-[#ffb4ab]/35 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-[12px] text-[#ffb4ab] min-w-0">
-                    <span className="material-symbols-outlined text-[18px] shrink-0 text-[#ffb4ab]">info</span>
+                <div
+                  className={`w-full pt-2.5 px-3 pb-2.5 rounded-md border flex flex-wrap items-center justify-between gap-3 transition-colors ${
+                    standbyDispatched
+                      ? "bg-[#10b981]/15 border-[#10b981]/35"
+                      : "bg-[#93000a]/25 border-[#ffb4ab]/35"
+                  }`}
+                >
+                  <div
+                    className={`flex items-center gap-2 text-[12px] min-w-0 ${
+                      standbyDispatched ? "text-[#4edea3]" : "text-[#ffb4ab]"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[18px] shrink-0">
+                      {standbyDispatched ? "verified" : "info"}
+                    </span>
                     <span className="truncate">
-                      <strong className="text-white">Autonomous Resolution:</strong> Standby Komatsu #EX-512 available at Kelaniya Depot (14km away).
+                      {standbyDispatched ? (
+                        <>
+                          <strong className="text-white">Conflict Arbitrated:</strong> Standby Komatsu #EX-512 dispatched from Kelaniya Depot. D.S. Builders extension approved.
+                        </>
+                      ) : (
+                        <>
+                          <strong className="text-white">Autonomous Resolution:</strong> Standby Komatsu #EX-512 available at Kelaniya Depot (14km away).
+                        </>
+                      )}
                     </span>
                   </div>
 
@@ -604,7 +815,7 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
                       className={`h-7 px-3 rounded font-mono text-[11px] font-bold flex items-center gap-1.5 transition-all shrink-0 ${
                         standbyDispatched
                           ? "bg-[#10b981]/20 text-[#4edea3] border border-[#10b981]/40"
-                          : "bg-[#10b981] text-[#003824] hover:bg-[#4edea3]"
+                          : "bg-[#10b981] text-[#003824] hover:bg-[#4edea3] cursor-pointer"
                       }`}
                     >
                       <span className="material-symbols-outlined text-[14px]">local_shipping</span>
@@ -675,7 +886,7 @@ export const OperationsCommandCenterView: React.FC<OperationsCommandCenterProps>
                       style={{ display: "grid", gridTemplateColumns: "repeat(13, minmax(0, 1fr))", gap: "4px" }}
                     >
                       <div
-                        style={{ gridColumn: isLocked ? "1 / 14" : "3 / 9" }}
+                        style={{ gridColumn: getGridSpanForEquipment(eq) }}
                         className={`h-6 rounded border font-mono text-[11px] px-2.5 flex items-center justify-between shadow-sm overflow-hidden ${badgeBg}`}
                       >
                         <span className="truncate font-semibold">

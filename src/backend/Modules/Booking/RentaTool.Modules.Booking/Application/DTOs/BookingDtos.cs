@@ -144,3 +144,36 @@ public class ExtendScheduleResponseDto
     public decimal NewTotalRentalFee { get; set; }
     public string Reason { get; set; } = string.Empty;
 }
+
+public class EmergencyHaltRequestDto
+{
+    public bool Halt { get; set; }
+    public string? Reason { get; set; }
+}
+
+public class EmergencyHaltResponseDto
+{
+    public bool IsHalted { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public int AffectedUnits { get; set; }
+    public DateTime TimestampUtc { get; set; }
+    public string? Reason { get; set; }
+}
+
+public class DispatchStandbyRequestDto
+{
+    public string? ConflictingEquipmentId { get; set; }
+    public string? StandbyUnitId { get; set; }
+    public string? DepotLocation { get; set; }
+}
+
+public class DispatchStandbyResponseDto
+{
+    public bool Dispatched { get; set; }
+    public string StandbyUnitId { get; set; } = string.Empty;
+    public string DepotLocation { get; set; } = string.Empty;
+    public int EtaMinutes { get; set; }
+    public DateTime DispatchedAtUtc { get; set; }
+    public string Message { get; set; } = string.Empty;
+}
+
