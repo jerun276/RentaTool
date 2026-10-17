@@ -2,6 +2,121 @@ import React, { useState, useEffect } from "react"
 import { axiosClient } from "@/shared/api/axiosClient"
 import { catalogApi } from "../api/catalogApi"
 
+const FALLBACK_FLEET_DATA = [
+  {
+    id: "EQ-0101",
+    dbId: "mock-1",
+    name: "Caterpillar 320D Hydraulic Excavator",
+    category: "Heavy Machinery",
+    serial: "SN-CAT320D-9921",
+    custodian: "Colombo Port Central Depot",
+    location: "Colombo",
+    dailyRate: 45000,
+    valuation: 12500000,
+    daysRented: 64,
+    isLocked: true,
+    image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=150&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "EQ-0102",
+    dbId: "mock-2",
+    name: "Cummins 250kVA Silent Diesel Generator",
+    category: "Power & Generation",
+    serial: "SN-CUM250-4812",
+    custodian: "Kandy Logistics Depot",
+    location: "Kandy",
+    dailyRate: 28000,
+    valuation: 6200000,
+    daysRented: 52,
+    isLocked: false,
+    image: "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=150&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "EQ-0103",
+    dbId: "mock-3",
+    name: "Komatsu PC130 Tracked Excavator",
+    category: "Heavy Machinery",
+    serial: "SN-KOM130-7731",
+    custodian: "Galle Southern Gateway Hub",
+    location: "Galle",
+    dailyRate: 38000,
+    valuation: 9800000,
+    daysRented: 28,
+    isLocked: false,
+    image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=150&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "EQ-0104",
+    dbId: "mock-4",
+    name: "Atlas Copco XAS 186 Air Compressor",
+    category: "Pneumatics & Air",
+    serial: "SN-ATC186-3390",
+    custodian: "Jaffna Regional Facility",
+    location: "Jaffna",
+    dailyRate: 18500,
+    valuation: 3400000,
+    daysRented: 61,
+    isLocked: true,
+    image: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=150&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "EQ-0105",
+    dbId: "mock-5",
+    name: "Bomag BW 213 Single Drum Roller",
+    category: "Compaction Equipment",
+    serial: "SN-BOM213-8819",
+    custodian: "Kurunegala Transit Hub",
+    location: "Kurunegala",
+    dailyRate: 32000,
+    valuation: 7500000,
+    daysRented: 15,
+    isLocked: false,
+    image: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "EQ-0106",
+    dbId: "mock-6",
+    name: "Perkins 150kVA Mobile Soundproof Generator",
+    category: "Power & Generation",
+    serial: "SN-PER150-5542",
+    custodian: "Gampaha Operations Base",
+    location: "Gampaha",
+    dailyRate: 22000,
+    valuation: 4800000,
+    daysRented: 48,
+    isLocked: false,
+    image: "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=150&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "EQ-0107",
+    dbId: "mock-7",
+    name: "JCB 3DX Eco Backhoe Loader",
+    category: "Heavy Machinery",
+    serial: "SN-JCB3DX-1144",
+    custodian: "Batticaloa Field Outpost",
+    location: "Batticaloa",
+    dailyRate: 26000,
+    valuation: 5800000,
+    daysRented: 34,
+    isLocked: false,
+    image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=150&auto=format&fit=crop&q=80",
+  },
+  {
+    id: "EQ-0108",
+    dbId: "mock-8",
+    name: "Wacker Neuson DPU 6555 Heavy Compactor",
+    category: "Compaction Equipment",
+    serial: "SN-WAC655-2091",
+    custodian: "Anuradhapura Central Depot",
+    location: "Anuradhapura",
+    dailyRate: 14000,
+    valuation: 2200000,
+    daysRented: 12,
+    isLocked: false,
+    image: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&auto=format&fit=crop&q=80",
+  },
+]
+
 export const FleetWearHubView: React.FC = () => {
   const [filterState, setFilterState] = useState<"all" | "healthy" | "due" | "lockout">("all")
   const [categoryFilter, setCategoryFilter] = useState("all")
@@ -15,8 +130,8 @@ export const FleetWearHubView: React.FC = () => {
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [enlargedPhoto, setEnlargedPhoto] = useState<{ url: string; angle: string } | null>(null)
 
-  const [fleetList, setFleetList] = useState<any[]>([])
-  const [loadingFleet, setLoadingFleet] = useState<boolean>(true)
+  const [fleetList, setFleetList] = useState<any[]>(FALLBACK_FLEET_DATA)
+  const [loadingFleet, setLoadingFleet] = useState<boolean>(false)
 
   const resolveEquipmentImageUrl = (eq: any): string => {
     if (Array.isArray(eq.images) && eq.images.length > 0) {
@@ -46,9 +161,9 @@ export const FleetWearHubView: React.FC = () => {
         params: { pageSize: 100 }
       })
       if (res.data) {
-        setDbLive(true)
         const items = res.data.items || (Array.isArray(res.data) ? res.data : [])
         if (items.length > 0) {
+          setDbLive(true)
           const mapped = items.map((eq: any) => {
             const accumulated = Number(eq.totalRentalDaysAccumulated ?? eq.accumulatedRentalDays ?? 0)
             const isLocked = Boolean(eq.requiresMaintenanceCheck || eq.requiresMandatoryServicing || eq.status === "UnderMaintenance" || accumulated >= 60)
@@ -56,7 +171,7 @@ export const FleetWearHubView: React.FC = () => {
               id: `EQ-${(eq.id || "").slice(0, 4).toUpperCase()}`,
               dbId: eq.id,
               name: eq.title || eq.name || "Equipment Asset",
-              category: eq.categoryName || "Heavy Machinery",
+              category: eq.categoryName || eq.category?.name || "Heavy Machinery",
               serial: `SN-${(eq.id || "").slice(0, 8).toUpperCase()}`,
               custodian: eq.ownerName ? `${eq.ownerName} Depot` : "Western Province Operations Hub",
               location: eq.location || "Colombo",
@@ -71,7 +186,8 @@ export const FleetWearHubView: React.FC = () => {
         }
       }
     } catch (err) {
-      console.warn("Could not fetch equipment from live API:", err)
+      console.warn("Could not fetch equipment from live API, retaining standby operational fleet:", err)
+      setDbLive(false)
     } finally {
       setLoadingFleet(false)
     }
@@ -187,25 +303,50 @@ export const FleetWearHubView: React.FC = () => {
     ]
   }, [fleetList])
 
-  const filteredFleet = fleetList.filter((item) => {
-    const matchesSearch =
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.custodian.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredFleet = React.useMemo(() => {
+    const rawQuery = searchQuery.trim().toLowerCase()
+    // Strip leading '#' so searching '#TR-088' or '#EQ-0101' matches directly
+    const query = rawQuery.startsWith("#") ? rawQuery.slice(1).trim() : rawQuery
 
-    if (!matchesSearch) return false
+    return fleetList.filter((item) => {
+      // 1. Search Query across all fields
+      if (query) {
+        const itemId = (item.id || "").toLowerCase()
+        const itemName = (item.name || "").toLowerCase()
+        const itemSerial = (item.serial || "").toLowerCase()
+        const itemCustodian = (item.custodian || "").toLowerCase()
+        const itemLocation = (item.location || "").toLowerCase()
+        const itemCategory = (item.category || "").toLowerCase()
 
-    if (categoryFilter !== "all" && item.category !== categoryFilter) return false
+        const matches =
+          itemId.includes(query) ||
+          itemName.includes(query) ||
+          itemSerial.includes(query) ||
+          itemCustodian.includes(query) ||
+          itemLocation.includes(query) ||
+          itemCategory.includes(query)
 
-    const isOverridden = overrides[item.id]
-    const effectiveDays = isOverridden ? 0 : item.daysRented
-    const isLocked = (effectiveDays >= 60 || item.isLocked) && !isOverridden
+        if (!matches) return false
+      }
 
-    if (filterState === "healthy") return effectiveDays <= 45 && !isLocked
-    if (filterState === "due") return effectiveDays > 45 && effectiveDays < 60 && !isLocked
-    if (filterState === "lockout") return isLocked
-    return true
-  })
+      // 2. Category Filter
+      if (categoryFilter !== "all") {
+        const itemCat = (item.category || "General Machinery").trim().toLowerCase()
+        const targetCat = categoryFilter.trim().toLowerCase()
+        if (itemCat !== targetCat) return false
+      }
+
+      // 3. Status / 60-Day Wear Filter
+      const isOverridden = overrides[item.id]
+      const effectiveDays = isOverridden ? 0 : item.daysRented
+      const isLocked = (effectiveDays >= 60 || item.isLocked) && !isOverridden
+
+      if (filterState === "healthy") return effectiveDays <= 45 && !isLocked
+      if (filterState === "due") return effectiveDays > 45 && effectiveDays < 60 && !isLocked
+      if (filterState === "lockout") return isLocked
+      return true
+    })
+  }, [fleetList, searchQuery, categoryFilter, filterState, overrides])
 
   return (
     <div className="flex flex-col w-full space-y-6">
@@ -235,39 +376,107 @@ export const FleetWearHubView: React.FC = () => {
           </p>
         </div>
 
-        {/* Quick Stats Telemetry Ribbon — Dynamically computed from database */}
+        {/* Quick Stats Telemetry Ribbon — Interactive Filter Switches */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#0a0e16] p-2.5 rounded-lg border border-[#1f2937]">
-          <div className="flex flex-col px-3 py-1.5 bg-[#181c24] rounded border border-[#1f2937]">
-            <span className="text-[10px] font-mono text-[#86948a] uppercase">Active Fleet</span>
+          {/* Active Fleet Button */}
+          <button
+            type="button"
+            onClick={() => setFilterState("all")}
+            className={`flex flex-col text-left px-3 py-1.5 rounded transition-all cursor-pointer ${
+              filterState === "all"
+                ? "bg-[#181c24] border-2 border-[#10b981] shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+                : "bg-[#181c24] border border-[#1f2937] hover:border-[#10b981]/50"
+            }`}
+            title="Click to view all active fleet units"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono text-[#86948a] uppercase">Active Fleet</span>
+              {filterState === "all" && (
+                <span className="text-[9px] font-mono px-1 py-0.2 bg-[#10b981]/20 text-[#4edea3] rounded font-bold">
+                  ACTIVE
+                </span>
+              )}
+            </div>
             <div className="flex items-baseline gap-1 mt-0.5">
               <span className="text-xl font-bold font-mono text-white">{stats.total}</span>
               <span className="text-[10px] font-mono text-[#4edea3]">{stats.healthRate}%</span>
             </div>
-          </div>
+          </button>
 
-          <div className="flex flex-col px-3 py-1.5 bg-[#181c24] rounded border border-[#1f2937]">
-            <span className="text-[10px] font-mono text-[#86948a] uppercase">Healthy (0-45d)</span>
+          {/* Healthy (0-45d) Button */}
+          <button
+            type="button"
+            onClick={() => setFilterState("healthy")}
+            className={`flex flex-col text-left px-3 py-1.5 rounded transition-all cursor-pointer ${
+              filterState === "healthy"
+                ? "bg-[#181c24] border-2 border-[#10b981] shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+                : "bg-[#181c24] border border-[#1f2937] hover:border-[#10b981]/50"
+            }`}
+            title="Click to filter by Healthy equipment (0-45 days)"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono text-[#86948a] uppercase">Healthy (0-45d)</span>
+              {filterState === "healthy" && (
+                <span className="text-[9px] font-mono px-1 py-0.2 bg-[#10b981]/20 text-[#4edea3] rounded font-bold">
+                  ACTIVE
+                </span>
+              )}
+            </div>
             <div className="flex items-baseline gap-1 mt-0.5">
               <span className="text-xl font-bold font-mono text-[#4edea3]">{stats.healthy}</span>
               <span className="text-[10px] font-mono text-[#bbcabf]">Normal</span>
             </div>
-          </div>
+          </button>
 
-          <div className="flex flex-col px-3 py-1.5 bg-[#181c24] rounded border border-[#1f2937]">
-            <span className="text-[10px] font-mono text-[#ffb95f] uppercase">Service Due (46-59d)</span>
+          {/* Service Due (46-59d) Button */}
+          <button
+            type="button"
+            onClick={() => setFilterState("due")}
+            className={`flex flex-col text-left px-3 py-1.5 rounded transition-all cursor-pointer ${
+              filterState === "due"
+                ? "bg-[#181c24] border-2 border-[#ffb95f] shadow-[0_0_12px_rgba(255,185,95,0.25)]"
+                : "bg-[#181c24] border border-[#1f2937] hover:border-[#ffb95f]/50"
+            }`}
+            title="Click to filter by equipment due for service (46-59 days)"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono text-[#ffb95f] uppercase">Service Due (46-59d)</span>
+              {filterState === "due" && (
+                <span className="text-[9px] font-mono px-1 py-0.2 bg-[#e29100]/25 text-[#ffb95f] rounded font-bold">
+                  ACTIVE
+                </span>
+              )}
+            </div>
             <div className="flex items-baseline gap-1 mt-0.5">
               <span className="text-xl font-bold font-mono text-[#ffb95f]">{stats.due}</span>
               <span className="text-[10px] font-mono text-[#ffb95f]">Priority</span>
             </div>
-          </div>
+          </button>
 
-          <div className="flex flex-col px-3 py-1.5 bg-[#181c24] rounded border border-[#ffb4ab]/40 shadow-[0_0_12px_rgba(147,0,10,0.35)]">
-            <span className="text-[10px] font-mono text-[#ffb4ab] uppercase">Locked Out (60d+)</span>
+          {/* Locked Out (60d+) Button */}
+          <button
+            type="button"
+            onClick={() => setFilterState("lockout")}
+            className={`flex flex-col text-left px-3 py-1.5 rounded transition-all cursor-pointer ${
+              filterState === "lockout"
+                ? "bg-[#181c24] border-2 border-[#ffb4ab] shadow-[0_0_16px_rgba(147,0,10,0.5)]"
+                : "bg-[#181c24] border border-[#ffb4ab]/40 shadow-[0_0_12px_rgba(147,0,10,0.35)] hover:border-[#ffb4ab]"
+            }`}
+            title="Click to filter by fail-safe locked out equipment (60+ days)"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono text-[#ffb4ab] uppercase">Locked Out (60d+)</span>
+              {filterState === "lockout" && (
+                <span className="text-[9px] font-mono px-1 py-0.2 bg-[#93000a] text-white rounded font-bold">
+                  ACTIVE
+                </span>
+              )}
+            </div>
             <div className="flex items-baseline gap-1 mt-0.5">
               <span className="text-xl font-bold font-mono text-[#ffb4ab]">{stats.locked}</span>
               <span className="text-[10px] font-mono text-[#ffb4ab] animate-pulse font-bold">LOCKED</span>
             </div>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -330,6 +539,7 @@ export const FleetWearHubView: React.FC = () => {
       {/* 3. SEARCH & FILTER CONTROLS */}
       <div className="flex flex-col space-y-3 bg-[#181c24] p-4 rounded-xl border border-[#1f2937]">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          {/* Smart Search Bar */}
           <div className="relative flex-1 max-w-lg">
             <span className="material-symbols-outlined absolute left-3 top-2 text-[#86948a] text-[18px]">
               search
@@ -338,18 +548,29 @@ export const FleetWearHubView: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter by Tool Asset ID (#TR-088), Serial, or Depot..."
-              className="w-full h-8 pl-9 pr-3 bg-[#0a0e16] border border-[#1f2937] text-white placeholder:text-[#86948a] text-[12px] rounded focus:outline-none focus:border-[#10b981]"
+              placeholder="Search by ID (#EQ-0101), Name, Serial, Depot, or City..."
+              className="w-full h-8 pl-9 pr-8 bg-[#0a0e16] border border-[#1f2937] text-white placeholder:text-[#86948a] text-[12px] rounded focus:outline-none focus:border-[#10b981]"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1.5 text-[#86948a] hover:text-white text-xs font-mono px-1 rounded hover:bg-[#1f2937]"
+                title="Clear search query"
+              >
+                ✕
+              </button>
+            )}
           </div>
 
-          {/* Filter Pills — Dynamically computed */}
+          {/* Filter Pills — In Sync with Quick Stats */}
           <div className="flex items-center gap-2 overflow-x-auto font-mono text-[11px]">
             <button
+              type="button"
               onClick={() => setFilterState("all")}
-              className={`px-3 py-1.5 rounded transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 ${
                 filterState === "all"
-                  ? "bg-[#10b981] text-[#003824] font-bold"
+                  ? "bg-[#10b981] text-[#003824] font-bold shadow-[0_0_8px_rgba(16,185,129,0.3)]"
                   : "bg-[#1c2028] text-[#bbcabf] hover:text-white border border-[#1f2937]"
               }`}
             >
@@ -358,10 +579,11 @@ export const FleetWearHubView: React.FC = () => {
             </button>
 
             <button
+              type="button"
               onClick={() => setFilterState("healthy")}
-              className={`px-3 py-1.5 rounded transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 ${
                 filterState === "healthy"
-                  ? "bg-[#10b981] text-[#003824] font-bold"
+                  ? "bg-[#10b981] text-[#003824] font-bold shadow-[0_0_8px_rgba(16,185,129,0.3)]"
                   : "bg-[#1c2028] text-[#bbcabf] hover:text-white border border-[#1f2937]"
               }`}
             >
@@ -371,10 +593,11 @@ export const FleetWearHubView: React.FC = () => {
             </button>
 
             <button
+              type="button"
               onClick={() => setFilterState("due")}
-              className={`px-3 py-1.5 rounded transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 ${
                 filterState === "due"
-                  ? "bg-[#e29100] text-black font-bold"
+                  ? "bg-[#e29100] text-black font-bold shadow-[0_0_8px_rgba(226,145,0,0.3)]"
                   : "bg-[#1c2028] text-[#ffb95f] hover:text-white border border-[#1f2937]"
               }`}
             >
@@ -384,10 +607,11 @@ export const FleetWearHubView: React.FC = () => {
             </button>
 
             <button
+              type="button"
               onClick={() => setFilterState("lockout")}
-              className={`px-3 py-1.5 rounded transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 ${
                 filterState === "lockout"
-                  ? "bg-[#93000a] text-white font-bold"
+                  ? "bg-[#93000a] text-white font-bold shadow-[0_0_12px_rgba(147,0,10,0.5)] border border-[#ffb4ab]"
                   : "bg-[#1c2028] text-[#ffb4ab] hover:text-white border border-[#93000a]/40"
               }`}
             >
@@ -398,25 +622,69 @@ export const FleetWearHubView: React.FC = () => {
           </div>
         </div>
 
-        {/* Category Pill Scroller — Dynamically derived from live database */}
+        {/* Category Pill Scroller — Toggleable */}
         <div className="flex items-center gap-2 overflow-x-auto pt-1 font-mono text-[11px] border-t border-[#1f2937]">
           <span className="text-[10px] text-[#86948a] uppercase tracking-wider shrink-0 mr-1">
             Categories:
           </span>
-          {dynamicCategories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setCategoryFilter(cat.id)}
-              className={`px-2.5 py-1 rounded whitespace-nowrap transition-colors ${
-                categoryFilter === cat.id
-                  ? "bg-[#10b981]/20 text-[#4edea3] font-bold border border-[#10b981]/40"
-                  : "bg-[#0a0e16] text-[#bbcabf] hover:text-white border border-[#1f2937]"
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
+          {dynamicCategories.map((cat) => {
+            const isSelected = categoryFilter.toLowerCase() === cat.id.toLowerCase()
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setCategoryFilter(isSelected ? "all" : cat.id)}
+                className={`px-2.5 py-1 rounded whitespace-nowrap transition-colors cursor-pointer ${
+                  isSelected
+                    ? "bg-[#10b981]/25 text-[#4edea3] font-bold border border-[#10b981]"
+                    : "bg-[#0a0e16] text-[#bbcabf] hover:text-white border border-[#1f2937]"
+                }`}
+                title={isSelected ? "Click to clear category filter" : `Filter by ${cat.label}`}
+              >
+                {cat.label}
+              </button>
+            )
+          })}
         </div>
+
+        {/* Active Filter Chips & Reset All */}
+        {(filterState !== "all" || categoryFilter !== "all" || searchQuery.trim() !== "") && (
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#1f2937] text-[11px] font-mono">
+            <div className="flex flex-wrap items-center gap-1.5 text-[#bbcabf]">
+              <span className="text-[#86948a]">Active Filters:</span>
+              {filterState !== "all" && (
+                <span className="px-2 py-0.5 rounded bg-[#1f2937] text-white flex items-center gap-1 border border-[#10b981]/40">
+                  Status: <strong className="text-[#4edea3] uppercase">{filterState === "lockout" ? "Locked Out (60d+)" : filterState}</strong>
+                  <button onClick={() => setFilterState("all")} className="hover:text-red-400 ml-1">✕</button>
+                </span>
+              )}
+              {categoryFilter !== "all" && (
+                <span className="px-2 py-0.5 rounded bg-[#1f2937] text-white flex items-center gap-1 border border-[#10b981]/40">
+                  Category: <strong className="text-[#4edea3]">{categoryFilter}</strong>
+                  <button onClick={() => setCategoryFilter("all")} className="hover:text-red-400 ml-1">✕</button>
+                </span>
+              )}
+              {searchQuery.trim() !== "" && (
+                <span className="px-2 py-0.5 rounded bg-[#1f2937] text-white flex items-center gap-1 border border-[#10b981]/40">
+                  Query: <strong className="text-[#4edea3]">"{searchQuery}"</strong>
+                  <button onClick={() => setSearchQuery("")} className="hover:text-red-400 ml-1">✕</button>
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setFilterState("all")
+                setCategoryFilter("all")
+                setSearchQuery("")
+              }}
+              className="text-[#ffb95f] hover:text-white flex items-center gap-1 font-bold cursor-pointer transition-colors"
+            >
+              <span className="material-symbols-outlined text-[14px]">filter_alt_off</span>
+              <span>Reset All Filters</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 4. HIGH DENSITY RESPONSIVE TABLE WITH 60-DAY WEAR RUBRIC */}
@@ -465,7 +733,22 @@ export const FleetWearHubView: React.FC = () => {
               ) : filteredFleet.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-12 text-center text-[#86948a] font-mono text-xs">
-                    No equipment assets found matching the current filter criteria.
+                    <div className="space-y-2.5">
+                      <p>No equipment assets found matching the current filter criteria.</p>
+                      {(filterState !== "all" || categoryFilter !== "all" || searchQuery.trim() !== "") && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFilterState("all")
+                            setCategoryFilter("all")
+                            setSearchQuery("")
+                          }}
+                          className="px-3 py-1 rounded bg-[#262a33] hover:bg-[#31353e] text-[#4edea3] text-[11px] font-mono border border-[#1f2937] transition-colors cursor-pointer"
+                        >
+                          Clear Filters & View All ({stats.total}) Assets
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (
