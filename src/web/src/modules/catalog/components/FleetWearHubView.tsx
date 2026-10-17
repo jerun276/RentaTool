@@ -15,78 +15,8 @@ export const FleetWearHubView: React.FC = () => {
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [enlargedPhoto, setEnlargedPhoto] = useState<{ url: string; angle: string } | null>(null)
 
-  const [fleetList, setFleetList] = useState([
-    {
-      id: "TR-088",
-      dbId: "8e5aeb95-8d78-41a2-89a2-de1966221686",
-      name: "Mikasa Plate Compactor 90kg",
-      category: "Compaction Equipment",
-      serial: "MKS-90-8841",
-      custodian: "Apex Civils Depot",
-      location: "Gampaha",
-      dailyRate: 6500,
-      valuation: 210000,
-      daysRented: 78,
-      isLocked: true,
-      image: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&auto=format&fit=crop&q=80",
-    },
-    {
-      id: "TR-062",
-      dbId: "20bb3889-67e8-4164-a186-5c926f651bcc",
-      name: "Bosch Professional GBH 8-45 D Rotary Hammer",
-      category: "Demolition Hammers",
-      serial: "BSH-GBH-4512",
-      custodian: "Perera Plant Hire",
-      location: "Kandy",
-      dailyRate: 4200,
-      valuation: 120000,
-      daysRented: 62,
-      isLocked: true,
-      image: "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=150&auto=format&fit=crop&q=80",
-    },
-    {
-      id: "TR-058",
-      dbId: "bsh-gsh-27",
-      name: "Bosch GSH 27 VC Breaker",
-      category: "Demolition Hammers",
-      serial: "BSH-GSH-2709",
-      custodian: "Sanken Depot",
-      location: "Colombo 03",
-      dailyRate: 4800,
-      valuation: 145000,
-      daysRented: 58,
-      isLocked: false,
-      image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=150&auto=format&fit=crop&q=80",
-    },
-    {
-      id: "TR-024",
-      dbId: "58975c9a-343e-4992-aaee-e212f6750873",
-      name: "Karcher HD 5/15 C Pressure Washer",
-      category: "Cleaning Equipment",
-      serial: "KRC-HD-5154",
-      custodian: "Nawaloka Yard",
-      location: "Colombo 03",
-      dailyRate: 3500,
-      valuation: 75000,
-      daysRented: 24,
-      isLocked: false,
-      image: "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=150&auto=format&fit=crop&q=80",
-    },
-    {
-      id: "TR-018",
-      dbId: "cat-320d-heavy",
-      name: "CAT 320D Hydraulic Excavator",
-      category: "Earthmoving",
-      serial: "CAT-320-9988",
-      custodian: "Maga Engineering Site",
-      location: "Colombo Port City",
-      dailyRate: 35000,
-      valuation: 18500000,
-      daysRented: 36,
-      isLocked: false,
-      image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=150&auto=format&fit=crop&q=80",
-    },
-  ])
+  const [fleetList, setFleetList] = useState<any[]>([])
+  const [loadingFleet, setLoadingFleet] = useState<boolean>(true)
 
   const resolveEquipmentImageUrl = (eq: any): string => {
     if (Array.isArray(eq.images) && eq.images.length > 0) {
@@ -110,25 +40,29 @@ export const FleetWearHubView: React.FC = () => {
   }
 
   const fetchEquipment = async () => {
+    setLoadingFleet(true)
     try {
-      const res = await axiosClient.get("/equipment")
+      const res = await axiosClient.get("/equipment", {
+        params: { pageSize: 100 }
+      })
       if (res.data) {
         setDbLive(true)
         const items = res.data.items || (Array.isArray(res.data) ? res.data : [])
         if (items.length > 0) {
           const mapped = items.map((eq: any) => {
-            const isLocked = eq.requiresMaintenanceCheck || eq.status === "UnderMaintenance" || (eq.totalRentalDaysAccumulated || 0) >= 60
+            const accumulated = Number(eq.totalRentalDaysAccumulated ?? eq.accumulatedRentalDays ?? 0)
+            const isLocked = Boolean(eq.requiresMaintenanceCheck || eq.requiresMandatoryServicing || eq.status === "UnderMaintenance" || accumulated >= 60)
             return {
-              id: `EQ-${eq.id.slice(0, 4).toUpperCase()}`,
+              id: `EQ-${(eq.id || "").slice(0, 4).toUpperCase()}`,
               dbId: eq.id,
-              name: eq.title,
+              name: eq.title || eq.name || "Equipment Asset",
               category: eq.categoryName || "Heavy Machinery",
-              serial: `SN-${eq.id.slice(0, 8).toUpperCase()}`,
-              custodian: "Western Province Operations Hub",
+              serial: `SN-${(eq.id || "").slice(0, 8).toUpperCase()}`,
+              custodian: eq.ownerName ? `${eq.ownerName} Depot` : "Western Province Operations Hub",
               location: eq.location || "Colombo",
-              dailyRate: eq.dailyRate || 5000,
-              valuation: eq.replacementValue || 200000,
-              daysRented: eq.totalRentalDaysAccumulated || 0,
+              dailyRate: Number(eq.dailyRate || 5000),
+              valuation: Number(eq.replacementValue || 200000),
+              daysRented: accumulated,
               isLocked,
               image: resolveEquipmentImageUrl(eq),
             }
@@ -137,7 +71,9 @@ export const FleetWearHubView: React.FC = () => {
         }
       }
     } catch (err) {
-      console.warn("Could not fetch equipment in Desk 03:", err)
+      console.warn("Could not fetch equipment from live API:", err)
+    } finally {
+      setLoadingFleet(false)
     }
   }
 
@@ -210,6 +146,47 @@ export const FleetWearHubView: React.FC = () => {
     }
   }
 
+  // Dynamic Telemetry Statistics derived directly from live database items
+  const stats = React.useMemo(() => {
+    const total = fleetList.length
+    const locked = fleetList.filter((item) => {
+      const isOverridden = overrides[item.id]
+      const effectiveDays = isOverridden ? 0 : item.daysRented
+      return (effectiveDays >= 60 || item.isLocked) && !isOverridden
+    }).length
+    const due = fleetList.filter((item) => {
+      const isOverridden = overrides[item.id]
+      const effectiveDays = isOverridden ? 0 : item.daysRented
+      const isLocked = (effectiveDays >= 60 || item.isLocked) && !isOverridden
+      return effectiveDays > 45 && effectiveDays < 60 && !isLocked
+    }).length
+    const healthy = fleetList.filter((item) => {
+      const isOverridden = overrides[item.id]
+      const effectiveDays = isOverridden ? 0 : item.daysRented
+      const isLocked = (effectiveDays >= 60 || item.isLocked) && !isOverridden
+      return effectiveDays <= 45 && !isLocked
+    }).length
+    const healthRate = total > 0 ? ((healthy / total) * 100).toFixed(1) : "100.0"
+
+    return { total, healthy, due, locked, healthRate }
+  }, [fleetList, overrides])
+
+  // Dynamic Categories derived directly from live database items
+  const dynamicCategories = React.useMemo(() => {
+    const counts: Record<string, number> = {}
+    fleetList.forEach((item) => {
+      const cat = item.category || "General Machinery"
+      counts[cat] = (counts[cat] || 0) + 1
+    })
+    return [
+      { id: "all", label: `All Categories (${fleetList.length})` },
+      ...Object.entries(counts).map(([cat, count]) => ({
+        id: cat,
+        label: `${cat} (${count})`,
+      })),
+    ]
+  }, [fleetList])
+
   const filteredFleet = fleetList.filter((item) => {
     const matchesSearch =
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -220,9 +197,13 @@ export const FleetWearHubView: React.FC = () => {
 
     if (categoryFilter !== "all" && item.category !== categoryFilter) return false
 
-    if (filterState === "healthy") return item.daysRented <= 45
-    if (filterState === "due") return item.daysRented > 45 && item.daysRented < 60
-    if (filterState === "lockout") return item.daysRented >= 60 || item.isLocked
+    const isOverridden = overrides[item.id]
+    const effectiveDays = isOverridden ? 0 : item.daysRented
+    const isLocked = (effectiveDays >= 60 || item.isLocked) && !isOverridden
+
+    if (filterState === "healthy") return effectiveDays <= 45 && !isLocked
+    if (filterState === "due") return effectiveDays > 45 && effectiveDays < 60 && !isLocked
+    if (filterState === "lockout") return isLocked
     return true
   })
 
@@ -254,20 +235,20 @@ export const FleetWearHubView: React.FC = () => {
           </p>
         </div>
 
-        {/* Quick Stats Telemetry Ribbon */}
+        {/* Quick Stats Telemetry Ribbon — Dynamically computed from database */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#0a0e16] p-2.5 rounded-lg border border-[#1f2937]">
           <div className="flex flex-col px-3 py-1.5 bg-[#181c24] rounded border border-[#1f2937]">
             <span className="text-[10px] font-mono text-[#86948a] uppercase">Active Fleet</span>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-xl font-bold font-mono text-white">248</span>
-              <span className="text-[10px] font-mono text-[#4edea3]">98.4%</span>
+              <span className="text-xl font-bold font-mono text-white">{stats.total}</span>
+              <span className="text-[10px] font-mono text-[#4edea3]">{stats.healthRate}%</span>
             </div>
           </div>
 
           <div className="flex flex-col px-3 py-1.5 bg-[#181c24] rounded border border-[#1f2937]">
             <span className="text-[10px] font-mono text-[#86948a] uppercase">Healthy (0-45d)</span>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-xl font-bold font-mono text-[#4edea3]">194</span>
+              <span className="text-xl font-bold font-mono text-[#4edea3]">{stats.healthy}</span>
               <span className="text-[10px] font-mono text-[#bbcabf]">Normal</span>
             </div>
           </div>
@@ -275,7 +256,7 @@ export const FleetWearHubView: React.FC = () => {
           <div className="flex flex-col px-3 py-1.5 bg-[#181c24] rounded border border-[#1f2937]">
             <span className="text-[10px] font-mono text-[#ffb95f] uppercase">Service Due (46-59d)</span>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-xl font-bold font-mono text-[#ffb95f]">42</span>
+              <span className="text-xl font-bold font-mono text-[#ffb95f]">{stats.due}</span>
               <span className="text-[10px] font-mono text-[#ffb95f]">Priority</span>
             </div>
           </div>
@@ -283,7 +264,7 @@ export const FleetWearHubView: React.FC = () => {
           <div className="flex flex-col px-3 py-1.5 bg-[#181c24] rounded border border-[#ffb4ab]/40 shadow-[0_0_12px_rgba(147,0,10,0.35)]">
             <span className="text-[10px] font-mono text-[#ffb4ab] uppercase">Locked Out (60d+)</span>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-xl font-bold font-mono text-[#ffb4ab]">12</span>
+              <span className="text-xl font-bold font-mono text-[#ffb4ab]">{stats.locked}</span>
               <span className="text-[10px] font-mono text-[#ffb4ab] animate-pulse font-bold">LOCKED</span>
             </div>
           </div>
@@ -362,7 +343,7 @@ export const FleetWearHubView: React.FC = () => {
             />
           </div>
 
-          {/* Filter Pills */}
+          {/* Filter Pills — Dynamically computed */}
           <div className="flex items-center gap-2 overflow-x-auto font-mono text-[11px]">
             <button
               onClick={() => setFilterState("all")}
@@ -373,7 +354,7 @@ export const FleetWearHubView: React.FC = () => {
               }`}
             >
               <span>All Units</span>
-              <span className="text-[10px]">248</span>
+              <span className="text-[10px]">{stats.total}</span>
             </button>
 
             <button
@@ -386,7 +367,7 @@ export const FleetWearHubView: React.FC = () => {
             >
               <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
               <span>Healthy (0-45d)</span>
-              <span className="text-[10px]">194</span>
+              <span className="text-[10px]">{stats.healthy}</span>
             </button>
 
             <button
@@ -399,7 +380,7 @@ export const FleetWearHubView: React.FC = () => {
             >
               <span className="w-1.5 h-1.5 rounded-full bg-[#ffb95f]" />
               <span>Due Soon (46-59d)</span>
-              <span className="text-[10px]">42</span>
+              <span className="text-[10px]">{stats.due}</span>
             </button>
 
             <button
@@ -412,23 +393,17 @@ export const FleetWearHubView: React.FC = () => {
             >
               <span className="w-1.5 h-1.5 rounded-full bg-[#ffb4ab] animate-pulse" />
               <span>LOCKED OUT (60d+)</span>
-              <span className="text-[10px]">12</span>
+              <span className="text-[10px]">{stats.locked}</span>
             </button>
           </div>
         </div>
 
-        {/* Category Pill Scroller */}
+        {/* Category Pill Scroller — Dynamically derived from live database */}
         <div className="flex items-center gap-2 overflow-x-auto pt-1 font-mono text-[11px] border-t border-[#1f2937]">
           <span className="text-[10px] text-[#86948a] uppercase tracking-wider shrink-0 mr-1">
             Categories:
           </span>
-          {[
-            { id: "all", label: "All Categories (248)" },
-            { id: "Compaction Equipment", label: "Compaction Equipment (34)" },
-            { id: "Demolition Hammers", label: "Demolition Hammers (68)" },
-            { id: "Cleaning Equipment", label: "Cleaning Equipment (42)" },
-            { id: "Earthmoving", label: "Earthmoving (82)" },
-          ].map((cat) => (
+          {dynamicCategories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setCategoryFilter(cat.id)}
@@ -452,7 +427,7 @@ export const FleetWearHubView: React.FC = () => {
               COMPLIANCE MATRIX TELEMETRY
             </span>
             <span className="text-[10px] font-mono text-[#4edea3] bg-[#10b981]/15 px-2 py-0.5 rounded">
-              Showing {filteredFleet.length} Operational Assets
+              Showing {filteredFleet.length} of {stats.total} Operational Assets
             </span>
           </div>
 
@@ -478,13 +453,29 @@ export const FleetWearHubView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1f2937]">
-              {filteredFleet.map((tool) => {
-                const isOverridden = overrides[tool.id]
-                const effectiveDays = isOverridden ? 0 : tool.daysRented
-                const isLocked = effectiveDays >= 60
+              {loadingFleet ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center text-[#bbcabf] font-mono text-xs">
+                    <div className="flex items-center justify-center gap-2.5">
+                      <span className="w-3.5 h-3.5 rounded-full border-2 border-[#10b981] border-t-transparent animate-spin" />
+                      <span>Loading live fleet telematics and duty-cycle records from database...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredFleet.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center text-[#86948a] font-mono text-xs">
+                    No equipment assets found matching the current filter criteria.
+                  </td>
+                </tr>
+              ) : (
+                filteredFleet.map((tool) => {
+                  const isOverridden = overrides[tool.id]
+                  const effectiveDays = isOverridden ? 0 : tool.daysRented
+                  const isLocked = (effectiveDays >= 60 || tool.isLocked) && !isOverridden
 
-                // Percentage capped at 100%
-                const pct = Math.min(100, Math.round((effectiveDays / 60) * 100))
+                  // Percentage capped at 100%
+                  const pct = Math.min(100, Math.round((effectiveDays / 60) * 100))
 
                 return (
                   <tr
@@ -606,7 +597,7 @@ export const FleetWearHubView: React.FC = () => {
                     </td>
                   </tr>
                 )
-              })}
+              }))}
             </tbody>
           </table>
         </div>
