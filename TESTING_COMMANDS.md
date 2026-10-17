@@ -6,7 +6,7 @@ This document lists all commands to run backend unit tests, PostgreSQL database 
 
 ## 1. .NET Backend Tests
 
-Run all commands from the repository root: `c:\Users\jerun\OneDrive\Desktop\SEF\SEF_Project\RentaTool`.
+Run all commands from your local repository root folder (`RentaTool`).
 
 ### Run All 118 Unit & Integration Tests Across the Entire Solution
 ```powershell
