@@ -29,6 +29,49 @@ public class PostgreSqlBookingDatabaseIntegrationTests : IAsyncLifetime
             if (_dbAvailable)
             {
                 await _context.Database.EnsureCreatedAsync();
+
+                const string createBookingSchemaSql = """
+                    CREATE TABLE IF NOT EXISTS bookings (
+                        id UUID PRIMARY KEY,
+                        equipment_id UUID NOT NULL,
+                        renter_id UUID NOT NULL,
+                        owner_id UUID NOT NULL,
+                        start_date TIMESTAMP WITH TIME ZONE NOT NULL,
+                        end_date TIMESTAMP WITH TIME ZONE NOT NULL,
+                        daily_rate NUMERIC(18,2) NOT NULL,
+                        total_rental_fee NUMERIC(18,2) NOT NULL,
+                        status VARCHAR(50) NOT NULL,
+                        cancellation_reason VARCHAR(500),
+                        created_at_utc TIMESTAMP WITH TIME ZONE NOT NULL,
+                        updated_at_utc TIMESTAMP WITH TIME ZONE,
+                        is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+                    );
+                    CREATE INDEX IF NOT EXISTS ix_bookings_equipment_id ON bookings(equipment_id);
+                    CREATE INDEX IF NOT EXISTS ix_bookings_renter_id ON bookings(renter_id);
+                    CREATE INDEX IF NOT EXISTS ix_bookings_owner_id ON bookings(owner_id);
+                    CREATE INDEX IF NOT EXISTS ix_bookings_status ON bookings(status);
+
+                    CREATE TABLE IF NOT EXISTS handover_events (
+                        id UUID PRIMARY KEY,
+                        booking_id UUID NOT NULL,
+                        event_type VARCHAR(50) NOT NULL,
+                        handover_token_hash VARCHAR(128) NOT NULL,
+                        is_confirmed BOOLEAN NOT NULL,
+                        expires_at_utc TIMESTAMP WITH TIME ZONE NOT NULL,
+                        geo_location_id UUID,
+                        created_at_utc TIMESTAMP WITH TIME ZONE NOT NULL,
+                        updated_at_utc TIMESTAMP WITH TIME ZONE,
+                        is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+                    );
+                    CREATE INDEX IF NOT EXISTS ix_handover_events_booking_id ON handover_events(booking_id);
+                    CREATE INDEX IF NOT EXISTS ix_handover_events_token ON handover_events(handover_token_hash);
+                """;
+
+                try
+                {
+                    await _context.Database.ExecuteSqlRawAsync(createBookingSchemaSql);
+                }
+                catch { }
             }
         }
         catch

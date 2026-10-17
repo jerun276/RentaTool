@@ -17,6 +17,40 @@ public class AppDbContext : DbContext
         // Auto-discover and apply entity configurations from all referenced assemblies
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         
+        // Ensure all module assemblies in the runtime directory are loaded into the AppDomain
+        try
+        {
+            var loadedNames = new HashSet<string>(
+                AppDomain.CurrentDomain.GetAssemblies()
+                    .Select(a => a.GetName().Name!)
+                    .Where(n => !string.IsNullOrEmpty(n)));
+
+            var binDirectory = AppContext.BaseDirectory;
+            if (Directory.Exists(binDirectory))
+            {
+                foreach (var file in Directory.GetFiles(binDirectory, "RentaTool.Modules.*.dll"))
+                {
+                    var asmName = Path.GetFileNameWithoutExtension(file);
+                    if (!loadedNames.Contains(asmName))
+                    {
+                        try
+                        {
+                            Assembly.LoadFrom(file);
+                            loadedNames.Add(asmName);
+                        }
+                        catch
+                        {
+                            // Ignore assemblies that cannot be loaded
+                        }
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Fallback gracefully if directory access is constrained
+        }
+
         // Scan for module assemblies dynamically
         var moduleAssemblies = AppDomain.CurrentDomain.GetAssemblies()
             .Where(a => a.FullName != null && a.FullName.StartsWith("RentaTool.Modules."));

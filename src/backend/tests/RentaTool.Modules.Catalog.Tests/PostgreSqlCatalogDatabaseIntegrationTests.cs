@@ -28,6 +28,43 @@ public class PostgreSqlCatalogDatabaseIntegrationTests : IAsyncLifetime
             if (_dbAvailable)
             {
                 await _context.Database.EnsureCreatedAsync();
+
+                const string createCatalogSchemaSql = """
+                    CREATE TABLE IF NOT EXISTS categories (
+                        id UUID PRIMARY KEY,
+                        name VARCHAR(100) NOT NULL,
+                        description VARCHAR(500) NOT NULL,
+                        icon_url VARCHAR(255) NOT NULL,
+                        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                        created_at_utc TIMESTAMP WITH TIME ZONE NOT NULL,
+                        updated_at_utc TIMESTAMP WITH TIME ZONE,
+                        is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+                    );
+
+                    CREATE TABLE IF NOT EXISTS equipment (
+                        id UUID PRIMARY KEY,
+                        owner_id UUID NOT NULL,
+                        category_id UUID NOT NULL,
+                        title VARCHAR(150) NOT NULL,
+                        description VARCHAR(2000) NOT NULL,
+                        daily_rate NUMERIC(18,2) NOT NULL,
+                        security_deposit NUMERIC(18,2) NOT NULL,
+                        specifications_json JSONB,
+                        total_rental_days_accumulated INT NOT NULL DEFAULT 0,
+                        requires_maintenance_check BOOLEAN NOT NULL DEFAULT FALSE,
+                        is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+                        created_at_utc TIMESTAMP WITH TIME ZONE NOT NULL,
+                        updated_at_utc TIMESTAMP WITH TIME ZONE
+                    );
+                    CREATE INDEX IF NOT EXISTS ix_equipment_category_id ON equipment(category_id);
+                    CREATE INDEX IF NOT EXISTS ix_equipment_owner_id ON equipment(owner_id);
+                """;
+
+                try
+                {
+                    await _context.Database.ExecuteSqlRawAsync(createCatalogSchemaSql);
+                }
+                catch { }
             }
         }
         catch
