@@ -1,0 +1,4 @@
+﻿Development Swagger compatibility retest - 2026-10-08
+Command attempted: ASPNETCORE_ENVIRONMENT=Development; dotnet RentaTool.API.dll --urls http://127.0.0.1:5012
+Result: BLOCKED before HTTP probe. API startup could not connect to PostgreSQL: 28P01 password authentication failed for user postgres. During Development schema startup, error logging caused the host process to exit; no Swagger status was collected.
+Required setup: correct local PostgreSQL credentials and repeat GET /swagger/index.html. Do not treat this as a Swagger regression or a pass.

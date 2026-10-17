@@ -1,0 +1,122 @@
+warn: Microsoft.EntityFrameworkCore.Model[10632]
+      No instantiatable types implementing `IEntityTypeConfiguration` were found while while scanning assembly 'RentaTool.Shared.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'.
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (26ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT CASE WHEN COUNT(*) = 0 THEN FALSE ELSE TRUE END
+FROM pg_class AS cls
+JOIN pg_namespace AS ns ON ns.oid = cls.relnamespace
+WHERE
+        cls.relkind IN ('r', 'v', 'm', 'f', 'p') AND
+        ns.nspname NOT IN ('pg_catalog', 'information_schema') AND
+        -- Exclude tables which are members of PG extensions
+        NOT EXISTS (
+            SELECT 1 FROM pg_depend WHERE
+                classid=(
+                    SELECT cls.oid
+                    FROM pg_class AS cls
+                             JOIN pg_namespace AS ns ON ns.oid = cls.relnamespace
+                    WHERE relname='pg_class' AND ns.nspname='pg_catalog'
+                ) AND
+                objid=cls.oid AND
+                deptype IN ('e', 'x')
+        )
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      
+                          ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT TRUE;
+                          ALTER TABLE users ADD COLUMN IF NOT EXISTS suspension_reason character varying(500);
+                          ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo_url character varying(2048);
+                          ALTER TABLE categories ADD COLUMN IF NOT EXISTS specification_schema_json jsonb NOT NULL DEFAULT '[]'::jsonb;
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT CASE WHEN COUNT(*) = 0 THEN FALSE ELSE TRUE END
+FROM pg_class AS cls
+JOIN pg_namespace AS ns ON ns.oid = cls.relnamespace
+WHERE
+        cls.relkind IN ('r', 'v', 'm', 'f', 'p') AND
+        ns.nspname NOT IN ('pg_catalog', 'information_schema') AND
+        -- Exclude tables which are members of PG extensions
+        NOT EXISTS (
+            SELECT 1 FROM pg_depend WHERE
+                classid=(
+                    SELECT cls.oid
+                    FROM pg_class AS cls
+                             JOIN pg_namespace AS ns ON ns.oid = cls.relnamespace
+                    WHERE relname='pg_class' AND ns.nspname='pg_catalog'
+                ) AND
+                objid=cls.oid AND
+                deptype IN ('e', 'x')
+        )
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (5ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT c.id, c.created_at_utc, c.description, c.icon_url, c.is_active, c.is_deleted, c.name, c.specification_schema_json, c.updated_at_utc
+      FROM categories AS c
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (4ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT EXISTS (
+          SELECT 1
+          FROM equipment AS e)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT CASE WHEN COUNT(*) = 0 THEN FALSE ELSE TRUE END
+FROM pg_class AS cls
+JOIN pg_namespace AS ns ON ns.oid = cls.relnamespace
+WHERE
+        cls.relkind IN ('r', 'v', 'm', 'f', 'p') AND
+        ns.nspname NOT IN ('pg_catalog', 'information_schema') AND
+        -- Exclude tables which are members of PG extensions
+        NOT EXISTS (
+            SELECT 1 FROM pg_depend WHERE
+                classid=(
+                    SELECT cls.oid
+                    FROM pg_class AS cls
+                             JOIN pg_namespace AS ns ON ns.oid = cls.relnamespace
+                    WHERE relname='pg_class' AND ns.nspname='pg_catalog'
+                ) AND
+                objid=cls.oid AND
+                deptype IN ('e', 'x')
+        )
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (8ms) [Parameters=[@__seed_Email_0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT EXISTS (
+          SELECT 1
+          FROM users AS u
+          WHERE u.email = @__seed_Email_0)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__seed_Email_0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT EXISTS (
+          SELECT 1
+          FROM users AS u
+          WHERE u.email = @__seed_Email_0)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (0ms) [Parameters=[@__seed_Email_0='?'], CommandType='Text', CommandTimeout='30']
+      SELECT EXISTS (
+          SELECT 1
+          FROM users AS u
+          WHERE u.email = @__seed_Email_0)
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://127.0.0.1:5000
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\Users\ASUS\Desktop\Rental\RentaTool\src\backend\Host\RentaTool.API
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT count(*)::int
+      FROM equipment AS e
+      WHERE NOT (e.is_deleted)
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (3ms) [Parameters=[@__p_1='?' (DbType = Int32), @__p_0='?' (DbType = Int32)], CommandType='Text', CommandTimeout='30']
+      SELECT e0.id, e0.category_id, e0.created_at_utc, e0.daily_rate, e0.description, e0.is_deleted, e0.last_maintenance_date_utc, e0.location, e0.owner_id, e0.replacement_value, e0.requires_maintenance_check, e0.specifications_json, e0.status, e0.title, e0.total_rental_days_accumulated, e0.updated_at_utc, c.id, c.created_at_utc, c.description, c.icon_url, c.is_active, c.is_deleted, c.name, c.specification_schema_json, c.updated_at_utc, t.id, t.angle, t.created_at_utc, t.equipment_id, t.image_url, t.is_deleted, t.is_primary, t.updated_at_utc
+      FROM (
+          SELECT e.id, e.category_id, e.created_at_utc, e.daily_rate, e.description, e.is_deleted, e.last_maintenance_date_utc, e.location, e.owner_id, e.replacement_value, e.requires_maintenance_check, e.specifications_json, e.status, e.title, e.total_rental_days_accumulated, e.updated_at_utc
+          FROM equipment AS e
+          WHERE NOT (e.is_deleted)
+          ORDER BY e.created_at_utc DESC
+          LIMIT @__p_1 OFFSET @__p_0
+      ) AS e0
+      INNER JOIN categories AS c ON e0.category_id = c.id
+      LEFT JOIN tool_images AS t ON e0.id = t.equipment_id
+      ORDER BY e0.created_at_utc DESC, e0.id, c.id

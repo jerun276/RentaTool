@@ -9,7 +9,11 @@ namespace RentaTool.Modules.Identity.Tests;
 
 public class PostgreSqlDatabaseIntegrationTests : IAsyncLifetime
 {
-    private const string ConnectionString = "Host=localhost;Port=5432;Database=rentatool_db;Username=postgres;Password=root;Timeout=2;CommandTimeout=2";
+    private static string ConnectionString =>
+        Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
+        ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+        ?? "Host=localhost;Port=5432;Database=rentatool_db;Username=postgres;Password=root;Timeout=5;CommandTimeout=5";
+
     private AppDbContext? _context;
     private bool _dbAvailable;
 

@@ -1,0 +1,3 @@
+GET http://127.0.0.1:5000/health => HTTP 200, 0.006877 s, 171 bytes
+GET http://127.0.0.1:5000/swagger/index.html => HTTP 200, 0.002202 s, 714 bytes
+GET http://127.0.0.1:5000/api/v1/equipment => HTTP 200, 0.011751 s, 1837 bytes
